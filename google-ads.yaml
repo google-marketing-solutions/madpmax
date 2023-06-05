@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,18 +42,6 @@ client_secret:
 refresh_token: 
 oauth_token: 
 
-# Service Account configuration
-##########################################################################################
-# To authenticate with a service account add the appropriate values to the below         #
-# configuration parameters and remove the three OAuth2 credentials above. The            #
-# "json_key_file_path" value should be a path to your local private key json file, and   #
-# "impersonated_email" should be the email address that is being used to impersonate the #
-# credentials making requests. for more information on service accounts, see:            #
-# https://developers.google.com/google-ads/api/docs/oauth/service-accounts               #
-##########################################################################################
-# json_key_file_path: INSERT_PATH_TO_JSON_KEY_FILE_HERE
-# impersonated_email: INSERT_DOMAIN_WIDE_DELEGATION_ACCOUNT
-
 # Login customer ID configuration
 ##########################################################################################
 # Required for manager accounts only: Specify the login customer ID used to authenticate #
@@ -63,34 +51,3 @@ oauth_token:
 # OAuth pairs.                                                                           #
 ##########################################################################################
 login_customer_id: 
-
-# Logging configuration
-##########################################################################################
-# Below you may specify the logging configuration. This will be provided as an input to  #
-# logging.config.dictConfig. Use the "level" block under the root logger configuration   #
-# to adjust the logging level. Note in the "format" field that log messages are          #
-# truncated to 5000 characters by default. You can change this to any length by removing #
-# the ".5000" portion or changing it to a different number.                              #
-# ########################################################################################
-# logging:
-  # version: 1
-  # disable_existing_loggers: False
-  # formatters:
-    # default_fmt:
-      # format: '[%(asctime)s - %(levelname)s] %(message).5000s'
-      # datefmt: '%Y-%m-%d %H:%M:%S'
-  # handlers:
-    # default_handler:
-      # class: logging.StreamHandler
-      # formatter: default_fmt
-  # loggers:
-    # "":
-      # handlers: [default_handler]
-      # level: INFO
-
-# Proxy configuration
-##########################################################################################
-# Below you can specify an optional proxy configuration to be used by requests. If you   #
-# don't have username and password, just specify host and port.                          #
-# ########################################################################################
-# http_proxy: http://user:password@localhost:8000
