@@ -29,6 +29,9 @@ class main():
         CUSTOMER_NAME = 6,
         CUSTOMER_ID = 7
 
+    class assetGroupsUploadStatus(enum.IntEnum):
+        COMPLETED = "COMPLETED"
+
     def __init__(self):
         # Configuration input values.
         self.includeVideo = False
@@ -64,22 +67,26 @@ class main():
         values = self.sheetService._get_sheet_values(
             self.sheetName+"!A6:E", self.googleSheetId)
 
+        asset_service = self._google_ads_client.get_service("AssetService")
+        # all operations across multiple assetGroups where the key is an assetGroup 
+        asset_operations=[]
         # Loop through of the input values in the provided spreadsheet / sheet.
         for row in values:
             # TODO: Retrieve AssetGroup Resource name.
             asset_group_details = self.sheetService._get_sheet_row(row[self.assetsColumnMap.ASSET_GROUP_ALIAS], "AssetGroups", self.googleSheetId)
-
+            asset_group_alias = row[self.assetsColumnMap.ASSET_GROUP_ALIAS]
             # Generate the performance max campaign object.
-            pmax_campaign_resource = self.googleAdsService._get_campaign_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.CAMPAIGN_ID])
+            # pmax_campaign_resource = self.googleAdsService._get_campaign_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.CAMPAIGN_ID])
+            # asset_group_resource = self.googleAdsService._get_asset_group_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.ASSET_GROUP_ID])
             
             # TODO: Read Customer ID from INPUT SHEET VALUE
             # TODO: IMPLEMENT FUNCTIONALITY FOR LOGO AND DIFFERENT IMAGE SIZES (PORTRAIT / SQUARE). 
             # Add image to AssetGroup
-            if row[self.assetsColumnMap.ASSET_TYPE] == "IMAGE" and len(row) == 4:
-                asset_group_resource = self.googleAdsService._get_asset_group_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.ASSET_GROUP_ID])
-                image_url = row[self.assetsColumnMap.ASSET_URL]
-                self.googleAdsService._add_asset_to_asset_group(asset_group_resource, image_url, self.customerId)
-                # TODO: WRITE RESULTS TO SPREADSHEET
+            # if row[self.assetsColumnMap.ASSET_TYPE] == "IMAGE" and len(row) == 4:
+            #     image_url = row[self.assetsColumnMap.ASSET_URL]
+            #     self.googleAdsService._add_asset_to_asset_group(asset_group_resource, image_url, self.customerId)
+            #     # TODO: WRITE RESULTS TO SPREADSHEET
+            #     self.sheetService._set_cell_value(self.assetGroupsUploadStatus.COMPLETED, self.sheetName+"!E"+row, self.googleSheetId)
 
 
             # TODO: IMPLEMENT VIDEO FUNCTIONALITY. 
@@ -94,6 +101,43 @@ class main():
             #         videoAsset = createVideoAsset(youtubeId)
 
             #     assetGroup.addAsset(videoAsset, assetTypes.VIDEO)
+
+
+            
+            if asset_group_alias not in asset_operations:
+                asset_operations[asset_group_alias] = list()
+            #TODO investigate blob API operation 
+            asset_url_retrieve = row[self.assetsColumnMap.ASSET_URL]
+            match self.assetsColumnMap.ASSET_TYPE:
+                case "IMAGE":
+                    #TODO add removal of images if needed 
+                    #TODO add check feedback for the amount of images 
+                    # asset_group_resource = self.googleAdsService._get_asset_group_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.ASSET_GROUP_ID])
+                    
+                    asset_img_resource = self.googleAdsService._create_image_asset(asset_url_retrieve, self.customer_id)
+                    asset_operations[asset_group_alias].append(asset_img_resource)
+
+                    # self.googleAdsService._add_asset_to_asset_group(asset_group_resource, asset_resource, self.customerId)
+                    # # TODO: WRITE RESULTS TO SPREADSHEET
+                    # self.sheetService._set_cell_value(self.assetGroupsUploadStatus.COMPLETED, self.sheetName+"!E"+row, self.googleSheetId)
+               # case "YOUTUBE_VIDEO":
+               # case "TEXT":     
+               # case "LOGO": 
+               # TODO reuse image creation method to make a logo and add into the asset_operations 
+                    # self.googleAdsService._add_asset_to_asset_group(asset_group_resource, asset_url_retrieve, self.customerId) 
+               # case "CALL_TO_ACTION":   
+
+        # Blob linking of assets and asset groups 
+        for asset_group_asset_operations in asset_operations:
+            # TODO change linking assets to specific asset groups 
+            mutate_asset_response = asset_service.mutate_assets(customer_id=self.customer_id, operations=[asset_group_asset_operations])
+        
+
+
+
+    
+        
+
 
 cp = main()
 cp.assetUpload()

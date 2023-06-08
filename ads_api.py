@@ -68,9 +68,65 @@ class AdService():
         return asset_group_service.asset_group_path(
             customer_id, asset_group_id
         )
-    
-    def _create_image_asset(self, image_url, customer_id):
+    # Creates image asset without linking
+    def _create_image_asset(self, image_url, customer_id, type, ):
         """Generates the image asset and returns the resource name.
+
+        Args:
+        image_url: full url of the image file.
+        customer_id: customer id.
+
+        Returns:
+        Asset resource.
+        """
+        # Download image from URL
+        image_content = requests.get(image_url).content
+
+        #TODO analyse type of the image
+
+        # Create and link the Marketing Image Asset.
+        asset_operation = self._google_ads_client.get_type("AssetOperation")
+        asset = asset_operation.create
+        asset.name = "Marketing Image #{uuid4()}"
+        asset.type = self._google_ads_client.enums.AssetTypeEnum.IMAGE
+        asset.image_asset.full_size.url = image_url
+        asset.image_asset.data = image_content
+
+        return asset_operation
+    
+    # previous version of image creation includes using API
+    # def _create_image_asset(self, image_url, customer_id, type, ):
+    #     """Generates the image asset and returns the resource name.
+
+    #     Args:
+    #     image_url: full url of the image file.
+    #     customer_id: customer id.
+
+    #     Returns:
+    #     Asset resource.
+    #     """
+    #     # Download image from URL
+    #     image_content = requests.get(image_url).content
+
+    #     #TODO analyse type of the image
+
+    #     # Create and link the Marketing Image Asset.
+    #     asset_service = self._google_ads_client.get_service("AssetService")
+    #     asset_operation = self._google_ads_client.get_type("AssetOperation")
+    #     asset = asset_operation.create
+    #     asset.name = "Marketing Image #{uuid4()}"
+    #     asset.type = self._google_ads_client.enums.AssetTypeEnum.IMAGE
+    #     asset.image_asset.full_size.url = image_url
+    #     asset.image_asset.data = image_content
+
+    #     mutate_asset_response = asset_service.mutate_assets(
+    #         customer_id=customer_id, operations=[asset_operation]
+    #     )
+
+    #     return mutate_asset_response.results[0].resource_name
+    
+    def _create_video_asset(self, image_url, customer_id):
+        """Generates the video asset and returns the resource name.
 
         Args:
         image_url: full url of the image file.
@@ -97,7 +153,7 @@ class AdService():
 
         return mutate_asset_response.results[0].resource_name
 
-    def _add_asset_to_asset_group(self, asset_group_resource, image_url, customer_id):
+    def _add_asset_to_asset_group(self, asset_group_resource, asset_resource, customer_id):
         """Adds the asset resource to an asset group.
 
         Args:
@@ -108,7 +164,7 @@ class AdService():
         asset_group_asset_service = self._google_ads_client.get_service("AssetGroupAssetService")
         asset_group_asset_operation = self._google_ads_client.get_type("AssetGroupAssetOperation")
 
-        asset_resource = self._create_image_asset(image_url, customer_id)
+        # asset_resource = self._create_image_asset(image_url, customer_id)
         asset_group_asset = asset_group_asset_operation.create
 
         asset_group_asset.asset_group = asset_group_resource
@@ -121,3 +177,6 @@ class AdService():
         print("Uploaded file(s):")
         for row in mutate_asset_group_response.results:
             print(f"\tResource name: {row.resource_name}")
+
+
+  
