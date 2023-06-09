@@ -69,7 +69,7 @@ class AdService():
             customer_id, asset_group_id
         )
     # Creates image asset without linking
-    def _create_image_asset(self, image_url, customer_id, type, ):
+    def _create_image_asset(self, image_url, type, name):
         """Generates the image asset and returns the resource name.
 
         Args:
@@ -87,8 +87,8 @@ class AdService():
         # Create and link the Marketing Image Asset.
         asset_operation = self._google_ads_client.get_type("AssetOperation")
         asset = asset_operation.create
-        asset.name = "Marketing Image #{uuid4()}"
-        asset.type = self._google_ads_client.enums.AssetTypeEnum.IMAGE
+        asset.name = name
+        asset.type = type 
         asset.image_asset.full_size.url = image_url
         asset.image_asset.data = image_content
 
@@ -153,7 +153,7 @@ class AdService():
 
         return mutate_asset_response.results[0].resource_name
 
-    def _add_asset_to_asset_group(self, asset_group_resource, asset_resource, customer_id):
+    def _add_asset_to_asset_group(self, asset_group, customer_id, operations):
         """Adds the asset resource to an asset group.
 
         Args:
@@ -162,21 +162,20 @@ class AdService():
         customer_id: customer id.
         """
         asset_group_asset_service = self._google_ads_client.get_service("AssetGroupAssetService")
-        asset_group_asset_operation = self._google_ads_client.get_type("AssetGroupAssetOperation")
+        #asset_group_asset_operation = self._google_ads_client.get_type("AssetGroupAssetOperation")
 
         # asset_resource = self._create_image_asset(image_url, customer_id)
-        asset_group_asset = asset_group_asset_operation.create
+        asset_group_asset = operations
 
-        asset_group_asset.asset_group = asset_group_resource
-        asset_group_asset.asset = asset_resource
-        asset_group_asset.field_type = self._google_ads_client.enums.AssetFieldTypeEnum.MARKETING_IMAGE
+        asset_group_asset.asset_group = asset_group
+        #asset_group_asset.asset = asset_resource
+        #asset_group_asset.field_type = self._google_ads_client.enums.AssetFieldTypeEnum.MARKETING_IMAGE
 
         mutate_asset_group_response = asset_group_asset_service.mutate_asset_group_assets(
-            customer_id=customer_id, operations=[asset_group_asset_operation]
+            customer_id=customer_id, operations=[operations]
         )
-        print("Uploaded file(s):")
-        for row in mutate_asset_group_response.results:
-            print(f"\tResource name: {row.resource_name}")
+        
+        return mutate_asset_group_response.results
 
 
   

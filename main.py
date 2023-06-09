@@ -67,14 +67,15 @@ class main():
         values = self.sheetService._get_sheet_values(
             self.sheetName+"!A6:E", self.googleSheetId)
 
-        asset_service = self._google_ads_client.get_service("AssetService")
+        # asset_service = self._google_ads_client.get_service("AssetService")
         # all operations across multiple assetGroups where the key is an assetGroup 
         asset_operations=[]
         # Loop through of the input values in the provided spreadsheet / sheet.
         for row in values:
-            # TODO: Retrieve AssetGroup Resource name.
-            asset_group_details = self.sheetService._get_sheet_row(row[self.assetsColumnMap.ASSET_GROUP_ALIAS], "AssetGroups", self.googleSheetId)
             asset_group_alias = row[self.assetsColumnMap.ASSET_GROUP_ALIAS]
+            # TODO: Retrieve AssetGroup Resource name.
+            # asset_group_details = self.sheetService._get_sheet_row(row[self.assetsColumnMap.ASSET_GROUP_ALIAS], "AssetGroups", self.googleSheetId)
+            
             # Generate the performance max campaign object.
             # pmax_campaign_resource = self.googleAdsService._get_campaign_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.CAMPAIGN_ID])
             # asset_group_resource = self.googleAdsService._get_asset_group_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.ASSET_GROUP_ID])
@@ -108,36 +109,27 @@ class main():
                 asset_operations[asset_group_alias] = list()
             #TODO investigate blob API operation 
             asset_url_retrieve = row[self.assetsColumnMap.ASSET_URL]
-            match self.assetsColumnMap.ASSET_TYPE:
+            asset_type = row[self.assetsColumnMap.ASSET_TYPE]
+            match asset_type:
                 case "IMAGE":
                     #TODO add removal of images if needed 
                     #TODO add check feedback for the amount of images 
-                    # asset_group_resource = self.googleAdsService._get_asset_group_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.ASSET_GROUP_ID])
-                    
-                    asset_img_resource = self.googleAdsService._create_image_asset(asset_url_retrieve, self.customer_id)
+                    asset_img_resource = self.googleAdsService._create_image_asset(asset_url_retrieve, self._google_ads_client.enums.AssetTypeEnum.IMAGE, "Marketing Image #{uuid4()}")
                     asset_operations[asset_group_alias].append(asset_img_resource)
-
-                    # self.googleAdsService._add_asset_to_asset_group(asset_group_resource, asset_resource, self.customerId)
-                    # # TODO: WRITE RESULTS TO SPREADSHEET
-                    # self.sheetService._set_cell_value(self.assetGroupsUploadStatus.COMPLETED, self.sheetName+"!E"+row, self.googleSheetId)
                # case "YOUTUBE_VIDEO":
                # case "TEXT":     
                # case "LOGO": 
                # TODO reuse image creation method to make a logo and add into the asset_operations 
-                    # self.googleAdsService._add_asset_to_asset_group(asset_group_resource, asset_url_retrieve, self.customerId) 
+                    # asset_logo_resource = self.googleAdsService._create_image_asset(asset_url_retrieve, self.customer_id)
                # case "CALL_TO_ACTION":   
 
         # Blob linking of assets and asset groups 
         for asset_group_asset_operations in asset_operations:
             # TODO change linking assets to specific asset groups 
-            mutate_asset_response = asset_service.mutate_assets(customer_id=self.customer_id, operations=[asset_group_asset_operations])
-        
-
-
-
-    
-        
-
+            result = self.googleAdsService._add_asset_to_asset_group(asset_group_alias, self.customerId, asset_group_asset_operations)
+            # TODO: WRITE RESULTS TO SPREADSHEET FROM results
+            # self.sheetService._set_cell_value(self.assetGroupsUploadStatus.COMPLETED, self.sheetName+"!E"+row, self.googleSheetId)
+                   
 
 cp = main()
 cp.assetUpload()
