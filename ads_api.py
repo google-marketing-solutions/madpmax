@@ -1,4 +1,4 @@
-# Copyright 2019 Google LLC
+# Copyright 2023 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,11 @@
 
 from google.ads import googleads
 from google.api_core import protobuf_helpers
+from PIL import Image
 import requests
+from io import BytesIO
+
+_ASSET_TEMP_ID = -100
 
 
 class AdService():
@@ -28,7 +32,7 @@ class AdService():
           ads_account_file: Path to Google Ads API account file.
         """
         self._google_ads_client = googleads.client.GoogleAdsClient.load_from_storage(
-            ads_account_file, version='v13')
+            ads_account_file, version='v14')
         self._cache_ad_group_ad = {}
         self.prev_image_asset_list = None
         self.prev_customer_id = None
@@ -69,113 +73,191 @@ class AdService():
             customer_id, asset_group_id
         )
     # Creates image asset without linking
-    def _create_image_asset(self, image_url, type, name):
+
+    def _create_image_asset(self, image_url, name, type, customer_id):
         """Generates the image asset and returns the resource name.
 
         Args:
         image_url: full url of the image file.
+        name: the name of the image asset.
+        type: The asset type for the image asset.
         customer_id: customer id.
 
         Returns:
-        Asset resource.
+        Asset operation, resource name or None.
         """
-        # Download image from URL
+        global _ASSET_TEMP_ID
+
+        # Download image from URL and determine the ratio.
         image_content = requests.get(image_url).content
+        img = Image.open(BytesIO(image_content))
+        img_ratio = img.width / img.height
 
-        #TODO analyse type of the image
+        if img_ratio == 1 and type == "IMAGE":
+            field_type = "SQUARE_MARKETING_IMAGE"
+        elif img_ratio < 1 and type == "IMAGE":
+            field_type = "PORTRAIT_MARKETING_IMAGE"
+        elif img_ratio > 1 and type == "IMAGE":
+            field_type = "MARKETING_IMAGE"
+        elif img_ratio == 1 and type == "LOGO":
+            field_type = "LOGO"
+        elif img_ratio > 1 and type == "LOGO":
+            field_type = "LANDSCAPE_LOGO"
+        else:
+            #TODO: Add return for error message (not supported image size / field_type.)
+            field_type = None
 
-        # Create and link the Marketing Image Asset.
-        asset_operation = self._google_ads_client.get_type("AssetOperation")
-        asset = asset_operation.create
-        asset.name = name
-        asset.type = type 
-        asset.image_asset.full_size.url = image_url
-        asset.image_asset.data = image_content
+        asset_service = self._google_ads_client.get_service("AssetService")
+        resource_name = asset_service.asset_path(customer_id, _ASSET_TEMP_ID)
 
-        return asset_operation
-    
-    # previous version of image creation includes using API
-    # def _create_image_asset(self, image_url, customer_id, type, ):
-    #     """Generates the image asset and returns the resource name.
+        _ASSET_TEMP_ID -= 1
 
-    #     Args:
-    #     image_url: full url of the image file.
-    #     customer_id: customer id.
+        if image_content:
+            # Create and link the Marketing Image Asset.
+            asset_operation = self._google_ads_client.get_type(
+                "MutateOperation")
+            asset = asset_operation.asset_operation.create
+            asset.name = name
+            asset.type = self._google_ads_client.enums.AssetTypeEnum.IMAGE
+            asset.resource_name = resource_name
+            asset.image_asset.full_size.url = image_url
+            asset.image_asset.data = image_content
 
-    #     Returns:
-    #     Asset resource.
-    #     """
-    #     # Download image from URL
-    #     image_content = requests.get(image_url).content
+            return asset_operation, resource_name, field_type
 
-    #     #TODO analyse type of the image
+        return None
 
-    #     # Create and link the Marketing Image Asset.
-    #     asset_service = self._google_ads_client.get_service("AssetService")
-    #     asset_operation = self._google_ads_client.get_type("AssetOperation")
-    #     asset = asset_operation.create
-    #     asset.name = "Marketing Image #{uuid4()}"
-    #     asset.type = self._google_ads_client.enums.AssetTypeEnum.IMAGE
-    #     asset.image_asset.full_size.url = image_url
-    #     asset.image_asset.data = image_content
-
-    #     mutate_asset_response = asset_service.mutate_assets(
-    #         customer_id=customer_id, operations=[asset_operation]
-    #     )
-
-    #     return mutate_asset_response.results[0].resource_name
-    
-    def _create_video_asset(self, image_url, customer_id):
-        """Generates the video asset and returns the resource name.
+    def _create_video_asset(self, video_url, field_type, customer_id):
+        """Generates the image asset and returns the resource name.
 
         Args:
-        image_url: full url of the image file.
+        video_url: full url of the image file.
+        field_type: Google Ads field type, required for assigning asset to asset group.
         customer_id: customer id.
 
         Returns:
-        Asset resource.
+        Asset operation, resource name or None.
         """
-        # Download image from URL
-        image_content = requests.get(image_url).content
+        global _ASSET_TEMP_ID
+
+        youtube_id = _retrieve_yt_id(video_url)
+
+        asset_service = self._google_ads_client.get_service("AssetService")
+        resource_name = asset_service.asset_path(customer_id, _ASSET_TEMP_ID)
+
+        _ASSET_TEMP_ID -= 1
+
+        if youtube_id:
+            # Create and link the Marketing Image Asset.
+            asset_operation = self._google_ads_client.get_type(
+                "MutateOperation")
+            asset = asset_operation.asset_operation.create
+            asset.resource_name = resource_name
+            asset.youtube_video_asset.youtube_video_title = "Marketing Video #{uuid4()}"
+            asset.youtube_video_asset.youtube_video_id = youtube_id
+
+            return asset_operation, resource_name, field_type
+
+        return None
+
+    def _retrieve_yt_id(self, video_url):
+        """Retrieves the YouTube video id from the URL.
+
+        Args:
+        video_url: full url of the video on YT.
+
+        Returns:
+        String value containing the id, or None.
+        """
+        regex = "^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*"
+        result = re.search(regex, video_url)
+        if result:
+            return result.group(2)
+
+        return None
+
+    def _create_text_asset(self, text, fieldtype, customer_id):
+        """Generates the image asset and returns the resource name.
+
+        Args:
+        video_url: full url of the image file.
+        field_type: Google Ads field type, required for assigning asset to asset group.
+        customer_id: customer id.
+
+        Returns:
+        Asset operation, resource name or None.
+        """
+        global _ASSET_TEMP_ID
+
+        asset_service = self._google_ads_client.get_service("AssetService")
+        resource_name = asset_service.asset_path(customer_id, _ASSET_TEMP_ID)
+
+        _ASSET_TEMP_ID -= 1
 
         # Create and link the Marketing Image Asset.
-        asset_service = self._google_ads_client.get_service("AssetService")
-        asset_operation = self._google_ads_client.get_type("AssetOperation")
-        asset = asset_operation.create
-        asset.name = "Marketing Image #{uuid4()}"
-        asset.type = self._google_ads_client.enums.AssetTypeEnum.IMAGE
-        asset.image_asset.full_size.url = image_url
-        asset.image_asset.data = image_content
+        asset_operation = self._google_ads_client.get_type("MutateOperation")
+        asset = asset_operation.asset_operation.create
+        asset.resource_name = resource_name
+        asset.text_asset.text = text
 
-        mutate_asset_response = asset_service.mutate_assets(
-            customer_id=customer_id, operations=[asset_operation]
-        )
+        return asset_operation, resource_name, field_type
 
-        return mutate_asset_response.results[0].resource_name
-
-    def _add_asset_to_asset_group(self, asset_group, customer_id, operations):
+    def _add_asset_to_asset_group(self, asset_resource, asset_group_id, field_type, customer_id):
         """Adds the asset resource to an asset group.
 
         Args:
-        asset_group_resource: resource name of the asset group.
+        asset_resource: resource name of the asset group.
         image_url: full url of the image file.
+        field_type: Google Ads field type, required for assigning asset to asset group.
         customer_id: customer id.
         """
-        asset_group_asset_service = self._google_ads_client.get_service("AssetGroupAssetService")
-        #asset_group_asset_operation = self._google_ads_client.get_type("AssetGroupAssetOperation")
-
-        # asset_resource = self._create_image_asset(image_url, customer_id)
-        asset_group_asset = operations
-
-        asset_group_asset.asset_group = asset_group
-        #asset_group_asset.asset = asset_resource
-        #asset_group_asset.field_type = self._google_ads_client.enums.AssetFieldTypeEnum.MARKETING_IMAGE
-
-        mutate_asset_group_response = asset_group_asset_service.mutate_asset_group_assets(
-            customer_id=customer_id, operations=[operations]
-        )
+        asset_group_service = self._google_ads_client.get_service("AssetGroupService")
         
-        return mutate_asset_group_response.results
+        asset_group_asset_operation = self._google_ads_client.get_type("MutateOperation")
+        asset_group_asset = asset_group_asset_operation.asset_group_asset_operation.create
 
+        asset_group_asset.field_type = field_type
+        asset_group_asset.asset_group = asset_group_service.asset_group_path(
+            customer_id, asset_group_id,
+        )
+        asset_group_asset.asset = asset_resource
 
-  
+        return asset_group_asset_operation
+
+    def _bulk_mutate(self, mutate_operations, customer_id):
+        """Process Bulk Mutate operation via Google Ads API.
+        
+        Args:
+        mutate_operations: Array of mutate operations.
+        customer_id: customer id.
+
+        Returns:
+        Response API object.
+        """
+        googleads_service = self._google_ads_client.get_service("GoogleAdsService")
+        response = googleads_service.mutate(
+            customer_id=customer_id, mutate_operations=mutate_operations
+        )
+
+        return response
+
+    def print_response_details(self, response):
+        """Prints the details of a MutateGoogleAdsResponse.
+        Parses the "response" oneof field name and uses it to extract the new
+        entity's name and resource name.
+        Args:
+            response: a MutateGoogleAdsResponse object.
+        """
+        # Parse the Mutate response to print details about the entities that
+        # were created by the request.
+        suffix = "_result"
+        for result in response.mutate_operation_responses:
+            for field_descriptor, value in result._pb.ListFields():
+                if field_descriptor.name.endswith(suffix):
+                    name = field_descriptor.name[: -len(suffix)]
+                else:
+                    name = field_descriptor.name
+                print(
+                    f"Created a(n) {name} with "
+                    f"{str(value).strip()}."
+                )

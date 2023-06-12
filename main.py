@@ -29,27 +29,16 @@ class main():
         CUSTOMER_NAME = 6,
         CUSTOMER_ID = 7
 
-    class assetGroupsUploadStatus(enum.IntEnum):
+    class assetGroupsUploadStatus(enum.Enum):
         COMPLETED = "COMPLETED"
 
     def __init__(self):
         # Configuration input values.
         self.includeVideo = False
-        # Set to true in case provided video assets should be removed from the asset group.
-        self.removeExistingVideo = False
-        # Leave empty in case removeExistingVideo = false.
-        self.placeholderYoutudeIds = ["YT_ID_1", "YT_ID_2"]
-        # Set to true in case provided image assets should be removed from the asset
-        # group.
-        self.removeExistingImages = False;
-        # Leave empty in case removeExistingImages = false.
-        self.placeholderImageNames = ["YOUR_ASSET_1", "YOUR_ASSET_2"]
         self.sheetName = "Assets"
         # Sample spreadsheet https://docs.google.com/spreadsheets/d/16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE/edit#gid=755896892
-        self.googleSheetId = "REPLACE_WITH_SPREADSHEET_ID"
-        self.customerId = "REPLACE_WITH_GOOGLE_ADS_CUSTOMER_ID"
+        self.googleSheetId = "16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE"
         self.rowLimit = 2000
-        
         with open('google-ads.yaml', 'r') as ymlfile:
             cfg = yaml.safe_load(ymlfile)
 
@@ -69,13 +58,14 @@ class main():
 
         # asset_service = self._google_ads_client.get_service("AssetService")
         # all operations across multiple assetGroups where the key is an assetGroup 
-        asset_operations=[]
+        asset_operations={}
         # Loop through of the input values in the provided spreadsheet / sheet.
         for row in values:
             asset_group_alias = row[self.assetsColumnMap.ASSET_GROUP_ALIAS]
             # TODO: Retrieve AssetGroup Resource name.
-            # asset_group_details = self.sheetService._get_sheet_row(row[self.assetsColumnMap.ASSET_GROUP_ALIAS], "AssetGroups", self.googleSheetId)
-            
+            asset_group_details = self.sheetService._get_sheet_row(row[self.assetsColumnMap.ASSET_GROUP_ALIAS], "AssetGroups", self.googleSheetId)
+            asset_group_id = asset_group_details[self.assetGroupsColumnMap.ASSET_GROUP_ID]
+            customer_id = asset_group_details[self.assetGroupsColumnMap.CUSTOMER_ID]
             # Generate the performance max campaign object.
             # pmax_campaign_resource = self.googleAdsService._get_campaign_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.CAMPAIGN_ID])
             # asset_group_resource = self.googleAdsService._get_asset_group_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.ASSET_GROUP_ID])
@@ -106,27 +96,34 @@ class main():
 
             
             if asset_group_alias not in asset_operations:
-                asset_operations[asset_group_alias] = list()
-            #TODO investigate blob API operation 
-            asset_url_retrieve = row[self.assetsColumnMap.ASSET_URL]
+                asset_operations[asset_group_alias] = []
+            
+            asset_url = row[self.assetsColumnMap.ASSET_URL]
             asset_type = row[self.assetsColumnMap.ASSET_TYPE]
-            match asset_type:
-                case "IMAGE":
-                    #TODO add removal of images if needed 
-                    #TODO add check feedback for the amount of images 
-                    asset_img_resource = self.googleAdsService._create_image_asset(asset_url_retrieve, self._google_ads_client.enums.AssetTypeEnum.IMAGE, "Marketing Image #{uuid4()}")
-                    asset_operations[asset_group_alias].append(asset_img_resource)
+            
+            if asset_type == "IMAGE":
+                #TODO add removal of images if needed 
+                #TODO add check feedback for the amount of images 
+
+
+                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_image_asset(asset_url, "Marketing Image #{uuid4()}", asset_type, customer_id)
+                asset_operations[asset_group_alias].append(asset_mutate_operation)
+
+                asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
+                asset_operations[asset_group_alias].append(asset_mutate_operation)
                # case "YOUTUBE_VIDEO":
                # case "TEXT":     
                # case "LOGO": 
                # TODO reuse image creation method to make a logo and add into the asset_operations 
-                    # asset_logo_resource = self.googleAdsService._create_image_asset(asset_url_retrieve, self.customer_id)
+                    # asset_logo_resource = self.googleAdsService._create_image_asset(asset_url, self.customerId)
                # case "CALL_TO_ACTION":   
 
         # Blob linking of assets and asset groups 
         for asset_group_asset_operations in asset_operations:
-            # TODO change linking assets to specific asset groups 
-            result = self.googleAdsService._add_asset_to_asset_group(asset_group_alias, self.customerId, asset_group_asset_operations)
+            # Send the operations in a single Mutate request.
+            response = self.googleAdsService._bulk_mutate(asset_operations[asset_group_asset_operations], customer_id)
+
+            self.googleAdsService.print_response_details(response)
             # TODO: WRITE RESULTS TO SPREADSHEET FROM results
             # self.sheetService._set_cell_value(self.assetGroupsUploadStatus.COMPLETED, self.sheetName+"!E"+row, self.googleSheetId)
                    
