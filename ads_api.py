@@ -176,7 +176,7 @@ class AdService():
 
         return None
 
-    def _create_text_asset(self, text, fieldtype, customer_id):
+    def _create_text_asset(self, text, field_type, customer_id):
         """Generates the image asset and returns the resource name.
 
         Args:
@@ -235,8 +235,12 @@ class AdService():
         Response API object.
         """
         googleads_service = self._google_ads_client.get_service("GoogleAdsService")
+        request = self._google_ads_client.get_type("MutateGoogleAdsRequest")
+        request.customer_id = customer_id
+        request.mutate_operations = mutate_operations
+        request.partial_failure = True
         response = googleads_service.mutate(
-            customer_id=customer_id, mutate_operations=mutate_operations
+            request=request
         )
 
         return response
@@ -261,3 +265,78 @@ class AdService():
                     f"Created a(n) {name} with "
                     f"{str(value).strip()}."
                 )
+
+
+    def is_partial_failure_error_present(self, response):
+        """Checks whether a response message has a partial failure error.
+        In Python the partial_failure_error attr is always present on a response
+        message and is represented by a google.rpc.Status message. So we can't
+        simply check whether the field is present, we must check that the code is
+        non-zero. Error codes are represented by the google.rpc.Code proto Enum:
+        https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
+        Args:
+            response:  A MutateAdGroupsResponse message instance.
+        Returns: A boolean, whether or not the response message has a partial
+            failure error.
+        """
+        partial_failure = getattr(response, "partial_failure_error", None)
+        code = getattr(partial_failure, "code", None)
+        return code != 0
+
+    def print_results(self, response, operations):
+        """Prints partial failure errors and success messages from a response.
+        This function shows how to retrieve partial_failure errors from a response
+        message (in the case of this example the message will be of type
+        MutateAdGroupsResponse) and how to unpack those errors to GoogleAdsFailure
+        instances. It also shows that a response with partial failures may still
+        contain successful requests, and that those messages should be parsed
+        separately.
+        """
+        error_obj = {}
+
+        # Check for existence of any partial failures in the response.
+        if self.is_partial_failure_error_present(response):
+            partial_failure = getattr(response, "partial_failure_error", None)
+            # partial_failure_error.details is a repeated field and iterable
+            error_details = getattr(partial_failure, "details", [])
+
+            for error_detail in error_details:
+                # Retrieve an instance of the GoogleAdsFailure class from the client
+                failure_message = self._google_ads_client.get_type("GoogleAdsFailure")
+                # Parse the string into a GoogleAdsFailure message instance.
+                # To access class-only methods on the message we retrieve its type.
+                GoogleAdsFailure = type(failure_message)
+                failure_object = GoogleAdsFailure.deserialize(error_detail.value)
+
+                for error in failure_object.errors:
+                    # Construct and print a string that details which element in
+                    # the above ad_group_operations list failed (by index number)
+                    # as well as the error message and error code.
+                    error_obj[error.location.field_path_elements[0].index] = f"\n\tError message: {error.message}\n\tError code: {error.error_code}"
+        else:
+            print(
+                "All operations completed successfully. No partial failure "
+                "to show."
+            )
+
+        # In the list of results, operations from the ad_group_operation list
+        # that failed will be represented as empty messages. This loop detects
+        # such empty messages and ignores them, while printing information about
+        # successful operations.
+        suffix = "_result"
+        i = 0
+        for result in response.mutate_operation_responses:
+            for field_descriptor, value in result._pb.ListFields():
+                if field_descriptor.name.endswith(suffix):
+                    name = field_descriptor.name[: -len(suffix)]
+                else:
+                    name = field_descriptor.name
+                if i in error_obj:
+                    # TODO: retrieve the Sheet Row Number for the operations[i] request.
+                    print(f"A partial failure creating a(n) {name} at index {i} occurred" + error_obj[i])
+                else:
+                    print(
+                        f"Created a(n) {name} with "
+                        f"{str(value).strip()}."
+                    )
+                i += 1

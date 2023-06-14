@@ -97,33 +97,52 @@ class main():
             
             if asset_group_alias not in asset_operations:
                 asset_operations[asset_group_alias] = []
-            
-            asset_url = row[self.assetsColumnMap.ASSET_URL]
+
+            if self.assetsColumnMap.ASSET_URL.value < len(row):
+                asset_url = row[self.assetsColumnMap.ASSET_URL]
+            else:
+                asset_url = ""
+
             asset_type = row[self.assetsColumnMap.ASSET_TYPE]
+            # Asset name / asset type
+            asset_text = row[self.assetsColumnMap.ASSET_TEXT]
             
-            if asset_type == "IMAGE":
+            if asset_type == "IMAGE" or asset_type ==  "LOGO":
                 #TODO add removal of images if needed 
                 #TODO add check feedback for the amount of images 
 
+                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_image_asset(asset_url, asset_text + " #{uuid4()}", asset_type, customer_id)
+                asset_operations[asset_group_alias].append(asset_mutate_operation)
 
-                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_image_asset(asset_url, "Marketing Image #{uuid4()}", asset_type, customer_id)
+                asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
+                asset_operations[asset_group_alias].append(asset_mutate_operation)
+            elif asset_type == "HEADLINE" or asset_type ==  "LONG_HEADLINE" or asset_type ==  "DESCRIPTION" or asset_type == "BUSINESS_NAME":
+                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_text_asset(asset_text, asset_type, customer_id)
                 asset_operations[asset_group_alias].append(asset_mutate_operation)
 
                 asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
                 asset_operations[asset_group_alias].append(asset_mutate_operation)
                # case "YOUTUBE_VIDEO":
-               # case "TEXT":     
-               # case "LOGO": 
-               # TODO reuse image creation method to make a logo and add into the asset_operations 
-                    # asset_logo_resource = self.googleAdsService._create_image_asset(asset_url, self.customerId)
                # case "CALL_TO_ACTION":   
 
         # Blob linking of assets and asset groups 
         for asset_group_asset_operations in asset_operations:
-            # Send the operations in a single Mutate request.
-            response = self.googleAdsService._bulk_mutate(asset_operations[asset_group_asset_operations], customer_id)
+            try:
+                asset_group_response = self.googleAdsService._bulk_mutate(asset_operations[asset_group_asset_operations], customer_id)
+            except GoogleAdsException as ex:
+                print(
+                    f'Request with ID "{ex.request_id}" failed with status '
+                    f'"{ex.error.code().name}" and includes the following errors:'
+                )
+                for error in ex.failure.errors:
+                    print(f'\tError with message "{error.message}".')
+                    if error.location:
+                        for field_path_element in error.location.field_path_elements:
+                            print(f"\t\tOn field: {field_path_element.field_name}")
+                sys.exit(1)
+            else:
+                self.googleAdsService.print_results(asset_group_response, asset_operations[asset_group_asset_operations])
 
-            self.googleAdsService.print_response_details(response)
             # TODO: WRITE RESULTS TO SPREADSHEET FROM results
             # self.sheetService._set_cell_value(self.assetGroupsUploadStatus.COMPLETED, self.sheetName+"!E"+row, self.googleSheetId)
                    
