@@ -18,6 +18,8 @@ from google.api_core import protobuf_helpers
 from PIL import Image
 import requests
 from io import BytesIO
+from uuid import uuid4
+
 
 _ASSET_TEMP_ID = -100
 
@@ -104,7 +106,7 @@ class AdService():
         elif img_ratio > 1 and type == "LOGO":
             field_type = "LANDSCAPE_LOGO"
         else:
-            #TODO: Add return for error message (not supported image size / field_type.)
+            # TODO: Add return for error message (not supported image size / field_type.)
             field_type = None
 
         asset_service = self._google_ads_client.get_service("AssetService")
@@ -211,9 +213,11 @@ class AdService():
         field_type: Google Ads field type, required for assigning asset to asset group.
         customer_id: customer id.
         """
-        asset_group_service = self._google_ads_client.get_service("AssetGroupService")
-        
-        asset_group_asset_operation = self._google_ads_client.get_type("MutateOperation")
+        asset_group_service = self._google_ads_client.get_service(
+            "AssetGroupService")
+
+        asset_group_asset_operation = self._google_ads_client.get_type(
+            "MutateOperation")
         asset_group_asset = asset_group_asset_operation.asset_group_asset_operation.create
 
         asset_group_asset.field_type = field_type
@@ -226,7 +230,7 @@ class AdService():
 
     def _bulk_mutate(self, mutate_operations, customer_id):
         """Process Bulk Mutate operation via Google Ads API.
-        
+
         Args:
         mutate_operations: Array of mutate operations.
         customer_id: customer id.
@@ -234,7 +238,8 @@ class AdService():
         Returns:
         Response API object.
         """
-        googleads_service = self._google_ads_client.get_service("GoogleAdsService")
+        googleads_service = self._google_ads_client.get_service(
+            "GoogleAdsService")
         request = self._google_ads_client.get_type("MutateGoogleAdsRequest")
         request.customer_id = customer_id
         request.mutate_operations = mutate_operations
@@ -266,7 +271,6 @@ class AdService():
                     f"{str(value).strip()}."
                 )
 
-
     def is_partial_failure_error_present(self, response):
         """Checks whether a response message has a partial failure error.
         In Python the partial_failure_error attr is always present on a response
@@ -283,7 +287,7 @@ class AdService():
         code = getattr(partial_failure, "code", None)
         return code != 0
 
-    def print_results(self, response, operations):
+    def print_results(self, response, operations, row_mapping):
         """Prints partial failure errors and success messages from a response.
         This function shows how to retrieve partial_failure errors from a response
         message (in the case of this example the message will be of type
@@ -302,17 +306,23 @@ class AdService():
 
             for error_detail in error_details:
                 # Retrieve an instance of the GoogleAdsFailure class from the client
-                failure_message = self._google_ads_client.get_type("GoogleAdsFailure")
+                failure_message = self._google_ads_client.get_type(
+                    "GoogleAdsFailure")
                 # Parse the string into a GoogleAdsFailure message instance.
                 # To access class-only methods on the message we retrieve its type.
                 GoogleAdsFailure = type(failure_message)
-                failure_object = GoogleAdsFailure.deserialize(error_detail.value)
+                failure_object = GoogleAdsFailure.deserialize(
+                    error_detail.value)
 
                 for error in failure_object.errors:
                     # Construct and print a string that details which element in
                     # the above ad_group_operations list failed (by index number)
                     # as well as the error message and error code.
-                    error_obj[error.location.field_path_elements[0].index] = f"\n\tError message: {error.message}\n\tError code: {error.error_code}"
+                    error_obj[error.location.field_path_elements[0].index] = [
+                        f"A partial failure creating a(n) {error.location.field_path_elements[1].field_name[:-10]} at index {error.location.field_path_elements[0].index} occurred",
+                        f"Error message: {error.message}\n",
+                        f"Error code: {str(error.error_code).strip()}\n",
+                        f"Error trigger: {error.trigger.string_value}"]
         else:
             print(
                 "All operations completed successfully. No partial failure "
@@ -323,6 +333,7 @@ class AdService():
         # that failed will be represented as empty messages. This loop detects
         # such empty messages and ignores them, while printing information about
         # successful operations.
+        results = {}
         suffix = "_result"
         i = 0
         for result in response.mutate_operation_responses:
@@ -333,10 +344,32 @@ class AdService():
                     name = field_descriptor.name
                 if i in error_obj:
                     # TODO: retrieve the Sheet Row Number for the operations[i] request.
-                    print(f"A partial failure creating a(n) {name} at index {i} occurred" + error_obj[i])
+                    print(error_obj[i][0])
+                    error_asset_resource = operations[i].asset_group_asset_operation.create.asset
+
+                    for op in operations:
+                        if op.asset_operation.create.resource_name == error_asset_resource:
+                            sheet_row = row_mapping[op.asset_operation.create.resource_name]
+                            if op.asset_operation.create.text_asset:
+                                print(
+                                    "\tText: " + op.asset_operation.create.text_asset.text)
+                            if op.asset_operation.create.image_asset.full_size.url:
+                                print("\tImage Name: " +
+                                      op.asset_operation.create.name)
+                                print(
+                                    "\tImage URL: " + op.asset_operation.create.image_asset.full_size.url + "\n")
+                    
+                    if sheet_row not in results:
+                        results[sheet_row] = {}
+
+                    results[sheet_row]["status"] = "FAILED"
+                    results[sheet_row]["message"] = error_obj[i][1] + error_obj[i][2] + error_obj[i][3] 
+
                 else:
                     print(
                         f"Created a(n) {name} with "
                         f"{str(value).strip()}."
                     )
                 i += 1
+
+        return results

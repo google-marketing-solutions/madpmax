@@ -22,6 +22,13 @@ class SheetsService():
       _sheets_services: service that is used for making Sheets API calls.
       _spreadsheet_id: id of the spreadsheet to read from and write to.
     """
+    class assetsColumnMap(enum.IntEnum):
+        ASSET_GROUP_ALIAS = 0,
+        ASSET_TYPE = 1,
+        ASSET_TEXT = 2,
+        ASSET_URL = 3,
+        STATUS = 4,
+        MESSAGE = 5
 
     class assetGroupsColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
@@ -86,3 +93,95 @@ class SheetsService():
           if row[self.assetGroupsColumnMap.ASSET_GROUP_ALIAS] == id:
             result = row
         return result
+
+    def batch_update_requests(self, request_lists, spreadsheet_id):
+        """Batch update row with requests in target sheet.
+        Args:
+          request_lists: request data list.
+        """
+        batch_update_spreadsheet_request_body = {'requests': request_lists}
+        self._sheets_service.batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body=batch_update_spreadsheet_request_body).execute()
+
+    def get_sheet_id_by_name(self, sheet_name, spreadsheet_id):
+        """Get sheet id by sheet name.
+        Args:
+          sheet_name: sheet name.
+        Returns:
+          sheet_id: id of the sheet with the given name. Not a spreadsheet id.
+        """
+        spreadsheet = self._sheets_service.get(
+            spreadsheetId=spreadsheet_id).execute()
+        for _sheet in spreadsheet['sheets']:
+          if _sheet['properties']['title'] == sheet_name:
+            return _sheet['properties']['sheetId']
+    
+
+    def get_status_note(self, row_index, input_values, sheet_id):
+        """Gets target cells to update error note in the Sheet.
+        Args:
+        update_row: error note content.
+        update_index: row index of the target cell.
+        sheet_id: Sheet id for the Sheet.
+        Returns:
+        error_note: cell information for updating error note.
+        """
+        error_note = {
+            'updateCells': {
+                'start': {
+                    'sheetId': sheet_id,
+                    'rowIndex': row_index + 5,
+                    'columnIndex': self.assetsColumnMap.STATUS
+                },
+                'rows': [{
+                    'values': [{
+                        'userEnteredValue': {
+                            'stringValue': input_values["status"]
+                        }
+                    },{
+                        'userEnteredValue': {
+                            'stringValue': input_values["message"]
+                        }
+                    }]
+                }],
+                'fields': 'userEnteredValue'
+            }
+        }
+        return error_note
+
+    def update_sheet_status(self, sheet_results, sheet_id, spreadsheet_id):
+        """Update error message in the sheet.
+        Args:
+            sheets_service: Google sheet api service.
+            sheet_results: row information and error message.
+            sheet_id: Sheet id.
+        Raises:
+            Exception: If unknown error occurs while updating rows in the Time Managed
+            Sheet.
+        """
+        update_request_list = []
+        for row_index in sheet_results:
+            error_note = self.get_status_note(row_index, sheet_results[row_index],
+                                            sheet_id)
+            update_request_list.append(error_note)
+        try:
+            self.batch_update_requests(update_request_list, spreadsheet_id)
+        except Exception as e:
+            print(f'Unable to update Sheet rows: {str(e)}')
+
+    def get_sheet_id(self, sheet_name, spreadsheet_id):
+        """Get sheet id of Sheet.
+        Args:
+            sheets_name: Google Sheet name.
+        Returns:
+            sheet_id: sheet id of Sheet.
+        Raises:
+            Exception: If error occurs while retrieving the Sheet ID.
+        """
+        try:
+            sheet_id = self.get_sheet_id_by_name(
+                sheet_name, spreadsheet_id)
+        except Exception as e:
+            print(f'Error while retrieving the Sheet ID: {str(e)}')
+        return sheet_id
