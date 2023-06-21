@@ -176,7 +176,7 @@ class AdService():
 
         return None
 
-    def _create_text_asset(self, text, fieldtype, customer_id):
+    def _create_text_asset(self, text, field_type, customer_id):
         """Generates the image asset and returns the resource name.
 
         Args:
@@ -199,6 +199,33 @@ class AdService():
         asset = asset_operation.asset_operation.create
         asset.resource_name = resource_name
         asset.text_asset.text = text
+        asset.field_type = field_type
+
+        return asset_operation, resource_name, field_type
+    
+    def _create_call_to_action_asset(self, action_selection, customer_id):
+        """Generates the image asset and returns the resource name.
+
+        Args:
+        action_selection: selection from call to action ENUM
+        customer_id: customer id.
+
+        Returns:
+        Asset operation, resource name or None.
+        """
+        global _ASSET_TEMP_ID
+
+        asset_service = self._google_ads_client.get_service("AssetService")
+        resource_name = asset_service.asset_path(customer_id, _ASSET_TEMP_ID)
+        field_type = "CALL_TO_ACTION_SELECTION"
+
+        _ASSET_TEMP_ID -= 1
+
+        asset_operation = self._google_ads_client.get_type("MutateOperation")
+        asset = asset_operation.asset_operation.create
+        asset.resource_name = resource_name
+        asset.call_to_action_type = action_selection
+        asset.field_type = field_type
 
         return asset_operation, resource_name, field_type
 

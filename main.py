@@ -16,8 +16,9 @@ class main():
         ASSET_GROUP_ALIAS = 0,
         ASSET_TYPE = 1,
         ASSET_TEXT = 2,
-        ASSET_URL = 3,
-        STATUS = 4
+        ASSET_CALL_TO_ACTION = 3,
+        ASSET_URL = 4,
+        STATUS = 5
 
     class assetGroupsColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
@@ -100,23 +101,38 @@ class main():
             
             asset_url = row[self.assetsColumnMap.ASSET_URL]
             asset_type = row[self.assetsColumnMap.ASSET_TYPE]
+            asset_name_or_text = row[self.assetsColumnMap.ASSET_TEXT]
+            asset_action_selection = row[self.assetsColumnMap.ASSET_CALL_TO_ACTION]
             
-            if asset_type == "IMAGE":
+            if asset_type == "IMAGE" or asset_type == "LOGO":
                 #TODO add removal of images if needed 
                 #TODO add check feedback for the amount of images 
-
-
-                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_image_asset(asset_url, "Marketing Image #{uuid4()}", asset_type, customer_id)
+                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_image_asset(asset_url, asset_name_or_text, asset_type, customer_id)
                 asset_operations[asset_group_alias].append(asset_mutate_operation)
 
                 asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
                 asset_operations[asset_group_alias].append(asset_mutate_operation)
-               # case "YOUTUBE_VIDEO":
-               # case "TEXT":     
-               # case "LOGO": 
-               # TODO reuse image creation method to make a logo and add into the asset_operations 
-                    # asset_logo_resource = self.googleAdsService._create_image_asset(asset_url, self.customerId)
-               # case "CALL_TO_ACTION":   
+
+            if asset_type == "YOUTUBE_VIDEO":    
+               asset_mutate_operation, asset_resource, field_type = self.googleSheetId._create_video_asset(asset_url, asset_type, customer_id)
+               asset_operations[asset_group_alias].append(asset_mutate_operation)
+
+               asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
+               asset_operations[asset_group_alias].append(asset_mutate_operation)
+
+            if asset_type == "HEADLINE" or asset_type == "DESCRIPTION" or "LONG_HEADLINE" or "BUSINESS_NAME":
+                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_text_asset(asset_name_or_text, asset_type, customer_id)
+                asset_operations[asset_group_alias].append(asset_mutate_operation)
+
+                asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
+                asset_operations[asset_group_alias].append(asset_mutate_operation)
+
+            if asset_type == "CALL_TO_ACTION":   
+                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_call_to_action_asset(asset_action_selection, customer_id)
+                asset_operations[asset_group_alias].append(asset_mutate_operation)
+
+                asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
+                asset_operations[asset_group_alias].append(asset_mutate_operation)
 
         # Blob linking of assets and asset groups 
         for asset_group_asset_operations in asset_operations:
