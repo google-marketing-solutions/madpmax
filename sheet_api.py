@@ -22,23 +22,51 @@ class SheetsService():
       _sheets_services: service that is used for making Sheets API calls.
       _spreadsheet_id: id of the spreadsheet to read from and write to.
     """
-    class assetsColumnMap(enum.IntEnum):
+    class newAssetsColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
         ASSET_TYPE = 1,
         ASSET_TEXT = 2,
-        ASSET_URL = 3,
-        STATUS = 4,
-        MESSAGE = 5
+        CALL_TO_ACTION = 3,
+        ASSET_URL = 4,
+        STATUS = 5,
+        MESSAGE = 6
 
-    class assetGroupsColumnMap(enum.IntEnum):
+    class assetGroupListColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
         ASSET_GROUP_NAME = 1,
         ASSET_GROUP_ID = 2,
         CAMPAIGN_NAME = 3,
         CAMPAIGN_ID = 4,
-        START_DATE = 5,
-        CUSTOMER_NAME = 6,
-        CUSTOMER_ID = 7
+        CUSTOMER_NAME = 5,
+        CUSTOMER_ID = 6
+
+    class newAssetGroupsColumnMap(enum.IntEnum):
+        ASSET_GROUP_ALIAS = 0,
+        CAMPAIGN_ALIAS = 1,
+        ASSET_CHECK = 2,
+        ASSET_GROUP_NAME = 3,
+        FINAL_URL = 4,
+        MOBILE_URL = 5,
+        PATH1 = 6,
+        PATH2 = 7,
+        CAMPAIGN_STATUS = 8,
+        STATUS = 9,
+        MESSAGE = 10
+
+    class newCampaignsColumnMap(enum.IntEnum):
+        CAMPAIGN_ALIAS = 0,
+        CAMPAIGN_SETTINGS_ALIAS = 1,
+        CAMPAIGN_NAME = 2,
+        START_DATE = 3,
+        END_DATE = 4,
+        CUSTOMER_ID = 5
+
+    class campaignListColumnMap(enum.IntEnum):
+        CAMPAIGN_ALIAS = 0,
+        CAMPAIGN_NAME = 1,
+        CAMPAIGN_ID = 2,
+        CUSTOMER_NAME = 3,
+        CUSTOMER_ID = 4
 
     def __init__(self, credentials):
         """Creates a instance of sheets service to handle requests."""
@@ -75,24 +103,51 @@ class SheetsService():
         request = self._sheets_service.values().update(spreadsheetId=spreadsheet_id,
                                                        valueInputOption="USER_ENTERED", range=cell_range, body=value_range_body)
         response = request.execute()
-    
-    def _get_sheet_row(self, id, sheet_name, spreadsheet_id):
+
+    def _get_sheet_row(self, id, sheet_name, sheet_range, spreadsheet_id):
         """Returns the values of the sheetrow matching the id.
-        
+
         Args:
           id: The string value as input for the cell.
-          sheet_name: string representation of sheetname range.
+          sheet_name: string representation of sheetname.
+          sheet_range: string representation of sheet range.
           spreadsheet_id: string representation of the spreadsheet id.
 
         Returns:
         Array of row values, or None.
         """
         result = None
-        values = self._get_sheet_values(sheet_name+"!A6:H", spreadsheet_id)
+        values = self._get_sheet_values(sheet_name+sheet_range, spreadsheet_id)
+
         for row in values:
-          if row[self.assetGroupsColumnMap.ASSET_GROUP_ALIAS] == id:
-            result = row
+            if row[self.assetGroupListColumnMap.ASSET_GROUP_ALIAS] == id:
+                result = row
+                break
+
         return result
+
+    def _get_row_number(self, id, sheet_name, sheet_range, spreadsheet_id):
+        """Returns the values of the sheetrow matching the id.
+
+        Args:
+          id: The string value as input for the cell.
+          sheet_name: string representation of sheetname.
+          sheet_range: string representation of sheet range.
+          spreadsheet_id: string representation of the spreadsheet id.
+
+        Returns:
+        Row number
+        """
+        index = 0
+        values = self._get_sheet_values(sheet_name+sheet_range, spreadsheet_id)
+
+        for row in values:
+            if row[self.assetGroupListColumnMap.ASSET_GROUP_ALIAS] == id:
+                result = row
+                break
+            index += 0
+
+        return index
 
     def batch_update_requests(self, request_lists, spreadsheet_id):
         """Batch update row with requests in target sheet.
@@ -114,11 +169,10 @@ class SheetsService():
         spreadsheet = self._sheets_service.get(
             spreadsheetId=spreadsheet_id).execute()
         for _sheet in spreadsheet['sheets']:
-          if _sheet['properties']['title'] == sheet_name:
-            return _sheet['properties']['sheetId']
-    
+            if _sheet['properties']['title'] == sheet_name:
+                return _sheet['properties']['sheetId']
 
-    def get_status_note(self, row_index, input_values, sheet_id):
+    def get_status_note(self, row_index, col_index, input_values, sheet_id):
         """Gets target cells to update error note in the Sheet.
         Args:
         update_row: error note content.
@@ -132,14 +186,14 @@ class SheetsService():
                 'start': {
                     'sheetId': sheet_id,
                     'rowIndex': row_index + 5,
-                    'columnIndex': self.assetsColumnMap.STATUS
+                    'columnIndex': col_index
                 },
                 'rows': [{
                     'values': [{
                         'userEnteredValue': {
                             'stringValue': input_values["status"]
                         }
-                    },{
+                    }, {
                         'userEnteredValue': {
                             'stringValue': input_values["message"]
                         }
@@ -150,20 +204,20 @@ class SheetsService():
         }
         return error_note
 
-    def update_sheet_status(self, sheet_results, sheet_id, spreadsheet_id):
+    def update_asset_sheet_status(self, sheet_results, sheet_id, spreadsheet_id):
         """Update error message in the sheet.
         Args:
-            sheets_service: Google sheet api service.
             sheet_results: row information and error message.
             sheet_id: Sheet id.
+            spreadsheet_id: the id for the Google Spreadsheet
         Raises:
             Exception: If unknown error occurs while updating rows in the Time Managed
             Sheet.
         """
         update_request_list = []
         for row_index in sheet_results:
-            error_note = self.get_status_note(row_index, sheet_results[row_index],
-                                            sheet_id)
+            error_note = self.get_status_note(row_index, self.newAssetsColumnMap.STATUS, sheet_results[row_index],
+                                              sheet_id)
             update_request_list.append(error_note)
         try:
             self.batch_update_requests(update_request_list, spreadsheet_id)
@@ -185,3 +239,61 @@ class SheetsService():
         except Exception as e:
             print(f'Error while retrieving the Sheet ID: {str(e)}')
         return sheet_id
+
+    def update_asset_group_sheet_status(self, error_message, row_index, sheet_id, spreadsheet_id):
+        """Update error message in the sheet.
+        Args:
+            sheet_results: row information and error message.
+            sheet_id: Sheet id.
+            spreadsheet_id: the id for the Google Spreadsheet
+        Raises:
+            Exception: If unknown error occurs while updating rows in the Time Managed
+            Sheet.
+        """
+        update_request_list = []
+
+        if error_message != "SUCCESS":
+            sheet_results = {
+                "status": "FAILED",
+                "message": error_message
+            }
+        else:
+            sheet_results = {
+                "status": "SUCCESS",
+                "message": ""
+            }
+
+        error_note = self.get_status_note(row_index, self.newAssetGroupsColumnMap.STATUS, sheet_results,
+                                          sheet_id)
+        update_request_list.append(error_note)
+
+        try:
+            self.batch_update_requests(update_request_list, spreadsheet_id)
+        except Exception as e:
+            print(f'Unable to update Sheet rows: {str(e)}')
+
+    def add_new_asset_group_to_list_sheet(self, asset_group_sheetlist, sheet_id, spreadsheet_id):
+        """Update error message in the sheet.
+        Args:
+            asset_group_sheetlist: Array containing the information of the new asset group.
+            sheet_id: Sheet id.
+            spreadsheet_id: the id for the Google Spreadsheet
+        Raises:
+            Exception: If unknown error occurs while updating rows in the Time Managed
+            Sheet.
+        """
+        resource = {
+            "majorDimension": "ROWS",
+            "values": [asset_group_sheetlist]
+        }
+        range = "AssetGroupList!A:G";
+
+        try:
+            self._sheets_service.values().append(
+            spreadsheetId=spreadsheet_id,
+            range=range,
+            body=resource,
+            valueInputOption="USER_ENTERED"
+            ).execute()
+        except Exception as e:
+            print(f'Unable to update Sheet rows: {str(e)}')

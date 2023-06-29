@@ -1,6 +1,7 @@
 from google.ads import googleads
 from google.api_core import protobuf_helpers
 from google.ads.googleads.errors import GoogleAdsException
+from uuid import uuid4
 
 import enum
 import auth
@@ -8,26 +9,56 @@ import sheet_api
 import ads_api
 import yaml
 
+
 class main():
 
     # Input column map, descripting the column names for the input data from the
     # RawData sheet.
-    class assetsColumnMap(enum.IntEnum):
+    class newAssetsColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
         ASSET_TYPE = 1,
         ASSET_TEXT = 2,
-        ASSET_URL = 3,
-        STATUS = 4
+        ASSET_CALL_TO_ACTION = 3,
+        ASSET_URL = 4,
+        STATUS = 5,
+        MESSAGE = 6
 
-    class assetGroupsColumnMap(enum.IntEnum):
+    class assetGroupListColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
         ASSET_GROUP_NAME = 1,
         ASSET_GROUP_ID = 2,
         CAMPAIGN_NAME = 3,
         CAMPAIGN_ID = 4,
-        START_DATE = 5,
-        CUSTOMER_NAME = 6,
-        CUSTOMER_ID = 7
+        CUSTOMER_NAME = 5,
+        CUSTOMER_ID = 6
+
+    class newAssetGroupsColumnMap(enum.IntEnum):
+        ASSET_GROUP_ALIAS = 0,
+        CAMPAIGN_ALIAS = 1,
+        ASSET_CHECK = 2,
+        ASSET_GROUP_NAME = 3,
+        FINAL_URL = 4,
+        MOBILE_URL = 5,
+        PATH1 = 6,
+        PATH2 = 7,
+        CAMPAIGN_STATUS = 8,
+        STATUS = 9,
+        MESSAGE = 10
+
+    class newCampaignsColumnMap(enum.IntEnum):
+        CAMPAIGN_ALIAS = 0,
+        CAMPAIGN_SETTINGS_ALIAS = 1,
+        CAMPAIGN_NAME = 2,
+        START_DATE = 3,
+        END_DATE = 4,
+        CUSTOMER_ID = 5
+
+    class campaignListColumnMap(enum.IntEnum):
+        CAMPAIGN_ALIAS = 0,
+        CAMPAIGN_NAME = 1,
+        CAMPAIGN_ID = 2,
+        CUSTOMER_NAME = 3,
+        CUSTOMER_ID = 4
 
     class assetGroupsUploadStatus(enum.Enum):
         COMPLETED = "COMPLETED"
@@ -35,9 +66,9 @@ class main():
     def __init__(self):
         # Configuration input values.
         self.includeVideo = False
-        self.sheetName = "Assets"
+        self.sheetName = "NewAssets"
         # Sample spreadsheet https://docs.google.com/spreadsheets/d/16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE/edit#gid=755896892
-        self.googleSheetId = "16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE"
+        self.googleSpreadSheetId = "16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE"
         self.rowLimit = 2000
         with open('google-ads.yaml', 'r') as ymlfile:
             cfg = yaml.safe_load(ymlfile)
@@ -51,101 +82,223 @@ class main():
     """Reads the campaigns and asset groups from the input sheet, creates assets
     for the assets provided. Removes the provided placeholder assets, and writes
     the results back to the spreadsheet."""
-    def assetUpload(self):
+
+    def create_api_operations(self):
+        """
+        TODO
+        """
         # Get Values from input sheet
-        values = self.sheetService._get_sheet_values(
-            self.sheetName+"!A6:E", self.googleSheetId)
+        asset_values = self.sheetService._get_sheet_values(
+            self.sheetName+"!A6:G", self.googleSpreadSheetId)
 
-        # asset_service = self._google_ads_client.get_service("AssetService")
-        # all operations across multiple assetGroups where the key is an assetGroup 
-        asset_operations={}
+        # all operations across multiple assetGroups where the key is an assetGroup
+        asset_operations = {}
+        asset_group_operations = {}
+        asset_group_text_operations = {}
+        asset_group_headline_operations = {}
+        asset_group_description_operations = {}
+        asset_group_sheetlist = {}
+
+        # The map used to store all the API results and error messages.
+        sheet_results = {}
+
+        # map to link sheet input rows to the asset operations for status and error handling.
+        row_to_operations_mapping = {}
+        sheet_row_index = 0
+
         # Loop through of the input values in the provided spreadsheet / sheet.
-        for row in values:
-            asset_group_alias = row[self.assetsColumnMap.ASSET_GROUP_ALIAS]
-            # TODO: Retrieve AssetGroup Resource name.
-            asset_group_details = self.sheetService._get_sheet_row(row[self.assetsColumnMap.ASSET_GROUP_ALIAS], "AssetGroups", self.googleSheetId)
-            asset_group_id = asset_group_details[self.assetGroupsColumnMap.ASSET_GROUP_ID]
-            customer_id = asset_group_details[self.assetGroupsColumnMap.CUSTOMER_ID]
-            # Generate the performance max campaign object.
-            # pmax_campaign_resource = self.googleAdsService._get_campaign_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.CAMPAIGN_ID])
-            # asset_group_resource = self.googleAdsService._get_asset_group_resource_name(self.customerId, asset_group_details[self.assetGroupsColumnMap.ASSET_GROUP_ID])
-            
-            # TODO: Read Customer ID from INPUT SHEET VALUE
-            # TODO: IMPLEMENT FUNCTIONALITY FOR LOGO AND DIFFERENT IMAGE SIZES (PORTRAIT / SQUARE). 
-            # Add image to AssetGroup
-            # if row[self.assetsColumnMap.ASSET_TYPE] == "IMAGE" and len(row) == 4:
-            #     image_url = row[self.assetsColumnMap.ASSET_URL]
-            #     self.googleAdsService._add_asset_to_asset_group(asset_group_resource, image_url, self.customerId)
-            #     # TODO: WRITE RESULTS TO SPREADSHEET
-            #     self.sheetService._set_cell_value(self.assetGroupsUploadStatus.COMPLETED, self.sheetName+"!E"+row, self.googleSheetId)
+        for row in asset_values:
+            new_asset_group = False
+            mutate_operations = []
+            asset_group_details = None
 
+            # Skip to next row in case Status is Success.
+            if self.newAssetsColumnMap.STATUS < len(row) and row[self.newAssetsColumnMap.STATUS] == "SUCCESS":
+                sheet_row_index += 1
+                continue
 
-            # TODO: IMPLEMENT VIDEO FUNCTIONALITY. 
-            #youtubeId = row[self.assetsColumnMap.ASSET_URL]
-            # if row[self.assetsColumnMap.TYPE] == self.assetTypes.YOUTUBE_VIDEO:
-            #     # TODO: Retrieve YT ID from YT URL row[self.assetsColumnMap.ASSET_URL]
+            asset_group_alias = row[self.newAssetsColumnMap.ASSET_GROUP_ALIAS]
+
+            # Use the Asset Group Alias to get Asset Group info from the Google sheet.
+            asset_group_details = self.sheetService._get_sheet_row(
+                row[self.newAssetsColumnMap.ASSET_GROUP_ALIAS], "AssetGroupList", "!A6:H", self.googleSpreadSheetId)
+
+            if asset_group_details:
+                asset_group_id = asset_group_details[self.assetGroupListColumnMap.ASSET_GROUP_ID]
+                customer_id = asset_group_details[self.assetGroupListColumnMap.CUSTOMER_ID]
+
+                if asset_group_alias not in asset_operations:
+                    asset_operations[asset_group_alias] = []
+
+            # Check if Asset Group already exists in Google Ads. If not create Asset Group operation.
+            elif not asset_group_details:
+                new_asset_group = True
+                # GENERATE ASSET GROUP OPERATION.
+                new_asset_group_details = self.sheetService._get_sheet_row(
+                    row[self.newAssetsColumnMap.ASSET_GROUP_ALIAS], "NewAssetGroups", "!A6:I", self.googleSpreadSheetId)
                 
-            #     videoAsset = getVideoByYouTubeId(youtubeId)
+                campaign_details = self.sheetService._get_sheet_row(
+                    new_asset_group_details[self.newAssetGroupsColumnMap.CAMPAIGN_ALIAS], "CampaignList", "!A6:E", self.googleSpreadSheetId)
+                
+                if not campaign_details or not new_asset_group_details:
+                    continue
 
-            #     # Check if the video is already a Google Ads Asset, if not create the asset.
-            #     if not videoAsset:
-            #         videoAsset = createVideoAsset(youtubeId)
+                customer_id = campaign_details[self.campaignListColumnMap.CUSTOMER_ID]
+                campaign_id = campaign_details[self.campaignListColumnMap.CAMPAIGN_ID]
 
-            #     assetGroup.addAsset(videoAsset, assetTypes.VIDEO)
+                if asset_group_alias not in asset_group_operations:
+                    asset_group_operations[asset_group_alias] = []
+                    asset_group_headline_operations[asset_group_alias] = []
+                    asset_group_description_operations[asset_group_alias] = []
+                    asset_group_mutate_operation, asset_group_id = self.googleAdsService._create_asset_group(
+                        new_asset_group_details, campaign_id, customer_id)
+                    mutate_operations.append(
+                        asset_group_mutate_operation)
+                    
+                    # Create AssetGroupList Sheet array.
+                    asset_group_sheetlist[asset_group_alias] = [asset_group_alias, new_asset_group_details[self.newAssetGroupsColumnMap.ASSET_GROUP_NAME], asset_group_id] + campaign_details[1:]
 
+            # Check if sheet results for the input sheet row already exists. If not create a new empty map.
+            if sheet_row_index not in sheet_results:
+                sheet_results[sheet_row_index] = {}
 
-            
-            if asset_group_alias not in asset_operations:
-                asset_operations[asset_group_alias] = []
+            # Preset the default map values for Status and Message.
+            sheet_results[sheet_row_index]["status"] = None
+            sheet_results[sheet_row_index]["message"] = None
 
-            if self.assetsColumnMap.ASSET_URL.value < len(row):
-                asset_url = row[self.assetsColumnMap.ASSET_URL]
+            if self.newAssetsColumnMap.ASSET_URL.value < len(row):
+                asset_url = row[self.newAssetsColumnMap.ASSET_URL]
             else:
                 asset_url = ""
 
-            asset_type = row[self.assetsColumnMap.ASSET_TYPE]
             # Asset name / asset type
-            asset_text = row[self.assetsColumnMap.ASSET_TEXT]
-            
-            if asset_type == "IMAGE" or asset_type ==  "LOGO":
-                #TODO add removal of images if needed 
-                #TODO add check feedback for the amount of images 
+            asset_type = row[self.newAssetsColumnMap.ASSET_TYPE]
+            asset_name_or_text = row[self.newAssetsColumnMap.ASSET_TEXT]
+            asset_action_selection = row[self.assetsColumnMap.ASSET_CALL_TO_ACTION]
 
-                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_image_asset(asset_url, asset_text + " #{uuid4()}", asset_type, customer_id)
+            if asset_type == "YOUTUBE_VIDEO":    
+               asset_mutate_operation, asset_resource, field_type = self.googleSheetId._create_video_asset(asset_url, asset_type, customer_id)
+               asset_operations[asset_group_alias].append(asset_mutate_operation)
+
+               asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
+               asset_operations[asset_group_alias].append(asset_mutate_operation)
+            elif asset_type == "IMAGE" or asset_type == "LOGO":
+                # TODO add removal of images if needed
+                # TODO add image error handling
+                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_image_asset(
+                    asset_url, asset_name_or_text + f" #{uuid4()}", asset_type, customer_id)
+                mutate_operations.append(
+                    asset_mutate_operation)
+
+                asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(
+                    asset_resource, asset_group_id, field_type, customer_id)
+                mutate_operations.append(
+                    asset_mutate_operation)
+            elif asset_type == "HEADLINE" or asset_type == "DESCRIPTION":
+                create_asset_operation, asset_resource, field_type = self.googleAdsService._create_text_asset(
+                    asset_name_or_text, asset_type, customer_id)
+                mutate_operations.append(
+                    create_asset_operation)
+
+                if not new_asset_group:
+                    add_asset_operation = self.googleAdsService._add_asset_to_asset_group(
+                        asset_resource, asset_group_id, field_type, customer_id)
+                    mutate_operations.append(
+                        add_asset_operation)
+            elif asset_type == "LONG_HEADLINE" or asset_type == "BUSINESS_NAME":
+                create_asset_operation, asset_resource, field_type = self.googleAdsService._create_text_asset(
+                    asset_name_or_text, asset_type, customer_id)
+                mutate_operations.append(
+                    create_asset_operation)
+
+                add_asset_operation = self.googleAdsService._add_asset_to_asset_group(
+                    asset_resource, asset_group_id, field_type, customer_id)
+                mutate_operations.append(
+                    add_asset_operation)
+            elif asset_type == "CALL_TO_ACTION":   
+                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_call_to_action_asset(asset_action_selection, customer_id)
                 asset_operations[asset_group_alias].append(asset_mutate_operation)
 
                 asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
                 asset_operations[asset_group_alias].append(asset_mutate_operation)
-            elif asset_type == "HEADLINE" or asset_type ==  "LONG_HEADLINE" or asset_type ==  "DESCRIPTION" or asset_type == "BUSINESS_NAME":
-                asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_text_asset(asset_text, asset_type, customer_id)
-                asset_operations[asset_group_alias].append(asset_mutate_operation)
 
-                asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
-                asset_operations[asset_group_alias].append(asset_mutate_operation)
-               # case "YOUTUBE_VIDEO":
-               # case "CALL_TO_ACTION":   
+            # Check if asset operation for the Asset Group already exists. If not create a new list.
+            if not new_asset_group:
+                asset_operations[asset_group_alias] += mutate_operations
+            elif new_asset_group:
+                if asset_type == "HEADLINE":
+                    asset_group_headline_operations[asset_group_alias].append(
+                        create_asset_operation)
+                if asset_type == "DESCRIPTION":
+                    asset_group_description_operations[asset_group_alias].append(
+                        create_asset_operation)
+                asset_group_operations[asset_group_alias] += mutate_operations
 
-        # Blob linking of assets and asset groups 
-        for asset_group_asset_operations in asset_operations:
-            try:
-                asset_group_response = self.googleAdsService._bulk_mutate(asset_operations[asset_group_asset_operations], customer_id)
-            except GoogleAdsException as ex:
-                print(
-                    f'Request with ID "{ex.request_id}" failed with status '
-                    f'"{ex.error.code().name}" and includes the following errors:'
-                )
-                for error in ex.failure.errors:
-                    print(f'\tError with message "{error.message}".')
-                    if error.location:
-                        for field_path_element in error.location.field_path_elements:
-                            print(f"\t\tOn field: {field_path_element.field_name}")
-                sys.exit(1)
-            else:
-                self.googleAdsService.print_results(asset_group_response, asset_operations[asset_group_asset_operations])
+            # Add reource name index and sheet row number to map, for processing error and status messages to sheet.
+            row_to_operations_mapping[asset_resource] = sheet_row_index
 
-            # TODO: WRITE RESULTS TO SPREADSHEET FROM results
-            # self.sheetService._set_cell_value(self.assetGroupsUploadStatus.COMPLETED, self.sheetName+"!E"+row, self.googleSheetId)
-                   
+            sheet_row_index += 1
+
+        # Update Assets only in Google Ads
+        self.process_api_operations(
+            "ASSETS", asset_operations, sheet_results, row_to_operations_mapping, asset_group_sheetlist, customer_id)
+
+        # Create a new Asset Group and Update Assets.
+        headlines = self.googleAdsService._create_multiple_text_assets(
+            asset_group_headline_operations, customer_id)
+        descriptions = self.googleAdsService._create_multiple_text_assets(
+            asset_group_description_operations, customer_id)
+        asset_group_operations, row_to_operations_mapping = self.googleAdsService.compile_asset_group_operations(
+            asset_group_operations, headlines, descriptions, row_to_operations_mapping, customer_id)
+        self.process_api_operations(
+            "ASSET_GROUPS", asset_group_operations, sheet_results, row_to_operations_mapping, asset_group_sheetlist, customer_id)
+
+    def process_api_operations(self, mutate_type, mutate_operations, sheet_results, row_to_operations_mapping, asset_group_sheetlist, customer_id):
+        """Logic to process API bulk operations based on type.
+
+        Based on the request type, the bulk API requests will be send to the API. Corresponding API response will be
+        parsed and processed both as terminal output and as output to the Google Sheet.
+        """
+        # Bulk requests are grouped by Asset Group Alias and are processed one by one in bulk.
+        for asset_group_alias in mutate_operations:
+            # Send the bulk request to the API and retrieve the API response object and the compiled Error message for asset Groups.
+            asset_group_response, asset_group_error_message = self.googleAdsService._bulk_mutate(mutate_type,
+                                                                                                 mutate_operations[asset_group_alias], customer_id)
+
+            # Check if a successful API response, if so, process output.
+            if asset_group_response:
+                
+                sheet_results.update(self.googleAdsService.process_asset_results(
+                    asset_group_response, mutate_operations[asset_group_alias], row_to_operations_mapping))
+                
+                if mutate_type == "ASSET_GROUPS":
+                    row_number = self.sheetService._get_row_number(
+                        asset_group_alias, "NewAssetGroups", "!A6:I", self.googleSpreadSheetId)
+                    sheet_id = self.sheetService.get_sheet_id("NewAssetGroups", self.googleSpreadSheetId)
+
+                    self.sheetService.update_asset_group_sheet_status(
+                        "SUCCESS", row_number, sheet_id, self.googleSpreadSheetId)
+                    
+                    asset_group_sheetlist[asset_group_alias][2] = asset_group_response.mutate_operation_responses[0].asset_group_result.resource_name.split("/")[-1]
+                    sheet_id = self.sheetService.get_sheet_id("AssetGroupList", self.googleSpreadSheetId)
+
+                    self.sheetService.add_new_asset_group_to_list_sheet(
+                            asset_group_sheetlist[asset_group_alias], sheet_id, self.googleSpreadSheetId)
+            # In case Asset Group creation returns an error string, updated the results object and process to sheet.
+            elif asset_group_error_message and mutate_type == "ASSET_GROUPS":
+                sheet_results.update(self.googleAdsService.process_asset_group_results(
+                    asset_group_error_message, mutate_operations[asset_group_alias], row_to_operations_mapping))
+                row_number = self.sheetService._get_row_number(
+                    asset_group_alias, "NewAssetGroups", "!A6:I", self.googleSpreadSheetId)
+                
+                sheet_id = self.sheetService.get_sheet_id("NewAssetGroups", self.googleSpreadSheetId)
+
+                self.sheetService.update_asset_group_sheet_status(
+                    asset_group_error_message, row_number, sheet_id, self.googleSpreadSheetId)
+
+        self.sheetService.update_asset_sheet_status(sheet_results, self.sheetService.get_sheet_id(
+            self.sheetName, self.googleSpreadSheetId), self.googleSpreadSheetId)
+
 
 cp = main()
-cp.assetUpload()
+cp.create_api_operations()
