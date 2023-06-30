@@ -33,12 +33,13 @@ class AdService():
 
     class newAssetsColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
-        ASSET_TYPE = 1,
-        ASSET_TEXT = 2,
-        CALL_TO_ACTION = 3,
-        ASSET_URL = 4,
-        STATUS = 5,
-        MESSAGE = 6
+        ASSET_STATUS = 1,
+        DELETE_ASSET = 2,
+        ASSET_TYPE = 3,
+        ASSET_TEXT = 4,
+        ASSET_CALL_TO_ACTION = 5,
+        ASSET_URL = 6,
+        ERROR_MESSAGE = 7
 
     class assetGroupListColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
@@ -76,6 +77,11 @@ class AdService():
         CAMPAIGN_ID = 2,
         CUSTOMER_NAME = 3,
         CUSTOMER_ID = 4
+
+    class assetStatus(enum.Enum):
+        UPLOADED = "UPLOADED",
+        ERROR = "ERROR",
+        NEW = "NEW"
 
 
     def __init__(self, ads_account_file):
@@ -438,7 +444,7 @@ class AdService():
                     if sheet_row not in results:
                         results[sheet_row] = {}
 
-                    results[sheet_row]["status"] = "FAILED"
+                    results[sheet_row]["status"] = self.assetStatus.ERROR.value[0]
                     results[sheet_row]["message"] = error_obj[i][1] + error_obj[i][2] + error_obj[i][3]
 
                 else:
@@ -451,7 +457,7 @@ class AdService():
 
                         if sheet_row not in results:
                             results[sheet_row] = {}
-                            results[sheet_row]["status"] = "SUCCESS"
+                            results[sheet_row]["status"] = self.assetStatus.UPLOADED.value[0]
                             results[sheet_row]["message"] = ""
 
                 i += 1
@@ -607,7 +613,7 @@ class AdService():
                     if sheet_row not in results:
                         results[sheet_row] = {}
 
-                    results[sheet_row]["status"] = "FAILED"
+                    results[sheet_row]["status"] = "ERROR"
                     results[sheet_row]["message"] = error_message
 
             return results

@@ -14,14 +14,15 @@ class main():
 
     # Input column map, descripting the column names for the input data from the
     # RawData sheet.
-    class newAssetsColumnMap(enum.IntEnum):
+    class assetsColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
-        ASSET_TYPE = 1,
-        ASSET_TEXT = 2,
-        ASSET_CALL_TO_ACTION = 3,
-        ASSET_URL = 4,
-        STATUS = 5,
-        MESSAGE = 6
+        ASSET_STATUS = 1,
+        DELETE_ASSET = 2,
+        ASSET_TYPE = 3,
+        ASSET_TEXT = 4,
+        ASSET_CALL_TO_ACTION = 5,
+        ASSET_URL = 6,
+        ERROR_MESSAGE = 7
 
     class assetGroupListColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
@@ -60,13 +61,15 @@ class main():
         CUSTOMER_NAME = 3,
         CUSTOMER_ID = 4
 
-    class assetGroupsUploadStatus(enum.Enum):
-        COMPLETED = "COMPLETED"
+    class assetStatus(enum.Enum):
+        UPLOADED = "UPLOADED",
+        ERROR = "ERROR",
+        NEW = "NEW"
 
     def __init__(self):
         # Configuration input values.
         self.includeVideo = False
-        self.sheetName = "NewAssets"
+        self.sheetName = "Assets"
         # Sample spreadsheet https://docs.google.com/spreadsheets/d/16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE/edit#gid=755896892
         self.googleSpreadSheetId = "16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE"
         self.rowLimit = 2000
@@ -113,15 +116,15 @@ class main():
             asset_group_details = None
 
             # Skip to next row in case Status is Success.
-            if self.newAssetsColumnMap.STATUS < len(row) and row[self.newAssetsColumnMap.STATUS] == "SUCCESS":
+            if self.assetsColumnMap.ASSET_STATUS < len(row) and row[self.assetsColumnMap.ASSET_STATUS] == "UPLOADED":
                 sheet_row_index += 1
                 continue
 
-            asset_group_alias = row[self.newAssetsColumnMap.ASSET_GROUP_ALIAS]
+            asset_group_alias = row[self.assetsColumnMap.ASSET_GROUP_ALIAS]
 
             # Use the Asset Group Alias to get Asset Group info from the Google sheet.
             asset_group_details = self.sheetService._get_sheet_row(
-                row[self.newAssetsColumnMap.ASSET_GROUP_ALIAS], "AssetGroupList", "!A6:H", self.googleSpreadSheetId)
+                row[self.assetsColumnMap.ASSET_GROUP_ALIAS], "AssetGroupList", "!A6:H", self.googleSpreadSheetId)
 
             if asset_group_details:
                 asset_group_id = asset_group_details[self.assetGroupListColumnMap.ASSET_GROUP_ID]
@@ -135,7 +138,7 @@ class main():
                 new_asset_group = True
                 # GENERATE ASSET GROUP OPERATION.
                 new_asset_group_details = self.sheetService._get_sheet_row(
-                    row[self.newAssetsColumnMap.ASSET_GROUP_ALIAS], "NewAssetGroups", "!A6:I", self.googleSpreadSheetId)
+                    row[self.assetsColumnMap.ASSET_GROUP_ALIAS], "NewAssetGroups", "!A6:I", self.googleSpreadSheetId)
                 
                 campaign_details = self.sheetService._get_sheet_row(
                     new_asset_group_details[self.newAssetGroupsColumnMap.CAMPAIGN_ALIAS], "CampaignList", "!A6:E", self.googleSpreadSheetId)
@@ -166,15 +169,16 @@ class main():
             sheet_results[sheet_row_index]["status"] = None
             sheet_results[sheet_row_index]["message"] = None
 
-            if self.newAssetsColumnMap.ASSET_URL.value < len(row):
-                asset_url = row[self.newAssetsColumnMap.ASSET_URL]
+            if self.assetsColumnMap.ASSET_URL.value < len(row):
+                asset_url = row[self.assetsColumnMap.ASSET_URL]
             else:
                 asset_url = ""
 
             # Asset name / asset type
-            asset_type = row[self.newAssetsColumnMap.ASSET_TYPE]
-            asset_name_or_text = row[self.newAssetsColumnMap.ASSET_TEXT]
-            asset_action_selection = row[self.assetsColumnMap.ASSET_CALL_TO_ACTION]
+            asset_type = row[self.assetsColumnMap.ASSET_TYPE]
+            asset_name_or_text = row[self.assetsColumnMap.ASSET_TEXT]
+            if self.assetsColumnMap.ASSET_CALL_TO_ACTION < len(row):
+                asset_action_selection = row[self.assetsColumnMap.ASSET_CALL_TO_ACTION]
 
             if asset_type == "YOUTUBE_VIDEO":    
                asset_mutate_operation, asset_resource, field_type = self.googleSheetId._create_video_asset(asset_url, asset_type, customer_id)
@@ -182,7 +186,9 @@ class main():
 
                asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
                asset_operations[asset_group_alias].append(asset_mutate_operation)
-            elif asset_type == "IMAGE" or asset_type == "LOGO":
+            # Possible values "MARKETING_IMAGE", "SQUARE_MARKETING_IMAGE", "PORTRAIT_MARKETING_IMAGE"
+            # Possible values "LOGO", "LANDSCAPE_LOGO"
+            elif "IMAGE" in asset_type or "LOGO" in asset_type:
                 # TODO add removal of images if needed
                 # TODO add image error handling
                 asset_mutate_operation, asset_resource, field_type = self.googleAdsService._create_image_asset(
@@ -277,7 +283,7 @@ class main():
                     sheet_id = self.sheetService.get_sheet_id("NewAssetGroups", self.googleSpreadSheetId)
 
                     self.sheetService.update_asset_group_sheet_status(
-                        "SUCCESS", row_number, sheet_id, self.googleSpreadSheetId)
+                        "UPLOADED", row_number, sheet_id, self.googleSpreadSheetId)
                     
                     asset_group_sheetlist[asset_group_alias][2] = asset_group_response.mutate_operation_responses[0].asset_group_result.resource_name.split("/")[-1]
                     sheet_id = self.sheetService.get_sheet_id("AssetGroupList", self.googleSpreadSheetId)

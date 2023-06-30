@@ -22,14 +22,16 @@ class SheetsService():
       _sheets_services: service that is used for making Sheets API calls.
       _spreadsheet_id: id of the spreadsheet to read from and write to.
     """
-    class newAssetsColumnMap(enum.IntEnum):
+
+    class assetsColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
-        ASSET_TYPE = 1,
-        ASSET_TEXT = 2,
-        CALL_TO_ACTION = 3,
-        ASSET_URL = 4,
-        STATUS = 5,
-        MESSAGE = 6
+        ASSET_STATUS = 1,
+        DELETE_ASSET = 2,
+        ASSET_TYPE = 3,
+        ASSET_TEXT = 4,
+        ASSET_CALL_TO_ACTION = 5,
+        ASSET_URL = 6,
+        ERROR_MESSAGE = 7
 
     class assetGroupListColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
@@ -67,6 +69,11 @@ class SheetsService():
         CAMPAIGN_ID = 2,
         CUSTOMER_NAME = 3,
         CUSTOMER_ID = 4
+
+    class assetStatus(enum.Enum):
+        UPLOADED = "UPLOADED",
+        ERROR = "ERROR",
+        NEW = "NEW"
 
     def __init__(self, credentials):
         """Creates a instance of sheets service to handle requests."""
@@ -172,7 +179,7 @@ class SheetsService():
             if _sheet['properties']['title'] == sheet_name:
                 return _sheet['properties']['sheetId']
 
-    def get_status_note(self, row_index, col_index, input_values, sheet_id):
+    def get_status_note(self, row_index, col_index, input_value, sheet_id):
         """Gets target cells to update error note in the Sheet.
         Args:
         update_row: error note content.
@@ -191,11 +198,7 @@ class SheetsService():
                 'rows': [{
                     'values': [{
                         'userEnteredValue': {
-                            'stringValue': input_values["status"]
-                        }
-                    }, {
-                        'userEnteredValue': {
-                            'stringValue': input_values["message"]
+                            'stringValue': input_value
                         }
                     }]
                 }],
@@ -203,6 +206,36 @@ class SheetsService():
             }
         }
         return error_note
+
+    def get_checkbox(self, row_index, col_index, sheet_id):
+        """Gets target cells to update error note in the Sheet.
+        Args:
+        update_row: error note content.
+        update_index: row index of the target cell.
+        sheet_id: Sheet id for the Sheet.
+        Returns:
+        error_note: cell information for updating error note.
+        """
+        checkbox = {
+            'updateCells': {
+                'start': {
+                    'sheetId': sheet_id,
+                    'rowIndex': row_index + 5,
+                    'columnIndex': col_index
+                },
+                'rows': [{
+                    'values': [{
+                        'dataValidation': {
+                            "condition": {
+                                "type": "BOOLEAN",
+                            }
+                        }
+                    }]
+                }],
+                'fields': 'dataValidation'
+            }
+        }
+        return checkbox
 
     def update_asset_sheet_status(self, sheet_results, sheet_id, spreadsheet_id):
         """Update error message in the sheet.
@@ -216,7 +249,16 @@ class SheetsService():
         """
         update_request_list = []
         for row_index in sheet_results:
-            error_note = self.get_status_note(row_index, self.newAssetsColumnMap.STATUS, sheet_results[row_index],
+            error_status = self.get_status_note(row_index, self.assetsColumnMap.ASSET_STATUS, sheet_results[row_index]["status"],
+                                              sheet_id)
+            update_request_list.append(error_status)
+
+            if sheet_results[row_index]["status"] == self.assetStatus.UPLOADED.value[0]:
+                checkbox = self.get_checkbox(row_index, self.assetsColumnMap.DELETE_ASSET,
+                                                sheet_id)
+                update_request_list.append(checkbox)
+
+            error_note = self.get_status_note(row_index, self.assetsColumnMap.ERROR_MESSAGE, sheet_results[row_index]["message"],
                                               sheet_id)
             update_request_list.append(error_note)
         try:
@@ -252,18 +294,11 @@ class SheetsService():
         """
         update_request_list = []
 
-        if error_message != "SUCCESS":
-            sheet_results = {
-                "status": "FAILED",
-                "message": error_message
-            }
-        else:
-            sheet_results = {
-                "status": "SUCCESS",
-                "message": ""
-            }
+        error_note = self.get_status_note(row_index, self.newAssetGroupsColumnMap.STATUS, "UPLOADED",
+                                          sheet_id)
+        update_request_list.append(error_note)
 
-        error_note = self.get_status_note(row_index, self.newAssetGroupsColumnMap.STATUS, sheet_results,
+        error_note = self.get_status_note(row_index, self.newAssetGroupsColumnMap.MESSAGE, error_message,
                                           sheet_id)
         update_request_list.append(error_note)
 
