@@ -8,6 +8,7 @@ import auth
 import sheet_api
 import ads_api
 import yaml
+import campaign_creation
 
 
 class main():
@@ -48,11 +49,16 @@ class main():
 
     class newCampaignsColumnMap(enum.IntEnum):
         CAMPAIGN_ALIAS = 0,
-        CAMPAIGN_SETTINGS_ALIAS = 1,
-        CAMPAIGN_NAME = 2,
-        START_DATE = 3,
-        END_DATE = 4,
-        CUSTOMER_ID = 5
+        CAMPAIGN_NAME = 1,
+        CAMPAIGN_BUDGET = 2,
+        BUDGET_DELIVERY_METHOD = 3,
+        CAMPAIGN_STATUS = 4,
+        BIDDING_STRATEGY = 5,
+        CAMPAIGN_TARGET_ROAS = 6,
+        CUSTOMER_START_DATE = 7,
+        CUSTOMER_END_DATE = 8,
+        CUSTOMER_ID = 9,
+        
 
     class campaignListColumnMap(enum.IntEnum):
         CAMPAIGN_ALIAS = 0,
@@ -71,7 +77,7 @@ class main():
         self.includeVideo = False
         self.sheetName = "Assets"
         # Sample spreadsheet https://docs.google.com/spreadsheets/d/16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE/edit#gid=755896892
-        self.googleSpreadSheetId = "16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE"
+        self.googleSpreadSheetId = "1rpRD3xPX7-d-7U6MFRvLo0rW8PjCOyaGFoDHf36XBWE"
         self.rowLimit = 2000
         with open('google-ads.yaml', 'r') as ymlfile:
             cfg = yaml.safe_load(ymlfile)
@@ -81,6 +87,7 @@ class main():
 
         self.sheetService = sheet_api.SheetsService(credentials)
         self.googleAdsService = ads_api.AdService("google-ads.yaml")
+        self.campaignService = campaign_creation.CampaignCreation("google-ads.yaml")
 
     """Reads the campaigns and asset groups from the input sheet, creates assets
     for the assets provided. Removes the provided placeholder assets, and writes
@@ -90,6 +97,26 @@ class main():
         """
         TODO
         """
+        # Go through new Campaigns Spreadsheet and create campaigns 
+        new_campaign_values = self.sheetService._get_sheet_values(
+            "NewCampaigns!A6:J", self.googleSpreadSheetId)
+        for campaign in new_campaign_values:
+            print("Got campaign row")
+            print(campaign)
+
+            campaign_name = campaign[self.newCampaignsColumnMap.CAMPAIGN_NAME]
+            campaign_status = campaign[self.newCampaignsColumnMap.CAMPAIGN_STATUS]
+            bidding_strategy = campaign[self.newCampaignsColumnMap.BIDDING_STRATEGY]
+            campaign_target_roas = campaign[self.newCampaignsColumnMap.CAMPAIGN_TARGET_ROAS]
+            campaign_budget = campaign[self.newCampaignsColumnMap.CAMPAIGN_BUDGET]
+            campaign_customer_id = campaign[self.newCampaignsColumnMap.CUSTOMER_ID]
+            campaign_start_date = campaign[self.newCampaignsColumnMap.CUSTOMER_START_DATE]
+            campaign_end_date = campaign[self.newCampaignsColumnMap.CUSTOMER_END_DATE]
+            budget_delivery_method = campaign[self.newCampaignsColumnMap.BUDGET_DELIVERY_METHOD]
+
+            print("_____________________CREATING_CAMPAIGN______________________")
+            self.campaignService._create_campaign(campaign_customer_id, campaign_budget, budget_delivery_method, campaign_name, campaign_status, campaign_target_roas, bidding_strategy, campaign_start_date, campaign_end_date)
+
         # Get Values from input sheet
         asset_values = self.sheetService._get_sheet_values(
             self.sheetName+"!A6:G", self.googleSpreadSheetId)
