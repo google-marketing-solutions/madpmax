@@ -55,9 +55,10 @@ class main():
         CAMPAIGN_STATUS = 4,
         BIDDING_STRATEGY = 5,
         CAMPAIGN_TARGET_ROAS = 6,
-        CUSTOMER_START_DATE = 7,
-        CUSTOMER_END_DATE = 8,
-        CUSTOMER_ID = 9,
+        CAMPAIGN_TARGET_CPA = 7,
+        CUSTOMER_START_DATE = 8,
+        CUSTOMER_END_DATE = 9,
+        CUSTOMER_ID = 10,
         
 
     class campaignListColumnMap(enum.IntEnum):
@@ -77,6 +78,7 @@ class main():
         self.includeVideo = False
         self.sheetName = "Assets"
         # Sample spreadsheet https://docs.google.com/spreadsheets/d/16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE/edit#gid=755896892
+        # Sample spreadsheet https://docs.google.com/spreadsheets/d/1rpRD3xPX7-d-7U6MFRvLo0rW8PjCOyaGFoDHf36XBWE/edit#gid=792246704
         self.googleSpreadSheetId = "1rpRD3xPX7-d-7U6MFRvLo0rW8PjCOyaGFoDHf36XBWE"
         self.rowLimit = 2000
         with open('google-ads.yaml', 'r') as ymlfile:
@@ -99,23 +101,29 @@ class main():
         """
         # Go through new Campaigns Spreadsheet and create campaigns 
         new_campaign_values = self.sheetService._get_sheet_values(
-            "NewCampaigns!A6:J", self.googleSpreadSheetId)
+            "NewCampaigns!A6:K", self.googleSpreadSheetId)
         for campaign in new_campaign_values:
-            print("Got campaign row")
-            print(campaign)
 
+            campaign_alias = campaign[self.newCampaignsColumnMap.CAMPAIGN_ALIAS]
             campaign_name = campaign[self.newCampaignsColumnMap.CAMPAIGN_NAME]
             campaign_status = campaign[self.newCampaignsColumnMap.CAMPAIGN_STATUS]
             bidding_strategy = campaign[self.newCampaignsColumnMap.BIDDING_STRATEGY]
             campaign_target_roas = campaign[self.newCampaignsColumnMap.CAMPAIGN_TARGET_ROAS]
+            campaign_target_cpa = campaign[self.newCampaignsColumnMap.CAMPAIGN_TARGET_CPA]
             campaign_budget = campaign[self.newCampaignsColumnMap.CAMPAIGN_BUDGET]
             campaign_customer_id = campaign[self.newCampaignsColumnMap.CUSTOMER_ID]
             campaign_start_date = campaign[self.newCampaignsColumnMap.CUSTOMER_START_DATE]
             campaign_end_date = campaign[self.newCampaignsColumnMap.CUSTOMER_END_DATE]
             budget_delivery_method = campaign[self.newCampaignsColumnMap.BUDGET_DELIVERY_METHOD]
 
-            print("_____________________CREATING_CAMPAIGN______________________")
-            self.campaignService._create_campaign(campaign_customer_id, campaign_budget, budget_delivery_method, campaign_name, campaign_status, campaign_target_roas, bidding_strategy, campaign_start_date, campaign_end_date)
+            campaign_details = self.sheetService._get_sheet_row(
+                    campaign_alias, "CampaignList", "!A6:E", self.googleSpreadSheetId)
+            if campaign != None:
+                self.campaignService._create_campaign(campaign_customer_id, campaign_budget, budget_delivery_method, campaign_name, campaign_status, campaign_target_roas, campaign_target_cpa, bidding_strategy, campaign_start_date, campaign_end_date)
+            else:
+                print("CAMPAIGN ALREADY EXIST")
+                #TODO add message to error column 
+
 
         # Get Values from input sheet
         asset_values = self.sheetService._get_sheet_values(
@@ -254,6 +262,8 @@ class main():
 
                 asset_mutate_operation = self.googleAdsService._add_asset_to_asset_group(asset_resource, asset_group_id, field_type, customer_id)
                 asset_operations[asset_group_alias].append(asset_mutate_operation)
+               # case "YOUTUBE_VIDEO":
+               # case "CALL_TO_ACTION":   
 
             # Check if asset operation for the Asset Group already exists. If not create a new list.
             if not new_asset_group:

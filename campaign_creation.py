@@ -25,14 +25,9 @@ class CampaignCreation():
             ads_account_file, version='v14')
         self._cache_ad_group_ad = {}
         self.prev_image_asset_list = None
-        self.prev_customer_id = None
-
-    # def _create_campaign_budget(self, customer_id):
-        
-
-    #     return mutate_operation    
+        self.prev_customer_id = None  
     
-    def _create_campaign(self, customer_id, budget, budget_delivery_method, campaign_name, campaign_status, target_roas, bidding_strategy_type, start_time, end_time):
+    def _create_campaign(self, customer_id, budget, budget_delivery_method, campaign_name, campaign_status, target_roas, target_cpa, bidding_strategy_type, start_time, end_time):
         mutate_operations = []
         global _BUDGET_TEMPORARY_ID
         mutate_operation_budget = self._google_ads_client.get_type("MutateOperation")
@@ -49,8 +44,6 @@ class CampaignCreation():
         campaign_budget.explicitly_shared = False
 
         _BUDGET_TEMPORARY_ID -= 1
-        # Set a temporary ID in the budget's resource name so it can be referenced
-        # by the campaign in later steps.
         campaign_budget.resource_name = self._google_ads_client.get_service("CampaignBudgetService").campaign_budget_path(customer_id, _BUDGET_TEMPORARY_ID)
         mutate_operations.append(mutate_operation_budget)
 
@@ -70,13 +63,15 @@ class CampaignCreation():
         campaign.advertising_channel_type = (self._google_ads_client.enums.AdvertisingChannelTypeEnum.PERFORMANCE_MAX)
 
         if bidding_strategy_type == "MaximizeConversions":
-            bidding_strategy_type = self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSIONS
+            campaign.bidding_strategy_type = self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSIONS
+            campaign.maximize_conversions.target_cpa_micros = float(target_cpa)*1000000
         elif bidding_strategy_type == "MaximizeConversionValue":
-            bidding_strategy_type = self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSION_VALUE
+            campaign.bidding_strategy_type = self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSION_VALUE
+            campaign.maximize_conversion_value.target_roas = float(target_roas)
         #TODO add  to error column   
 
-        campaign.bidding_strategy_type = (self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSIONS)
-        campaign.maximize_conversion_value.target_roas = float(target_roas)
+        
+        
 
         campaign.url_expansion_opt_out = False
         _PERFORMANCE_MAX_CAMPAIGN_TEMPORARY_ID= -1
