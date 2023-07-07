@@ -133,13 +133,13 @@ class AdService():
         )
     # Creates image asset without linking
 
-    def _create_image_asset(self, image_url, name, type, customer_id):
+    def _create_image_asset(self, image_url, name, asset_type, customer_id):
         """Generates the image asset and returns the resource name.
 
         Args:
         image_url: full url of the image file.
         name: the name of the image asset.
-        type: The asset type for the image asset.
+        asset_type: The asset type for the image asset.
         customer_id: customer id.
 
         Returns:
@@ -152,15 +152,15 @@ class AdService():
         img = Image.open(BytesIO(image_content))
         img_ratio = img.width / img.height
 
-        if img_ratio == 1 and type == "IMAGE":
+        if img_ratio == 1 and "IMAGE" in asset_type:
             field_type = self._google_ads_client.enums.AssetFieldTypeEnum.SQUARE_MARKETING_IMAGE
-        elif img_ratio < 1 and type == "IMAGE":
+        elif img_ratio < 1 and "IMAGE" in asset_type:
             field_type = self._google_ads_client.enums.AssetFieldTypeEnum.PORTRAIT_MARKETING_IMAGE
-        elif img_ratio > 1 and type == "IMAGE":
+        elif img_ratio > 1 and "IMAGE" in asset_type:
             field_type = self._google_ads_client.enums.AssetFieldTypeEnum.MARKETING_IMAGE
-        elif img_ratio == 1 and type == "LOGO":
+        elif img_ratio == 1 and "LOGO" in asset_type:
             field_type = self._google_ads_client.enums.AssetFieldTypeEnum.LOGO
-        elif img_ratio > 1 and type == "LOGO":
+        elif img_ratio > 1 and "LOGO" in asset_type:
             field_type = self._google_ads_client.enums.AssetFieldTypeEnum.LANDSCAPE_LOGO
         else:
             # TODO: Add return for error message (not supported image size / field_type.)
