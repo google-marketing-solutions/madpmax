@@ -31,7 +31,7 @@ _CAMPAIGN_TEMP_ID = -1
 class AdService():
     """Provides Google ads API service to interact with Ads platform."""
 
-    class newAssetsColumnMap(enum.IntEnum):
+    class assetsColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
         ASSET_STATUS = 1,
         DELETE_ASSET = 2,
@@ -39,7 +39,8 @@ class AdService():
         ASSET_TEXT = 4,
         ASSET_CALL_TO_ACTION = 5,
         ASSET_URL = 6,
-        ERROR_MESSAGE = 7
+        ERROR_MESSAGE = 7,
+        ASSET_GROUP_ASSET = 8
 
     class assetGroupListColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
@@ -446,6 +447,7 @@ class AdService():
 
                     results[sheet_row]["status"] = self.assetStatus.ERROR.value[0]
                     results[sheet_row]["message"] = error_obj[i][1] + error_obj[i][2] + error_obj[i][3]
+                    results[sheet_row]["asset_group_asset"] = ""
 
                 else:
                     print(
@@ -459,6 +461,7 @@ class AdService():
                             results[sheet_row] = {}
                             results[sheet_row]["status"] = self.assetStatus.UPLOADED.value[0]
                             results[sheet_row]["message"] = ""
+                            results[sheet_row]["asset_group_asset"] = value.resource_name
 
                 i += 1
         return results
@@ -617,3 +620,53 @@ class AdService():
                     results[sheet_row]["message"] = error_message
 
             return results
+
+    def retrieve_all_assets(self, customer_id):
+            """TODO"""
+            query = (f"""SELECT
+                            customer.id,
+                            customer.descriptive_name,
+                            campaign.id,
+                            campaign.name,
+                            campaign.resource_name,
+                            asset_group.id,
+                            asset_group.name,
+                            asset_group.resource_name,
+                            asset_group_asset.resource_name,
+                            asset_group_asset.field_type,
+                            asset.id,
+                            asset.name,
+                            asset.resource_name,
+                            asset.text_asset.text,
+                            asset.youtube_video_asset.youtube_video_id,
+                            asset.lead_form_asset.business_name,
+                            asset.call_to_action_asset.call_to_action,
+                            asset.image_asset.full_size.url
+                        FROM asset_group_asset
+                        WHERE customer.id = {customer_id}
+                            AND campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+                        ORDER BY
+                            asset_group.id ASC,
+                            asset_group_asset.field_type ASC""")
+            
+            return self._google_ads_client.get_service('GoogleAdsService').search(
+                    customer_id=customer_id, query=query)
+
+    def retrieve_all_asset_groups(self, customer_id):
+            """TODO"""
+            query = (f"""SELECT
+                            asset_group.name,
+                            asset_group.id,
+                            campaign.name,
+                            campaign.id,
+                            customer.descriptive_name,
+                            customer.id
+                        FROM asset_group
+                        WHERE customer.id = {customer_id}
+                            AND campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+                        ORDER BY
+                            campaign.id ASC,
+                            asset_group.id ASC""")
+            
+            return self._google_ads_client.get_service('GoogleAdsService').search(
+                    customer_id=customer_id, query=query)

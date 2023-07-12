@@ -9,6 +9,7 @@ import sheet_api
 import ads_api
 import yaml
 import campaign_creation
+from pprint import pprint
 
 
 class main():
@@ -23,7 +24,8 @@ class main():
         ASSET_TEXT = 4,
         ASSET_CALL_TO_ACTION = 5,
         ASSET_URL = 6,
-        ERROR_MESSAGE = 7
+        ERROR_MESSAGE = 7,
+        ASSET_GROUP_ASSET = 8
 
     class assetGroupListColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
@@ -79,7 +81,8 @@ class main():
         self.sheetName = "Assets"
         # Sample spreadsheet https://docs.google.com/spreadsheets/d/16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE/edit#gid=755896892
         # Sample spreadsheet https://docs.google.com/spreadsheets/d/1rpRD3xPX7-d-7U6MFRvLo0rW8PjCOyaGFoDHf36XBWE/edit#gid=792246704
-        self.googleSpreadSheetId = "1rpRD3xPX7-d-7U6MFRvLo0rW8PjCOyaGFoDHf36XBWE"
+        self.googleSpreadSheetId = "16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE"
+        self.googleCustomerId = "8958116280"
         self.rowLimit = 2000
         with open('google-ads.yaml', 'r') as ymlfile:
             cfg = yaml.safe_load(ymlfile)
@@ -120,9 +123,10 @@ class main():
                     campaign_alias, "CampaignList", "!A6:E", self.googleSpreadSheetId)
             if campaign != None:
                 self.campaignService._create_campaign(campaign_customer_id, campaign_budget, budget_delivery_method, campaign_name, campaign_status, campaign_target_roas, campaign_target_cpa, bidding_strategy, campaign_start_date, campaign_end_date)
+                #TODO write new campaign to campaignList (and mark campaign as UPLOADED)
             else:
                 print("CAMPAIGN ALREADY EXIST")
-                #TODO add message to error column 
+                #TODO add message to error column
 
 
         # Get Values from input sheet
@@ -143,6 +147,8 @@ class main():
         # map to link sheet input rows to the asset operations for status and error handling.
         row_to_operations_mapping = {}
         sheet_row_index = 0
+        customer_id = None
+        #TODO FIGURE OUT A WAY TO HANDLE MULTIPLE CUSTOMER IDS.
 
         # Loop through of the input values in the provided spreadsheet / sheet.
         for row in asset_values:
@@ -151,11 +157,14 @@ class main():
             asset_group_details = None
 
             # Skip to next row in case Status is Success.
-            if self.assetsColumnMap.ASSET_STATUS < len(row) and row[self.assetsColumnMap.ASSET_STATUS] == "UPLOADED":
+            if self.assetsColumnMap.ASSET_STATUS < len(row) and row[self.assetsColumnMap.ASSET_STATUS] in ("UPLOADED", "GOOGLE ADS"):
                 sheet_row_index += 1
                 continue
 
             asset_group_alias = row[self.assetsColumnMap.ASSET_GROUP_ALIAS]
+
+            if not asset_group_alias:
+                continue
 
             # Use the Asset Group Alias to get Asset Group info from the Google sheet.
             asset_group_details = self.sheetService._get_sheet_row(
@@ -173,7 +182,7 @@ class main():
                 new_asset_group = True
                 # GENERATE ASSET GROUP OPERATION.
                 new_asset_group_details = self.sheetService._get_sheet_row(
-                    row[self.assetsColumnMap.ASSET_GROUP_ALIAS], "NewAssetGroups", "!A6:I", self.googleSpreadSheetId)
+                    row[self.assetsColumnMap.ASSET_GROUP_ALIAS], "NewAssetGroups", "!A6:J", self.googleSpreadSheetId)
                 
                 campaign_details = self.sheetService._get_sheet_row(
                     new_asset_group_details[self.newAssetGroupsColumnMap.CAMPAIGN_ALIAS], "CampaignList", "!A6:E", self.googleSpreadSheetId)
@@ -203,6 +212,7 @@ class main():
             # Preset the default map values for Status and Message.
             sheet_results[sheet_row_index]["status"] = None
             sheet_results[sheet_row_index]["message"] = None
+            sheet_results[sheet_row_index]["asset_group_asset"] = None
 
             if self.assetsColumnMap.ASSET_URL.value < len(row):
                 asset_url = row[self.assetsColumnMap.ASSET_URL]
@@ -282,19 +292,20 @@ class main():
 
             sheet_row_index += 1
 
-        # Update Assets only in Google Ads
-        self.process_api_operations(
-            "ASSETS", asset_operations, sheet_results, row_to_operations_mapping, asset_group_sheetlist, customer_id)
+        if customer_id:
+            # Update Assets only in Google Ads
+            self.process_api_operations(
+                "ASSETS", asset_operations, sheet_results, row_to_operations_mapping, asset_group_sheetlist, customer_id)
 
-        # Create a new Asset Group and Update Assets.
-        headlines = self.googleAdsService._create_multiple_text_assets(
-            asset_group_headline_operations, customer_id)
-        descriptions = self.googleAdsService._create_multiple_text_assets(
-            asset_group_description_operations, customer_id)
-        asset_group_operations, row_to_operations_mapping = self.googleAdsService.compile_asset_group_operations(
-            asset_group_operations, headlines, descriptions, row_to_operations_mapping, customer_id)
-        self.process_api_operations(
-            "ASSET_GROUPS", asset_group_operations, sheet_results, row_to_operations_mapping, asset_group_sheetlist, customer_id)
+            # Create a new Asset Group and Update Assets.
+            headlines = self.googleAdsService._create_multiple_text_assets(
+                asset_group_headline_operations, customer_id)
+            descriptions = self.googleAdsService._create_multiple_text_assets(
+                asset_group_description_operations, customer_id)
+            asset_group_operations, row_to_operations_mapping = self.googleAdsService.compile_asset_group_operations(
+                asset_group_operations, headlines, descriptions, row_to_operations_mapping, customer_id)
+            self.process_api_operations(
+                "ASSET_GROUPS", asset_group_operations, sheet_results, row_to_operations_mapping, asset_group_sheetlist, customer_id)
 
     def process_api_operations(self, mutate_type, mutate_operations, sheet_results, row_to_operations_mapping, asset_group_sheetlist, customer_id):
         """Logic to process API bulk operations based on type.
@@ -342,6 +353,18 @@ class main():
         self.sheetService.update_asset_sheet_status(sheet_results, self.sheetService.get_sheet_id(
             self.sheetName, self.googleSpreadSheetId), self.googleSpreadSheetId)
 
+    def retrieve_assets(self):
+        """TODO"""
+        results = self.googleAdsService.retrieve_all_assets(self.googleCustomerId)
+        self.sheetService.update_asset_sheet_output(results, "Assets", self.googleSpreadSheetId)
+
+    def retrieve_asset_groups(self):
+        """TODO"""
+        results = self.googleAdsService.retrieve_all_asset_groups(self.googleCustomerId)
+        self.sheetService.update_asset_group_sheet_output(results, "AssetGroupList", self.googleSpreadSheetId)
+
 
 cp = main()
 cp.create_api_operations()
+cp.retrieve_asset_groups()
+cp.retrieve_assets()
