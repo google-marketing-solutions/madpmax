@@ -1,0 +1,3 @@
+# Function dependencies
+pillow
+functions-framework==3.3.0
