@@ -21,6 +21,7 @@ from io import BytesIO
 from uuid import uuid4
 
 import enum
+import re
 import requests
 
 _ASSET_TEMP_ID = -10000
@@ -54,14 +55,14 @@ class AdService():
     class newAssetGroupsColumnMap(enum.IntEnum):
         ASSET_GROUP_ALIAS = 0,
         CAMPAIGN_ALIAS = 1,
-        ASSET_CHECK = 2,
-        ASSET_GROUP_NAME = 3,
-        FINAL_URL = 4,
-        MOBILE_URL = 5,
-        PATH1 = 6,
-        PATH2 = 7,
-        CAMPAIGN_STATUS = 8,
-        STATUS = 9,
+        STATUS = 2,
+        ASSET_CHECK = 3,
+        ASSET_GROUP_NAME = 4,
+        FINAL_URL = 5,
+        MOBILE_URL = 6,
+        PATH1 = 7,
+        PATH2 = 8,
+        CAMPAIGN_STATUS = 9,
         MESSAGE = 10
 
     class newCampaignsColumnMap(enum.IntEnum):
@@ -200,7 +201,7 @@ class AdService():
         """
         global _ASSET_TEMP_ID
 
-        youtube_id = _retrieve_yt_id(video_url)
+        youtube_id = self._retrieve_yt_id(video_url)
 
         asset_service = self._google_ads_client.get_service("AssetService")
         resource_name = asset_service.asset_path(customer_id, _ASSET_TEMP_ID)

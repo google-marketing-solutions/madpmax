@@ -106,5 +106,3 @@ class CampaignCreation():
                 if error.message != "Resource was not found.":
                     error_message = error_message + f'\n\tError message: "{error.message}".'
             print(error_message)
-
-        
