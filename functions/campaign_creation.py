@@ -2,39 +2,63 @@
 
 from google.ads import googleads
 from google.api_core import protobuf_helpers
-from PIL import Image
-import requests
-from io import BytesIO
-from datetime import datetime, timedelta
-from google.ads.googleads.errors import GoogleAdsException
+from datetime import datetime
 from datetime import datetime
 
-_BUDGET_TEMPORARY_ID = -100
-_PERFORMANCE_MAX_CAMPAIGN_TEMPORARY_ID = -100
+import enum
 
-class CampaignCreation():
-    """Provides Google ads API service to interact with Ads platform."""
+class CampaignService():
 
-    def __init__(self, ads_account_file):
-        """Constructs the AdService instance.
+    class newCampaignsColumnMap(enum.IntEnum):
+        CAMPAIGN_ALIAS = 0,
+        CAMPAIGN_UPLOAD_STATUS = 1,
+        CAMPAIGN_NAME = 2,
+        CAMPAIGN_BUDGET = 3,
+        BUDGET_DELIVERY_METHOD = 4,
+        CAMPAIGN_STATUS = 5,
+        BIDDING_STRATEGY = 6,
+        CAMPAIGN_TARGET_ROAS = 7,
+        CAMPAIGN_TARGET_CPA = 8,
+        CUSTOMER_START_DATE = 9,
+        CUSTOMER_END_DATE = 10,
+        CUSTOMER_ID = 11,
+        ERROR_MESSAGE =12
+
+    def __init__(self, ads_account_file, googleAdsService, sheetService):
+        """Constructs the CampaignService instance.
 
         Args:
           ads_account_file: Path to Google Ads API account file.
+          googleAdsService: instance of the googleAdsService for dependancy injection.
+          sheetService: instance of sheetService for dependancy injection.
         """
         self._google_ads_client = googleads.client.GoogleAdsClient.load_from_storage(
             ads_account_file, version='v14')
         self._cache_ad_group_ad = {}
         self.prev_image_asset_list = None
         self.prev_customer_id = None
+        self.budget_temporary_id = -2000
+        self.performance_max_campaign_temporary_id = -100  
+        self.googleAdsService = googleAdsService  
+        self.sheetService = sheetService   
 
-    # def _create_campaign_budget(self, customer_id):
-        
-
-    #     return mutate_operation    
-    
     def _create_campaign(self, customer_id, budget, budget_delivery_method, campaign_name, campaign_status, target_roas, target_cpa, bidding_strategy_type, start_time, end_time):
+        """Set up mutate object for creating campaign and budget for the campaign.
+
+        Args:
+          customer_id: Google ads customer id.
+          budget: Budget for the campaign.
+          budget_delivery_method: The delivery method that determines the rate at which the campaign budget is spent. STANDARD or ACCELERATED
+          campaign_name: Name for the campaign.
+          campaign_status: ENABLED or PAUSED
+          target_roas: The chosen revenue (based on conversion data) per unit of spend. Value must be between 0.01 and 1000.0, inclusive.
+          target_cpa: Average CPA target. This target should be greater than or equal to minimum billable unit based on the currency for the account.
+          bidding_strategy_type: MaximizeConversions or MaximizeConversionValue bidding strategy. 
+          start_time: Start time for the campaign in format 'YYYY-MM-DD'.
+          end_time: End time for the campaign in format 'YYYY-MM-DD'.
+
+        """
         mutate_operations = []
-        global _BUDGET_TEMPORARY_ID
         mutate_operation_budget = self._google_ads_client.get_type("MutateOperation")
         campaign_budget_operation = mutate_operation_budget.campaign_budget_operation
         campaign_budget = campaign_budget_operation.create
@@ -42,20 +66,17 @@ class CampaignCreation():
 
         budget = float(budget)*1000000
         campaign_budget.amount_micros = budget
-
         
         campaign_budget.delivery_method = (budget_delivery_method)
         # A Performance Max campaign cannot use a shared campaign budget.
         campaign_budget.explicitly_shared = False
 
-        _BUDGET_TEMPORARY_ID -= 1
+        self.budget_temporary_id -= 1
         # Set a temporary ID in the budget's resource name so it can be referenced
         # by the campaign in later steps.
-        campaign_budget.resource_name = self._google_ads_client.get_service("CampaignBudgetService").campaign_budget_path(customer_id, _BUDGET_TEMPORARY_ID)
+        campaign_budget.resource_name = self._google_ads_client.get_service("CampaignBudgetService").campaign_budget_path(customer_id, self.budget_temporary_id)
         mutate_operations.append(mutate_operation_budget)
 
-
-        global _PERFORMANCE_MAX_CAMPAIGN_TEMPORARY_ID
         mutate_operation = self._google_ads_client.get_type("MutateOperation")
         campaign = mutate_operation.campaign_operation.create
         campaign.name = campaign_name
@@ -64,45 +85,66 @@ class CampaignCreation():
         if campaign_status == "PAUSED":
             campaign.status = self._google_ads_client.enums.CampaignStatusEnum.PAUSED
         elif campaign_status == "ENABLED":
-            campaign.status = self._google_ads_client.enums.CampaignStatusEnum.ENABLED
-        #TODO add  to error column     
+            campaign.status = self._google_ads_client.enums.CampaignStatusEnum.ENABLED     
         
         campaign.advertising_channel_type = (self._google_ads_client.enums.AdvertisingChannelTypeEnum.PERFORMANCE_MAX)
 
         if bidding_strategy_type == "MaximizeConversions":
-            bidding_strategy_type = self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSIONS
+            campaign.bidding_strategy_type = self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSIONS
+            campaign.maximize_conversions.target_cpa_micros = float(target_cpa)*1000000
         elif bidding_strategy_type == "MaximizeConversionValue":
-            bidding_strategy_type = self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSION_VALUE
-        #TODO add  to error column   
-
-        campaign.bidding_strategy_type = (self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSIONS)
-        campaign.maximize_conversion_value.target_roas = float(target_roas)
+            campaign.bidding_strategy_type = self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSION_VALUE
+            campaign.maximize_conversion_value.target_roas = float(target_roas)
 
         campaign.url_expansion_opt_out = False
-        _PERFORMANCE_MAX_CAMPAIGN_TEMPORARY_ID= -1
+        self.performance_max_campaign_temporary_id -= 1
 
         campaign_service = self._google_ads_client.get_service("CampaignService")
-        campaign.resource_name = campaign_service.campaign_path(customer_id, _PERFORMANCE_MAX_CAMPAIGN_TEMPORARY_ID)
+        campaign.resource_name = campaign_service.campaign_path(customer_id, self.performance_max_campaign_temporary_id)
 
-        campaign.campaign_budget = campaign_service.campaign_budget_path(customer_id, _BUDGET_TEMPORARY_ID)
+        campaign.campaign_budget = campaign_service.campaign_budget_path(customer_id, self.budget_temporary_id)
 
         campaign.start_date = datetime.strptime(start_time, "%Y-%m-%d").strftime("%Y%m%d")
         campaign.end_date = datetime.strptime(end_time, "%Y-%m-%d").strftime("%Y%m%d")
         mutate_operations.append(mutate_operation)
 
-        googleads_service = self._google_ads_client.get_service(
-            "GoogleAdsService")
-        request = self._google_ads_client.get_type("MutateGoogleAdsRequest")
-        request.customer_id = customer_id
-        request.mutate_operations = mutate_operations
-        
-        try:
-            response = googleads_service.mutate(
-                request=request
-            )
-        except GoogleAdsException as ex:
-            error_message = f'Request with ID "{ex.request_id}" failed and includes the following errors:'
-            for error in ex.failure.errors:
-                if error.message != "Resource was not found.":
-                    error_message = error_message + f'\n\tError message: "{error.message}".'
-            print(error_message)
+        return mutate_operations
+       
+    def _process_campaign_data_and_create_campaigns(self, campaign_data, googleSpreadSheetId, googleCustomerId):
+        """Creates campaigns via google API based on data provided and update the spreadsheet with the result or an error.
+
+        Args:
+          campaign_data: Actual data for creating new campaigns in array form.
+          googleSpreadSheetId: Id of the sheet for updating the status.
+          googleCustomerId: Google ads customer id. 
+        """
+        for campaign in campaign_data:
+            mutate_campaign_operation = None
+            campaign_name = campaign[self.newCampaignsColumnMap.CAMPAIGN_NAME]
+            campaign_status = campaign[self.newCampaignsColumnMap.CAMPAIGN_STATUS]
+            bidding_strategy = campaign[self.newCampaignsColumnMap.BIDDING_STRATEGY]
+            campaign_target_roas = campaign[self.newCampaignsColumnMap.CAMPAIGN_TARGET_ROAS]
+            campaign_target_cpa = campaign[self.newCampaignsColumnMap.CAMPAIGN_TARGET_CPA]
+            campaign_budget = campaign[self.newCampaignsColumnMap.CAMPAIGN_BUDGET]
+            campaign_customer_id = campaign[self.newCampaignsColumnMap.CUSTOMER_ID]
+            campaign_start_date = campaign[self.newCampaignsColumnMap.CUSTOMER_START_DATE]
+            campaign_end_date = campaign[self.newCampaignsColumnMap.CUSTOMER_END_DATE]
+            budget_delivery_method = campaign[self.newCampaignsColumnMap.BUDGET_DELIVERY_METHOD]
+
+            mutate_campaign_operation = self._create_campaign(campaign_customer_id, campaign_budget, budget_delivery_method, campaign_name, campaign_status, campaign_target_roas, campaign_target_cpa, bidding_strategy, campaign_start_date, campaign_end_date)
+            
+            campaigns_response, campaigns_error_message = self.googleAdsService._bulk_mutate("Campaigns",
+                                                                                                 mutate_campaign_operation, googleCustomerId)
+            row_number = self.sheetService._get_row_number_by_value(
+                        campaign_name, campaign_data, self.newCampaignsColumnMap.CAMPAIGN_NAME)
+            
+            sheet_id = self.sheetService.get_sheet_id("NewCampaigns", googleSpreadSheetId)
+
+            if campaigns_response: 
+                self.sheetService.variable_update_sheet_status(
+                     row_number, sheet_id, googleSpreadSheetId, self.newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS, "UPLOADED")
+            
+            if campaigns_error_message:
+                self.sheetService.variable_update_sheet_status(
+                        row_number, sheet_id, googleSpreadSheetId, self.newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
+                         'ERROR', campaigns_error_message, self.newCampaignsColumnMap.ERROR_MESSAGE)

@@ -134,26 +134,22 @@ class SheetsService():
 
         return result
 
-    def _get_row_number(self, id, sheet_values, col_index):
+    def _get_row_number_by_value(self, value_to_find, sheet_values, col_index):
         """Returns the values of the sheetrow matching the id.
 
         Args:
-          id: The string value as input for the cell.
+          value_to_find: The string value as input for the cell.
           sheet_values: Array of arrays representation of sheetname.
-          col_index: 
+          col_index: index of the column where to find value 
 
         Returns:
         Row number
         """
-        index = 0
-
-        for row in sheet_values:
-            if row[col_index] == id:
-                result = row
-                break
-            index += 1
-
-        return index
+        for index, row in enumerate(sheet_values):
+            if row[col_index] == value_to_find:
+                return index
+            
+        return 0
 
     def batch_update_requests(self, request_lists, spreadsheet_id):
         """Batch update row with requests in target sheet.
@@ -267,6 +263,34 @@ class SheetsService():
             }
         }
         return sort
+
+    def variable_update_sheet_status(self, row_index, sheet_id, spreadsheet_id, status_row_id, upload_status, error_message=None, message_row_id=None):
+        """Update status and error message (if provided) in the sheet.
+        Args:
+            sheet_results: row information and error message.
+            sheet_id: Sheet id.
+            spreadsheet_id: the id for the Google Spreadsheet
+            status_row_id: column of status position
+            message_row_id: column of error messgae position
+        Raises:
+            Exception: If unknown error occurs while updating rows in the Time Managed
+            Sheet.
+        """
+        update_request_list = []
+
+        status = self.get_status_note(row_index + 5, status_row_id, upload_status,
+                                          sheet_id)
+        update_request_list.append(status)
+
+        if error_message and message_row_id:
+            error_note = self.get_status_note(row_index + 5, message_row_id, error_message,
+                                            sheet_id)
+            update_request_list.append(error_note)
+
+        try:
+            self.batch_update_requests(update_request_list, spreadsheet_id)
+        except Exception as e:
+            print(f"Unable to update Sheet rows: {str(e)}")
 
     def update_asset_sheet_status(self, sheet_results, sheet_id, spreadsheet_id):
         """Update error message in the sheet.

@@ -94,8 +94,7 @@ class main():
 
         self.sheetService = sheet_api.SheetsService(credentials)
         self.googleAdsService = ads_api.AdService("config.yaml")
-        self.campaignService = campaign_creation.CampaignCreation(
-            "config.yaml")
+        self.campaignService = campaign_creation.CampaignService("config.yaml", self.googleAdsService, self.sheetService)
 
     """Reads the campaigns and asset groups from the input sheet, creates assets
     for the assets provided. Removes the provided placeholder assets, and writes
@@ -114,32 +113,11 @@ class main():
             "NewAssetGroups!A6:J", self.googleSpreadSheetId)
         campaign_values = self.sheetService._get_sheet_values(
             "CampaignList!A6:E", self.googleSpreadSheetId)
-        new_campaign_values = self.sheetService._get_sheet_values(
-            "NewCampaigns!A6:K", self.googleSpreadSheetId)
-
-        for campaign in new_campaign_values:
-
-            campaign_alias = campaign[self.newCampaignsColumnMap.CAMPAIGN_ALIAS]
-            campaign_name = campaign[self.newCampaignsColumnMap.CAMPAIGN_NAME]
-            campaign_status = campaign[self.newCampaignsColumnMap.CAMPAIGN_STATUS]
-            bidding_strategy = campaign[self.newCampaignsColumnMap.BIDDING_STRATEGY]
-            campaign_target_roas = campaign[self.newCampaignsColumnMap.CAMPAIGN_TARGET_ROAS]
-            campaign_target_cpa = campaign[self.newCampaignsColumnMap.CAMPAIGN_TARGET_CPA]
-            campaign_budget = campaign[self.newCampaignsColumnMap.CAMPAIGN_BUDGET]
-            campaign_customer_id = campaign[self.newCampaignsColumnMap.CUSTOMER_ID]
-            campaign_start_date = campaign[self.newCampaignsColumnMap.CUSTOMER_START_DATE]
-            campaign_end_date = campaign[self.newCampaignsColumnMap.CUSTOMER_END_DATE]
-            budget_delivery_method = campaign[self.newCampaignsColumnMap.BUDGET_DELIVERY_METHOD]
-
-            campaign_details = self.sheetService._get_sheet_row(
-                campaign_alias, campaign_values, self.campaignListColumnMap.CAMPAIGN_ALIAS.value)
-            if campaign != None:
-                self.campaignService._create_campaign(campaign_customer_id, campaign_budget, budget_delivery_method, campaign_name,
-                                                      campaign_status, campaign_target_roas, campaign_target_cpa, bidding_strategy, campaign_start_date, campaign_end_date)
-                # TODO write new campaign to campaignList (and mark campaign as UPLOADED)
-            else:
-                print("CAMPAIGN ALREADY EXIST")
-                # TODO add message to error column
+        new_campaign_data = self.sheetService._get_sheet_values(
+            "NewCampaigns!A6:M", self.googleSpreadSheetId)
+        
+        # Load new Campaigns Spreadsheet and create campaigns 
+        self.campaignService._process_campaign_data_and_create_campaigns(new_campaign_data, self.googleSpreadSheetId, self.googleCustomerId)
 
         # all operations across multiple assetGroups where the key is an assetGroup
         asset_operations = {}
@@ -343,7 +321,7 @@ class main():
                     asset_group_response, mutate_operations[asset_group_alias], row_to_operations_mapping))
 
                 if mutate_type == "ASSET_GROUPS":
-                    row_number = self.sheetService._get_row_number(
+                    row_number = self.sheetService._get_row_number_by_value(
                         asset_group_alias, new_asset_group_values, self.newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value)
                     sheet_id = self.sheetService.get_sheet_id(
                         "NewAssetGroups", self.googleSpreadSheetId)
@@ -361,7 +339,7 @@ class main():
             elif asset_group_error_message and mutate_type == "ASSET_GROUPS":
                 sheet_results.update(self.googleAdsService.process_asset_group_results(
                     asset_group_error_message, mutate_operations[asset_group_alias], row_to_operations_mapping))
-                row_number = self.sheetService._get_row_number(
+                row_number = self.sheetService._get_row_number_by_value(
                     asset_group_alias, new_asset_group_values, self.newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value)
 
                 sheet_id = self.sheetService.get_sheet_id(
