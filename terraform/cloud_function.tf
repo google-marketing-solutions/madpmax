@@ -14,7 +14,7 @@ resource "local_file" "ads_config" {
     developer_token    = "${var.developer_token}",
     client_id          = "${var.client_id}",
     client_secret      = "${var.client_secret}",
-    oauth_token        = "${var.oauth_token}",
+    token              = "${var.token}",
     refresh_token      = "${var.refresh_token}",
     login_customer_id  = "${var.login_customer_id}"
     customer_id        = "${var.customer_id}"

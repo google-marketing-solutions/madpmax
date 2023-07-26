@@ -9,18 +9,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# OAuth2 configuration
-###############################################################################
-# The below configuration parameters are used to authenticate using the       #
-# recommended OAuth2 flow. For more information on authenticating with OAuth2 #
-# see: https://developers.google.com/google-ads/api/docs/oauth/overview       #
-###############################################################################
+# Google Ads API configuration
 use_proto_plus: "True"
 developer_token: "${developer_token}"
+login_customer_id: "${login_customer_id}"
+
+# Application configuration
+spreadsheet_id: "${spreadsheet_id}"
+customer_id: "${customer_id}"
+
+# OAuth2 configuration
 client_id: "${client_id}"
 client_secret: "${client_secret}"
-oauth_token: "${oauth_token}"
+token: "${token}"
 refresh_token: "${refresh_token}"
-login_customer_id: "${login_customer_id}"
-customer_id: "${customer_id}"
-spreadsheet_id: "${spreadsheet_id}"

@@ -18,13 +18,17 @@
 
 # Config variables for the Google Ads Yaml file.
 developer_token   = "" # Google Ads API Developer Token
-client_id         = "" # "pmax-api" Client ID (from Cloud OAuth credentials)
-client_secret     = "" # "pmax-api" Client Secret (from Cloud OAuth credentials)
-oauth_token       = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
-refresh_token     = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
 login_customer_id = "" # [Optional] only if you setup under manager account
+
+# Application Config variable.
 customer_id       = "" # Google Ads Customer ID
 spreadsheet_id    = "" # Google Spreadsheet ID
+
+# Config variables for the OAuth Authentication flow.
+client_id         = "" # "pmax-api" Client ID (from Cloud OAuth credentials)
+client_secret     = "" # "pmax-api" Client Secret (from Cloud OAuth credentials)
+token             = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
+refresh_token     = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
 
 # General Cloud Configuration
 project_id            = ""   # defaults to current project. Project id were the solution will run.
