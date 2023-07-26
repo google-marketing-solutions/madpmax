@@ -671,3 +671,19 @@ class AdService():
             
             return self._google_ads_client.get_service('GoogleAdsService').search(
                     customer_id=customer_id, query=query)
+    
+    def retrieve_all_campaigns(self, customer_id):
+            """TODO"""
+            query = (f"""SELECT
+                            campaign.name,
+                            campaign.id,
+                            customer.descriptive_name,
+                            customer.id
+                        FROM campaign
+                        WHERE customer.id = {customer_id}
+                            AND campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+                        ORDER BY
+                            campaign.id ASC""")
+            
+            return self._google_ads_client.get_service('GoogleAdsService').search(
+                    customer_id=customer_id, query=query)

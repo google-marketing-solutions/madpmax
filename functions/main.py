@@ -364,6 +364,8 @@ class main():
         self.sheetService.update_asset_group_sheet_output(
             results, "AssetGroupList", self.googleSpreadSheetId)
 
+        results = self.googleAdsService.retrieve_all_campaigns(self.googleCustomerId)
+        self.sheetService.update_campaign_sheet_output(results, 'CampaignList', self.googleSpreadSheetId)
 
 # Triggered from a message on a Cloud Pub/Sub topic.
 @functions_framework.cloud_event

@@ -58,14 +58,6 @@ class SheetsService():
         CAMPAIGN_STATUS = 9,
         MESSAGE = 10
 
-    class newCampaignsColumnMap(enum.IntEnum):
-        CAMPAIGN_ALIAS = 0,
-        CAMPAIGN_SETTINGS_ALIAS = 1,
-        CAMPAIGN_NAME = 2,
-        START_DATE = 3,
-        END_DATE = 4,
-        CUSTOMER_ID = 5
-
     class campaignListColumnMap(enum.IntEnum):
         CAMPAIGN_ALIAS = 0,
         CAMPAIGN_NAME = 1,
@@ -509,6 +501,53 @@ class SheetsService():
 
         # The ID of the spreadsheet to update.
         range_ = sheet_name + "!A:I"
+        value_input_option = "USER_ENTERED"
+        insert_data_option = "INSERT_ROWS"
+        value_range_body = {
+            "values": sheet_output
+        }
+
+        try:
+            request = self._sheets_service.values().append(spreadsheetId=spreadsheet_id, range=range_, valueInputOption=value_input_option, insertDataOption=insert_data_option, body=value_range_body)
+            response = request.execute()
+        except Exception as e:
+            print(f"Unable to update Sheet rows: {str(e)}")
+
+        sheet_id = self.get_sheet_id(sheet_name, spreadsheet_id)
+        update_request_list = []
+        sort = self.get_sort_request(5,0, sheet_id, 0, 2)
+        update_request_list.append(sort)
+
+        try:
+            self.batch_update_requests(update_request_list, spreadsheet_id)
+        except Exception as e:
+            print(f"Unable to update Sheet rows: {str(e)}")
+
+    def update_campaign_sheet_output(self, results, sheet_name, spreadsheet_id):
+        """Write exisitng campaigns to campaign list sheet
+        
+        Args:
+            results: Array of array containing the existing asset groups in Google Ads.
+            sheet_name: Name of the sheet to write the results to.
+            spreadsheet_id: Google spreadsheet id.
+        """
+        campaign_existing_values = self._get_sheet_values(sheet_name + "!C:C", spreadsheet_id)
+
+        sheet_output = []
+        index = 0
+        for row in results:
+            if [str(row.campaign.id)] not in campaign_existing_values:
+                sheet_output.append([None] * len(self.campaignListColumnMap))
+                sheet_output[index][0] = str(row.customer.id) + "_" + str(row.campaign.id) + "_" + str(row.campaign.name)
+                sheet_output[index][1] = row.campaign.name
+                sheet_output[index][2] = row.campaign.id
+                sheet_output[index][3] = row.customer.descriptive_name
+                sheet_output[index][4] = row.customer.id
+
+                index += 1
+
+        # The ID of the spreadsheet to update.
+        range_ = sheet_name + "!A:E"
         value_input_option = "USER_ENTERED"
         insert_data_option = "INSERT_ROWS"
         value_range_body = {
