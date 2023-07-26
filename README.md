@@ -24,10 +24,12 @@ Performance Max Campaign Manager can be deployed on Google Cloud through Terrafo
     1.  Open [Cloud credentials](https://console.developers.google.com/apis/credentials)
     2.  Create credentials -> Create 'OAuth client ID' -> Web Application
     3.  Add the follwing 'Authorized redirect URIs' : 
-        *   [**pmax-trigger**] 'https://script.google.com/macros/d/*YOUR_APP_SCRIPT_PROJECT_ID*/usercallback' **
+        *   [**pmax-trigger**] 'https://script.google.com/macros/d/*YOUR_APP_SCRIPT_PROJECT_ID*/usercallback' 
+
+         Obtain your App Script ID by navigating to Your Copy of the Spreadsheet *"Template > Extensions > Apps Script"*. The Apps Script editor will open in a new tab. Navigate on the left hand side to Project Settings and copy the Project ID.
         *   [**pmax-api**] 'https://developers.google.com/oauthplayground'
     4.  Copy the Client ID and Client Secret and store safely for use later in the configuration.
-    5.  [**pmax-trigger**] Navigate to the Apps Script Code Editor, and copy values for the Client ID and Client Secret to the respective variables in the Code.gs file.
+    5.  [**pmax-trigger**] Navigate to the Apps Script Code Editor, and copy values for the Client ID and Client Secret to the respective variables in the Service.gs file.
     6.  [**pmax-api**] Generate access and refresh token:
         Generate access and refresh token:
         Follow the steps in the following link to generate OAuth tokens, https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens. Make sure to include the following scopes when generating the tokens:
@@ -36,8 +38,7 @@ Performance Max Campaign Manager can be deployed on Google Cloud through Terrafo
         *   https://www.googleapis.com/auth/adwords
         **Important** Make sure to use the Client ID and Client Secret generated in step 4 for [pmax-api] to generate the tokens. 
     
-    ** Obtain your App Script ID by navigating to Your Copy of the Spreadsheet *"Template > Extensions > Apps Script"*. The Apps Script editor will open in a new tab. Navigate on the left hand side to Project Settings and copy the Project ID.
-
+    
 4.  ### Terraform Deployment
     a. Open the cloud project where you want to deploy the solution and open the Cloud Editor.
     b. In the terminal, run ```git clone https://professional-services.googlesource.com/solutions/pmax_asset_automation```

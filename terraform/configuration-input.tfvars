@@ -17,7 +17,7 @@
 #  In initial setup, under "oauth consent screen", make sure to select "Internal"
 
 # Config variables for the Google Ads Yaml file.
-developer_token   = "" # Google Ads API Developer Token
+developer_token   = "" # Google Ads API Developer Token. Go to your Ads Account -> Tools and Settings -> Developer token
 client_id         = "" # "pmax-api" Client ID (from Cloud OAuth credentials)
 client_secret     = "" # "pmax-api" Client Secret (from Cloud OAuth credentials)
 oauth_token       = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
