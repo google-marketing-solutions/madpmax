@@ -65,25 +65,19 @@ resource "google_project_service" "artifactregistry" {
   disable_on_destroy = false
 }
 
-resource "google_project_services" "iam" {
+resource "google_project_service" "iam" {
   project = var.project_id
   service   = "iam.googleapis.com"
   disable_on_destroy = false
 } 
 
-resource "google_project_services" "cloudresourcemanager" {
+resource "google_project_service" "cloudresourcemanager" {
   project = var.project_id
   service   = "cloudresourcemanager.googleapis.com"
   disable_on_destroy = false
 }
 
-resource "google_project_services" "cloudfunctions" {
-  project = var.project_id
-  service   = "cloudfunctions.googleapis.com"
-  disable_on_destroy = false
-}
-
-resource "google_project_services" "cloudrun" {
+resource "google_project_service" "cloudrun" {
   project = var.project_id
   service   = "run.googleapis.com"
   disable_on_destroy = false
