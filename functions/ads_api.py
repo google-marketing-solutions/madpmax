@@ -687,3 +687,4 @@ class AdService():
             
             return self._google_ads_client.get_service('GoogleAdsService').search(
                     customer_id=customer_id, query=query)
+    

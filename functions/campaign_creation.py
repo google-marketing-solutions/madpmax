@@ -2,27 +2,12 @@
 
 from datetime import datetime
 from datetime import datetime
-import enum
 from google.ads import googleads
 from google.api_core import protobuf_helpers
+from enums.new_campaigns_column_map import newCampaignsColumnMap
 
 
 class CampaignService:
-
-  class newCampaignsColumnMap(enum.IntEnum):
-    CAMPAIGN_ALIAS = 0,
-    CAMPAIGN_UPLOAD_STATUS = 1,
-    CAMPAIGN_NAME = 2,
-    CAMPAIGN_BUDGET = 3,
-    BUDGET_DELIVERY_METHOD = 4,
-    CAMPAIGN_STATUS = 5,
-    BIDDING_STRATEGY = 6,
-    CAMPAIGN_TARGET_ROAS = 7,
-    CAMPAIGN_TARGET_CPA = 8,
-    CUSTOMER_START_DATE = 9,
-    CUSTOMER_END_DATE = 10,
-    CUSTOMER_ID = 11,
-    ERROR_MESSAGE =12
 
   def __init__(self, ads_account_file, googleAdsService, sheetService):
     """Constructs the CampaignService instance.
@@ -162,23 +147,23 @@ class CampaignService:
     """
     for campaign in campaign_data:
       mutate_campaign_operation = None
-      campaign_name = campaign[self.newCampaignsColumnMap.CAMPAIGN_NAME]
-      campaign_status = campaign[self.newCampaignsColumnMap.CAMPAIGN_STATUS]
-      bidding_strategy = campaign[self.newCampaignsColumnMap.BIDDING_STRATEGY]
+      campaign_name = campaign[newCampaignsColumnMap.CAMPAIGN_NAME]
+      campaign_status = campaign[newCampaignsColumnMap.CAMPAIGN_STATUS]
+      bidding_strategy = campaign[newCampaignsColumnMap.BIDDING_STRATEGY]
       campaign_target_roas = campaign[
-          self.newCampaignsColumnMap.CAMPAIGN_TARGET_ROAS
+          newCampaignsColumnMap.CAMPAIGN_TARGET_ROAS
       ]
       campaign_target_cpa = campaign[
-          self.newCampaignsColumnMap.CAMPAIGN_TARGET_CPA
+          newCampaignsColumnMap.CAMPAIGN_TARGET_CPA
       ]
-      campaign_budget = campaign[self.newCampaignsColumnMap.CAMPAIGN_BUDGET]
-      campaign_customer_id = campaign[self.newCampaignsColumnMap.CUSTOMER_ID]
+      campaign_budget = campaign[newCampaignsColumnMap.CAMPAIGN_BUDGET]
+      campaign_customer_id = campaign[newCampaignsColumnMap.CUSTOMER_ID]
       campaign_start_date = campaign[
-          self.newCampaignsColumnMap.CUSTOMER_START_DATE
+          newCampaignsColumnMap.CUSTOMER_START_DATE
       ]
-      campaign_end_date = campaign[self.newCampaignsColumnMap.CUSTOMER_END_DATE]
+      campaign_end_date = campaign[newCampaignsColumnMap.CUSTOMER_END_DATE]
       budget_delivery_method = campaign[
-          self.newCampaignsColumnMap.BUDGET_DELIVERY_METHOD
+          newCampaignsColumnMap.BUDGET_DELIVERY_METHOD
       ]
 
       if campaign_status != "UPLOADED":
@@ -203,7 +188,7 @@ class CampaignService:
         row_number = self.sheetService._get_row_number_by_value(
             campaign_name,
             campaign_data,
-            self.newCampaignsColumnMap.CAMPAIGN_NAME
+            newCampaignsColumnMap.CAMPAIGN_NAME
         )
 
         sheet_id = self.sheetService.get_sheet_id(
@@ -215,7 +200,7 @@ class CampaignService:
               row_number,
               sheet_id,
               googleSpreadSheetId,
-              self.newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
+              newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
               "UPLOADED"
           )
 
@@ -224,8 +209,8 @@ class CampaignService:
               row_number,
               sheet_id,
               googleSpreadSheetId,
-              self.newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
+              newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
               "ERROR",
               campaigns_error_message,
-              self.newCampaignsColumnMap.ERROR_MESSAGE
+              newCampaignsColumnMap.ERROR_MESSAGE
           )
