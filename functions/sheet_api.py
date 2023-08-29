@@ -16,6 +16,12 @@ from googleapiclient import discovery
 import re
 import ads_api
 import yaml
+from pprint import pprint
+from enums.asset_column_map import assetsColumnMap
+from enums.asset_group_list_column_map import assetGroupListColumnMap
+from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
+from enums.campaign_list_column_map import campaignListColumnMap
+from enums.asset_status import assetStatus
 
 
 class SheetsService():
@@ -24,51 +30,6 @@ class SheetsService():
       _sheets_services: service that is used for making Sheets API calls.
       _spreadsheet_id: id of the spreadsheet to read from and write to.
     """
-
-    class assetsColumnMap(enum.IntEnum):
-        ASSET_GROUP_ALIAS = 0,
-        ASSET_STATUS = 1,
-        DELETE_ASSET = 2,
-        ASSET_TYPE = 3,
-        ASSET_TEXT = 4,
-        ASSET_CALL_TO_ACTION = 5,
-        ASSET_URL = 6,
-        ERROR_MESSAGE = 7,
-        ASSET_GROUP_ASSET = 8
-
-    class assetGroupListColumnMap(enum.IntEnum):
-        ASSET_GROUP_ALIAS = 0,
-        ASSET_GROUP_NAME = 1,
-        ASSET_GROUP_ID = 2,
-        CAMPAIGN_NAME = 3,
-        CAMPAIGN_ID = 4,
-        CUSTOMER_NAME = 5,
-        CUSTOMER_ID = 6
-
-    class newAssetGroupsColumnMap(enum.IntEnum):
-        ASSET_GROUP_ALIAS = 0,
-        CAMPAIGN_ALIAS = 1,
-        STATUS = 2,
-        ASSET_CHECK = 3,
-        ASSET_GROUP_NAME = 4,
-        FINAL_URL = 5,
-        MOBILE_URL = 6,
-        PATH1 = 7,
-        PATH2 = 8,
-        CAMPAIGN_STATUS = 9,
-        MESSAGE = 10
-
-    class campaignListColumnMap(enum.IntEnum):
-        CAMPAIGN_ALIAS = 0,
-        CAMPAIGN_NAME = 1,
-        CAMPAIGN_ID = 2,
-        CUSTOMER_NAME = 3,
-        CUSTOMER_ID = 4
-
-    class assetStatus(enum.Enum):
-        UPLOADED = "UPLOADED",
-        ERROR = "ERROR",
-        NEW = "NEW"
 
     def __init__(self, credentials):
         """Creates a instance of sheets service to handle requests."""
@@ -302,21 +263,21 @@ class SheetsService():
         """
         update_request_list = []
         for row_index in sheet_results:
-            error_status = self.get_status_note(row_index + 5, self.assetsColumnMap.ASSET_STATUS.value, sheet_results[row_index]["status"],
+            error_status = self.get_status_note(row_index + 5, assetsColumnMap.ASSET_STATUS.value, sheet_results[row_index]["status"],
                                               sheet_id)
             update_request_list.append(error_status)
 
-            if sheet_results[row_index]["status"] == self.assetStatus.UPLOADED.value[0]:
-                checkbox = self.get_checkbox(row_index + 5, self.assetsColumnMap.DELETE_ASSET.value,
+            if sheet_results[row_index]["status"] == assetStatus.UPLOADED.value[0]:
+                checkbox = self.get_checkbox(row_index + 5, assetsColumnMap.DELETE_ASSET.value,
                                                 sheet_id)
                 update_request_list.append(checkbox)
 
-            error_note = self.get_status_note(row_index + 5, self.assetsColumnMap.ERROR_MESSAGE.value, sheet_results[row_index]["message"],
+            error_note = self.get_status_note(row_index + 5, assetsColumnMap.ERROR_MESSAGE.value, sheet_results[row_index]["message"],
                                               sheet_id)
             update_request_list.append(error_note)
 
             if "asset_group_asset" in sheet_results[row_index]:
-                asset_group_asset_resource = self.get_status_note(row_index + 5, self.assetsColumnMap.ASSET_GROUP_ASSET.value, sheet_results[row_index]["asset_group_asset"],
+                asset_group_asset_resource = self.get_status_note(row_index + 5, assetsColumnMap.ASSET_GROUP_ASSET.value, sheet_results[row_index]["asset_group_asset"],
                                                 sheet_id)
                 update_request_list.append(asset_group_asset_resource)
         try:
@@ -354,11 +315,11 @@ class SheetsService():
         """
         update_request_list = []
 
-        error_note = self.get_status_note(row_index + 5, self.newAssetGroupsColumnMap.STATUS.value, status,
+        error_note = self.get_status_note(row_index + 5, newAssetGroupsColumnMap.STATUS.value, status,
                                           sheet_id)
         update_request_list.append(error_note)
 
-        error_note = self.get_status_note(row_index + 5, self.newAssetGroupsColumnMap.MESSAGE.value, error_message,
+        error_note = self.get_status_note(row_index + 5, newAssetGroupsColumnMap.MESSAGE.value, error_message,
                                           sheet_id)
         update_request_list.append(error_note)
 
@@ -417,7 +378,7 @@ class SheetsService():
                         if alias_row[2] == str(row.asset_group.id):
                             alias = alias_row[0]
 
-                sheet_output.append([None] * len(self.assetsColumnMap))
+                sheet_output.append([None] * len(assetsColumnMap))
                 sheet_output[index][0] = alias
                 sheet_output[index][1] = "UPLOADED"
                 sheet_output[index][2] = ""
@@ -466,7 +427,7 @@ class SheetsService():
             i = 0
             if "updatedRows" in response["updates"]:
                 while i < response["updates"]["updatedRows"]:
-                    checkbox = self.get_checkbox(start_row + i, self.assetsColumnMap.DELETE_ASSET.value, sheet_id)
+                    checkbox = self.get_checkbox(start_row + i, assetsColumnMap.DELETE_ASSET.value, sheet_id)
                     update_request_list.append(checkbox)
                     i += 1
 
@@ -494,7 +455,7 @@ class SheetsService():
         index = 0
         for row in results:
             if [str(row.asset_group.id)] not in asset_group_values:
-                sheet_output.append([None] * len(self.assetGroupListColumnMap))
+                sheet_output.append([None] * len(assetGroupListColumnMap))
                 sheet_output[index][0] = str(row.customer.id) + "_" + str(row.campaign.id) + "_" + str(row.asset_group.id) + "_" + row.asset_group.name
                 sheet_output[index][1] = row.asset_group.name
                 sheet_output[index][2] = row.asset_group.id
@@ -568,7 +529,7 @@ class SheetsService():
         index = 0
         for row in results:
             if [str(row.campaign.id)] not in campaign_existing_values:
-                sheet_output.append([None] * len(self.campaignListColumnMap))
+                sheet_output.append([None] * len(campaignListColumnMap))
                 sheet_output[index][0] = str(row.customer.id) + "_" + str(row.campaign.id) + "_" + str(row.campaign.name)
                 sheet_output[index][1] = row.campaign.name
                 sheet_output[index][2] = row.campaign.id
@@ -648,7 +609,7 @@ class SheetsService():
                     row_number = self._get_row_number_by_value(
                         asset_group_alias,
                         new_asset_group_values,
-                        self.newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
+                        newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
                     )
                     sheet_id = self.get_sheet_id(
                         "NewAssetGroups", googleSpreadSheetId
@@ -683,7 +644,7 @@ class SheetsService():
                 row_number = self._get_row_number_by_value(
                     asset_group_alias,
                     new_asset_group_values,
-                    self.newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
+                    newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
                 )
 
                 sheet_id = self.get_sheet_id(

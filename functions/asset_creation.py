@@ -1,26 +1,12 @@
 
 """Provides functionality to create campaigns."""
 
-from datetime import datetime
-from datetime import datetime
-import enum
 import ads_api
 from uuid import uuid4
+from enums.asset_column_map import assetsColumnMap
 
 
 class AssetService:
-
-  class assetsColumnMap(enum.IntEnum):
-    ASSET_GROUP_ALIAS = 0,
-    ASSET_STATUS = 1,
-    DELETE_ASSET = 2,
-    ASSET_TYPE = 3,
-    ASSET_TEXT = 4,
-    ASSET_CALL_TO_ACTION = 5,
-    ASSET_URL = 6,
-    ERROR_MESSAGE = 7,
-    ASSET_GROUP_ASSET = 8
-
   def __init__(self):
     """Constructs the AssetService instance.
 
@@ -38,16 +24,16 @@ class AssetService:
       asset_type: type of the asset
     """
     operations = []
-    if self.assetsColumnMap.ASSET_URL.value < len(row):
-        asset_url = row[self.assetsColumnMap.ASSET_URL]
+    if assetsColumnMap.ASSET_URL.value < len(row):
+        asset_url = row[assetsColumnMap.ASSET_URL]
     else:
       asset_url = ""
 
     # Asset name / asset type / call to action selection
-    asset_type = row[self.assetsColumnMap.ASSET_TYPE]
-    asset_name_or_text = row[self.assetsColumnMap.ASSET_TEXT]
-    if self.assetsColumnMap.ASSET_CALL_TO_ACTION < len(row):
-        asset_action_selection = row[self.assetsColumnMap.ASSET_CALL_TO_ACTION]
+    asset_type = row[assetsColumnMap.ASSET_TYPE]
+    asset_name_or_text = row[assetsColumnMap.ASSET_TEXT]
+    if assetsColumnMap.ASSET_CALL_TO_ACTION < len(row):
+        asset_action_selection = row[assetsColumnMap.ASSET_CALL_TO_ACTION]
 
     if asset_type == "YOUTUBE_VIDEO":
         asset_creation_mutate_operation, asset_resource, field_type = (

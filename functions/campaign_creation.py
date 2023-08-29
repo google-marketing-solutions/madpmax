@@ -2,14 +2,12 @@
 
 from datetime import datetime
 from datetime import datetime
-from google.ads import googleads
-from google.api_core import protobuf_helpers
 from enums.new_campaigns_column_map import newCampaignsColumnMap
 
 
 class CampaignService:
 
-  def __init__(self, ads_account_file, googleAdsService, sheetService):
+  def __init__(self, googleAdsService, sheetService, googleAdsClient):
     """Constructs the CampaignService instance.
 
     Args:
@@ -18,11 +16,7 @@ class CampaignService:
         injection.
       sheetService: instance of sheetService for dependancy injection.
     """
-    self._google_ads_client = (
-        googleads.client.GoogleAdsClient.load_from_storage(
-            ads_account_file, version="v14"
-        )
-    )
+    self._google_ads_client = googleAdsClient
     self._cache_ad_group_ad = {}
     self.prev_image_asset_list = None
     self.prev_customer_id = None

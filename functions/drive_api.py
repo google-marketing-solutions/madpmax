@@ -13,7 +13,6 @@
 # limitations under the License.
 """Provides functionality to interact with Google Drive platform."""
 import io
-from urllib import parse
 from googleapiclient import http
 from googleapiclient.discovery import build
 import requests

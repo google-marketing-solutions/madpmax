@@ -14,78 +14,23 @@
 """Provides functionality to interact with Google Ads platform."""
 
 from google.ads import googleads
-from google.api_core import protobuf_helpers
 from google.ads.googleads.errors import GoogleAdsException
 from PIL import Image
 from io import BytesIO
 from uuid import uuid4
+from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
+from enums.asset_status import assetStatus
 
-import enum
 import re
 import requests
 
 _ASSET_TEMP_ID = -10000
 _ASSET_GROUP_TEMP_ID = -1000
-_CAMPAIGN_TEMP_ID = -1
 
 
 class AdService():
     """Provides Google ads API service to interact with Ads platform."""
-
-    class assetsColumnMap(enum.IntEnum):
-        ASSET_GROUP_ALIAS = 0,
-        ASSET_STATUS = 1,
-        DELETE_ASSET = 2,
-        ASSET_TYPE = 3,
-        ASSET_TEXT = 4,
-        ASSET_CALL_TO_ACTION = 5,
-        ASSET_URL = 6,
-        ERROR_MESSAGE = 7,
-        ASSET_GROUP_ASSET = 8
-
-    class assetGroupListColumnMap(enum.IntEnum):
-        ASSET_GROUP_ALIAS = 0,
-        ASSET_GROUP_NAME = 1,
-        ASSET_GROUP_ID = 2,
-        CAMPAIGN_NAME = 3,
-        CAMPAIGN_ID = 4,
-        CUSTOMER_NAME = 5,
-        CUSTOMER_ID = 6
-
-    class newAssetGroupsColumnMap(enum.IntEnum):
-        ASSET_GROUP_ALIAS = 0,
-        CAMPAIGN_ALIAS = 1,
-        STATUS = 2,
-        ASSET_CHECK = 3,
-        ASSET_GROUP_NAME = 4,
-        FINAL_URL = 5,
-        MOBILE_URL = 6,
-        PATH1 = 7,
-        PATH2 = 8,
-        CAMPAIGN_STATUS = 9,
-        MESSAGE = 10
-
-    class newCampaignsColumnMap(enum.IntEnum):
-        CAMPAIGN_ALIAS = 0,
-        CAMPAIGN_SETTINGS_ALIAS = 1,
-        CAMPAIGN_NAME = 2,
-        START_DATE = 3,
-        END_DATE = 4,
-        CUSTOMER_ID = 5
-
-    class campaignListColumnMap(enum.IntEnum):
-        CAMPAIGN_ALIAS = 0,
-        CAMPAIGN_NAME = 1,
-        CAMPAIGN_ID = 2,
-        CUSTOMER_NAME = 3,
-        CUSTOMER_ID = 4
-
-    class assetStatus(enum.Enum):
-        UPLOADED = "UPLOADED",
-        ERROR = "ERROR",
-        NEW = "NEW"
-
-
+    
     def __init__(self, ads_account_file):
         """Constructs the AdService instance.
 
@@ -446,7 +391,7 @@ class AdService():
                     if sheet_row not in results:
                         results[sheet_row] = {}
 
-                    results[sheet_row]["status"] = self.assetStatus.ERROR.value[0]
+                    results[sheet_row]["status"] = assetStatus.ERROR.value[0]
                     results[sheet_row]["message"] = error_obj[i][1] + error_obj[i][2] + error_obj[i][3]
                     results[sheet_row]["asset_group_asset"] = ""
 
@@ -460,7 +405,7 @@ class AdService():
 
                         if sheet_row not in results:
                             results[sheet_row] = {}
-                            results[sheet_row]["status"] = self.assetStatus.UPLOADED.value[0]
+                            results[sheet_row]["status"] = assetStatus.UPLOADED.value[0]
                             results[sheet_row]["message"] = ""
                             results[sheet_row]["asset_group_asset"] = value.resource_name
 
@@ -493,13 +438,13 @@ class AdService():
         # Create the AssetGroup
         mutate_operation = self._google_ads_client.get_type("MutateOperation")
         asset_group = mutate_operation.asset_group_operation.create
-        asset_group.name = asset_group_details[self.newAssetGroupsColumnMap.ASSET_GROUP_NAME]
+        asset_group.name = asset_group_details[newAssetGroupsColumnMap.ASSET_GROUP_NAME]
         asset_group.campaign = campaign_service.campaign_path(
             customer_id, campaign_id
         )
-        asset_group.final_urls.append(asset_group_details[self.newAssetGroupsColumnMap.FINAL_URL])
-        asset_group.final_mobile_urls.append(asset_group_details[self.newAssetGroupsColumnMap.MOBILE_URL])
-        asset_group.status = self._google_ads_client.enums.AssetGroupStatusEnum[asset_group_details[self.newAssetGroupsColumnMap.CAMPAIGN_STATUS]]
+        asset_group.final_urls.append(asset_group_details[newAssetGroupsColumnMap.FINAL_URL])
+        asset_group.final_mobile_urls.append(asset_group_details[newAssetGroupsColumnMap.MOBILE_URL])
+        asset_group.status = self._google_ads_client.enums.AssetGroupStatusEnum[asset_group_details[newAssetGroupsColumnMap.CAMPAIGN_STATUS]]
         asset_group.resource_name = asset_group_service.asset_group_path(
             customer_id, asset_group_id,
         )
