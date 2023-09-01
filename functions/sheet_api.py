@@ -14,9 +14,7 @@
 """Provides Google Sheets API to read and write sheets."""
 from googleapiclient import discovery
 import re
-import ads_api
 import yaml
-from pprint import pprint
 from enums.asset_column_map import assetsColumnMap
 from enums.asset_group_list_column_map import assetGroupListColumnMap
 from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
@@ -31,22 +29,22 @@ class SheetsService():
       _spreadsheet_id: id of the spreadsheet to read from and write to.
     """
 
-    def __init__(self, credentials):
+    def __init__(self, credentials, google_ads_service):
         """Creates a instance of sheets service to handle requests."""
         with open("config.yaml", "r") as ymlfile:
             cfg = yaml.safe_load(ymlfile)
 
-        self.spreadSheetId = cfg["spreadsheet_id"]
-        self.customerId = cfg["customer_id"]
-        self.googleAdsService = ads_api.AdService("config.yaml")
+        self.spread_sheet_id = cfg["spreadsheet_id"]
+        self.customer_id = cfg["customer_id"]
+        self.google_ads_service = google_ads_service
         self._sheets_service = discovery.build(
             "sheets", "v4", credentials=credentials).spreadsheets()
 
-    def _get_sheet_values(self, cell_range, spreadsheet_id):
+    def get_sheet_values(self, cell_range, spreadsheet_id):
         """Gets values from sheet.
         Args:
           cell_range: string representation of sheet range. For example,
-            "SheetName!A:C".
+            "sheet_name!A:C".
           spreadsheet_id: string representation of the spreadsheet id. 
         Returns:
           Array of arrays of values in selectd field range.
@@ -60,7 +58,7 @@ class SheetsService():
         Args:
           value: The string value as input for the cell.
           cell_range: string representation of cell range. For example,
-            "SheetName!B2".
+            "sheet_name!B2".
           spreadsheet_id: string representation of the spreadsheet id.
         """
         value_range_body = {
@@ -73,12 +71,12 @@ class SheetsService():
                                                        valueInputOption="USER_ENTERED", range=cell_range, body=value_range_body)
         response = request.execute()
 
-    def _get_sheet_row(self, id, sheet_values, col_index):
+    def get_sheet_row(self, id, sheet_values, col_index):
         """Returns the values of the sheetrow matching the id.
 
         Args:
           id: The string value as input for the cell.
-          sheet_values: Array of arrays representation of sheetname.
+          sheet_values: Array of arrays representation of sheet_name.
           col_index: 
 
         Returns:
@@ -93,12 +91,12 @@ class SheetsService():
 
         return result
 
-    def _get_row_number_by_value(self, value_to_find, sheet_values, col_index):
+    def get_row_number_by_value(self, value_to_find, sheet_values, col_index):
         """Returns the values of the sheetrow matching the id.
 
         Args:
           value_to_find: The string value as input for the cell.
-          sheet_values: Array of arrays representation of sheetname.
+          sheet_values: Array of arrays representation of sheet_name.
           col_index: index of the column where to find value 
 
         Returns:
@@ -362,10 +360,10 @@ class SheetsService():
             sheet_name: Name of the sheet to write the results to.
             spreadsheet_id: Google spreadsheet id.
         """
-        asset_group_asset_values = self._get_sheet_values(
+        asset_group_asset_values = self.get_sheet_values(
             sheet_name + "!I:I", spreadsheet_id)
 
-        asset_group_alias_values = self._get_sheet_values(
+        asset_group_alias_values = self.get_sheet_values(
             "AssetGroupList!A:C", spreadsheet_id)
 
         sheet_output = []
@@ -448,7 +446,7 @@ class SheetsService():
             sheet_name: Name of the sheet to write the results to.
             spreadsheet_id: Google spreadsheet id.
         """
-        asset_group_values = self._get_sheet_values(
+        asset_group_values = self.get_sheet_values(
             sheet_name + "!C:C", spreadsheet_id)
 
         sheet_output = []
@@ -494,24 +492,49 @@ class SheetsService():
     def refresh_spreadsheet(self):
         """Update spreadsheet with exisitng assets, asset groups and campaigns 
         """
-        results = self.googleAdsService.retrieve_all_assets(self.customerId)
+        results = self.google_ads_service.retrieve_all_assets(self.customer_id)
         self.update_asset_sheet_output(
-            results, "Assets", self.spreadSheetId
+            results, "Assets", self.spread_sheet_id
         )
 
         # TODO
-        results = self.googleAdsService.retrieve_all_asset_groups(
-            self.customerId
+        results = self.google_ads_service.retrieve_all_asset_groups(
+            self.customer_id
         )
         self.update_asset_group_sheet_output(
-            results, "AssetGroupList", self.spreadSheetId
+            results, "AssetGroupList", self.spread_sheet_id
         )
 
-        results = self.googleAdsService.retrieve_all_campaigns(
-            self.customerId
+        results = self.google_ads_service.retrieve_all_campaigns(
+            self.customer_id
         )
         self.update_campaign_sheet_output(
-            results, "CampaignList", self.spreadSheetId
+            results, "CampaignList", self.spread_sheet_id
+        )
+
+
+
+    def refresh_spreadsheet(self):
+        """Update spreadsheet with exisitng assets, asset groups and campaigns 
+        """
+        results = self.google_ads_service.retrieve_all_assets(self.customer_id)
+        self.update_asset_sheet_output(
+            results, "Assets", self.spread_sheet_id
+        )
+
+        # TODO
+        results = self.google_ads_service.retrieve_all_asset_groups(
+            self.customer_id
+        )
+        self.update_asset_group_sheet_output(
+            results, "AssetGroupList", self.spread_sheet_id
+        )
+
+        results = self.google_ads_service.retrieve_all_campaigns(
+            self.customer_id
+        )
+        self.update_campaign_sheet_output(
+            results, "CampaignList", self.spread_sheet_id
         )
 
 
@@ -523,7 +546,7 @@ class SheetsService():
             sheet_name: Name of the sheet to write the results to.
             spreadsheet_id: Google spreadsheet id.
         """
-        campaign_existing_values = self._get_sheet_values(sheet_name + "!C:C", spreadsheet_id)
+        campaign_existing_values = self.get_sheet_values(sheet_name + "!C:C", spreadsheet_id)
 
         sheet_output = []
         index = 0
@@ -571,8 +594,8 @@ class SheetsService():
         row_to_operations_mapping,
         asset_group_sheetlist,
         customer_id,
-        googleSpreadSheetId,
-        sheetName
+        google_spread_sheet_id,
+        sheet_name
     ):
         """Logic to process API bulk operations based on type.
 
@@ -583,14 +606,14 @@ class SheetsService():
         """
         # Bulk requests are grouped by Asset Group Alias and are processed one by one in bulk.
 
-        new_asset_group_values = self._get_sheet_values(
-            "NewAssetGroups!A6:J", googleSpreadSheetId
+        new_asset_group_values = self.get_sheet_values(
+            "NewAssetGroups!A6:J", google_spread_sheet_id
         )
 
         for asset_group_alias in mutate_operations:
         # Send the bulk request to the API and retrieve the API response object and the compiled Error message for asset Groups.
             asset_group_response, asset_group_error_message = (
-                self.googleAdsService._bulk_mutate(
+                self.google_ads_service._bulk_mutate(
                     mutate_type, mutate_operations[asset_group_alias], customer_id
                 )
             )
@@ -598,7 +621,7 @@ class SheetsService():
             # Check if a successful API response, if so, process output.
             if asset_group_response:
                 sheet_results.update(
-                    self.googleAdsService.process_asset_results(
+                    self.google_ads_service.process_asset_results(
                         asset_group_response,
                         mutate_operations[asset_group_alias],
                         row_to_operations_mapping
@@ -606,16 +629,16 @@ class SheetsService():
                 )
 
                 if mutate_type == "ASSET_GROUPS":
-                    row_number = self._get_row_number_by_value(
+                    row_number = self.get_row_number_by_value(
                         asset_group_alias,
                         new_asset_group_values,
                         newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
                     )
                     sheet_id = self.get_sheet_id(
-                        "NewAssetGroups", googleSpreadSheetId
+                        "NewAssetGroups", google_spread_sheet_id
                     )
                     self.update_asset_group_sheet_status(
-                        "UPLOADED", "", row_number, sheet_id, googleSpreadSheetId
+                        "UPLOADED", "", row_number, sheet_id, google_spread_sheet_id
                     )
 
                     asset_group_sheetlist[asset_group_alias][2] = (
@@ -624,31 +647,31 @@ class SheetsService():
                         ].asset_group_result.resource_name.split("/")[-1]
                     )
                     sheet_id = self.get_sheet_id(
-                        "AssetGroupList", googleSpreadSheetId
+                        "AssetGroupList", google_spread_sheet_id
                     )
 
                     self.add_new_asset_group_to_list_sheet(
                         asset_group_sheetlist[asset_group_alias],
                         sheet_id,
-                        googleSpreadSheetId
+                        google_spread_sheet_id
                     )
             # In case Asset Group creation returns an error string, updated the results object and process to sheet.
             elif asset_group_error_message and mutate_type == "ASSET_GROUPS":
                 sheet_results.update(
-                    self.googleAdsService.process_asset_group_results(
+                    self.google_ads_service.process_asset_group_results(
                         asset_group_error_message,
                         mutate_operations[asset_group_alias],
                         row_to_operations_mapping
                     )
                 )
-                row_number = self._get_row_number_by_value(
+                row_number = self.get_row_number_by_value(
                     asset_group_alias,
                     new_asset_group_values,
                     newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
                 )
 
                 sheet_id = self.get_sheet_id(
-                    "NewAssetGroups", googleSpreadSheetId
+                    "NewAssetGroups", google_spread_sheet_id
                 )
 
                 self.update_asset_group_sheet_status(
@@ -656,13 +679,331 @@ class SheetsService():
                     asset_group_error_message,
                     row_number,
                     sheet_id,
-                    googleSpreadSheetId
+                    google_spread_sheet_id
                 )
 
         self.update_asset_sheet_status(
             sheet_results,
             self.get_sheet_id(
-                sheetName, googleSpreadSheetId
+                sheet_name, google_spread_sheet_id
             ),
-            googleSpreadSheetId
+            google_spread_sheet_id
+        )
+
+
+
+    def process_api_operations(
+        self,
+        mutate_type,
+        mutate_operations,
+        sheet_results,
+        row_to_operations_mapping,
+        asset_group_sheetlist,
+        customer_id,
+        google_spread_sheet_id,
+        sheet_name
+    ):
+        """Logic to process API bulk operations based on type.
+
+        Based on the request type, the bulk API requests will be send to the API.
+        Corresponding API response will be
+        parsed and processed both as terminal output and as output to the Google
+        Sheet.
+        """
+        # Bulk requests are grouped by Asset Group Alias and are processed one by one in bulk.
+
+        new_asset_group_values = self.get_sheet_values(
+            "NewAssetGroups!A6:J", google_spread_sheet_id
+        )
+
+        for asset_group_alias in mutate_operations:
+        # Send the bulk request to the API and retrieve the API response object and the compiled Error message for asset Groups.
+            asset_group_response, asset_group_error_message = (
+                self.google_ads_service._bulk_mutate(
+                    mutate_type, mutate_operations[asset_group_alias], customer_id
+                )
+            )
+
+            # Check if a successful API response, if so, process output.
+            if asset_group_response:
+                sheet_results.update(
+                    self.google_ads_service.process_asset_results(
+                        asset_group_response,
+                        mutate_operations[asset_group_alias],
+                        row_to_operations_mapping
+                    )
+                )
+
+                if mutate_type == "ASSET_GROUPS":
+                    row_number = self.get_row_number_by_value(
+                        asset_group_alias,
+                        new_asset_group_values,
+                        newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
+                    )
+                    sheet_id = self.get_sheet_id(
+                        "NewAssetGroups", google_spread_sheet_id
+                    )
+                    self.update_asset_group_sheet_status(
+                        "UPLOADED", "", row_number, sheet_id, google_spread_sheet_id
+                    )
+
+                    asset_group_sheetlist[asset_group_alias][2] = (
+                        asset_group_response.mutate_operation_responses[
+                            0
+                        ].asset_group_result.resource_name.split("/")[-1]
+                    )
+                    sheet_id = self.get_sheet_id(
+                        "AssetGroupList", google_spread_sheet_id
+                    )
+
+                    self.add_new_asset_group_to_list_sheet(
+                        asset_group_sheetlist[asset_group_alias],
+                        sheet_id,
+                        google_spread_sheet_id
+                    )
+            # In case Asset Group creation returns an error string, updated the results object and process to sheet.
+            elif asset_group_error_message and mutate_type == "ASSET_GROUPS":
+                sheet_results.update(
+                    self.google_ads_service.process_asset_group_results(
+                        asset_group_error_message,
+                        mutate_operations[asset_group_alias],
+                        row_to_operations_mapping
+                    )
+                )
+                row_number = self.get_row_number_by_value(
+                    asset_group_alias,
+                    new_asset_group_values,
+                    newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
+                )
+
+                sheet_id = self.get_sheet_id(
+                    "NewAssetGroups", google_spread_sheet_id
+                )
+
+                self.update_asset_group_sheet_status(
+                    "ERROR",
+                    asset_group_error_message,
+                    row_number,
+                    sheet_id,
+                    google_spread_sheet_id
+                )
+
+        self.update_asset_sheet_status(
+            sheet_results,
+            self.get_sheet_id(
+                sheet_name, google_spread_sheet_id
+            ),
+            google_spread_sheet_id
+        )
+
+
+
+    def process_api_operations(
+        self,
+        mutate_type,
+        mutate_operations,
+        sheet_results,
+        row_to_operations_mapping,
+        asset_group_sheetlist,
+        customer_id,
+        google_spread_sheet_id,
+        sheet_name
+    ):
+        """Logic to process API bulk operations based on type.
+
+        Based on the request type, the bulk API requests will be send to the API.
+        Corresponding API response will be
+        parsed and processed both as terminal output and as output to the Google
+        Sheet.
+        """
+        # Bulk requests are grouped by Asset Group Alias and are processed one by one in bulk.
+
+        new_asset_group_values = self.get_sheet_values(
+            "NewAssetGroups!A6:J", google_spread_sheet_id
+        )
+
+        for asset_group_alias in mutate_operations:
+        # Send the bulk request to the API and retrieve the API response object and the compiled Error message for asset Groups.
+            asset_group_response, asset_group_error_message = (
+                self.google_ads_service._bulk_mutate(
+                    mutate_type, mutate_operations[asset_group_alias], customer_id
+                )
+            )
+
+            # Check if a successful API response, if so, process output.
+            if asset_group_response:
+                sheet_results.update(
+                    self.google_ads_service.process_asset_results(
+                        asset_group_response,
+                        mutate_operations[asset_group_alias],
+                        row_to_operations_mapping
+                    )
+                )
+
+                if mutate_type == "ASSET_GROUPS":
+                    row_number = self.get_row_number_by_value(
+                        asset_group_alias,
+                        new_asset_group_values,
+                        newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
+                    )
+                    sheet_id = self.get_sheet_id(
+                        "NewAssetGroups", google_spread_sheet_id
+                    )
+                    self.update_asset_group_sheet_status(
+                        "UPLOADED", "", row_number, sheet_id, google_spread_sheet_id
+                    )
+
+                    asset_group_sheetlist[asset_group_alias][2] = (
+                        asset_group_response.mutate_operation_responses[
+                            0
+                        ].asset_group_result.resource_name.split("/")[-1]
+                    )
+                    sheet_id = self.get_sheet_id(
+                        "AssetGroupList", google_spread_sheet_id
+                    )
+
+                    self.add_new_asset_group_to_list_sheet(
+                        asset_group_sheetlist[asset_group_alias],
+                        sheet_id,
+                        google_spread_sheet_id
+                    )
+            # In case Asset Group creation returns an error string, updated the results object and process to sheet.
+            elif asset_group_error_message and mutate_type == "ASSET_GROUPS":
+                sheet_results.update(
+                    self.google_ads_service.process_asset_group_results(
+                        asset_group_error_message,
+                        mutate_operations[asset_group_alias],
+                        row_to_operations_mapping
+                    )
+                )
+                row_number = self.get_row_number_by_value(
+                    asset_group_alias,
+                    new_asset_group_values,
+                    newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
+                )
+
+                sheet_id = self.get_sheet_id(
+                    "NewAssetGroups", google_spread_sheet_id
+                )
+
+                self.update_asset_group_sheet_status(
+                    "ERROR",
+                    asset_group_error_message,
+                    row_number,
+                    sheet_id,
+                    google_spread_sheet_id
+                )
+
+        self.update_asset_sheet_status(
+            sheet_results,
+            self.get_sheet_id(
+                sheet_name, google_spread_sheet_id
+            ),
+            google_spread_sheet_id
+        )
+
+
+
+    def process_api_operations(
+        self,
+        mutate_type,
+        mutate_operations,
+        sheet_results,
+        row_to_operations_mapping,
+        asset_group_sheetlist,
+        customer_id,
+        google_spread_sheet_id,
+        sheet_name
+    ):
+        """Logic to process API bulk operations based on type.
+
+        Based on the request type, the bulk API requests will be send to the API.
+        Corresponding API response will be
+        parsed and processed both as terminal output and as output to the Google
+        Sheet.
+        """
+        # Bulk requests are grouped by Asset Group Alias and are processed one by one in bulk.
+
+        new_asset_group_values = self.get_sheet_values(
+            "NewAssetGroups!A6:J", google_spread_sheet_id
+        )
+
+        for asset_group_alias in mutate_operations:
+        # Send the bulk request to the API and retrieve the API response object and the compiled Error message for asset Groups.
+            asset_group_response, asset_group_error_message = (
+                self.google_ads_service._bulk_mutate(
+                    mutate_type, mutate_operations[asset_group_alias], customer_id
+                )
+            )
+
+            # Check if a successful API response, if so, process output.
+            if asset_group_response:
+                sheet_results.update(
+                    self.google_ads_service.process_asset_results(
+                        asset_group_response,
+                        mutate_operations[asset_group_alias],
+                        row_to_operations_mapping
+                    )
+                )
+
+                if mutate_type == "ASSET_GROUPS":
+                    row_number = self.get_row_number_by_value(
+                        asset_group_alias,
+                        new_asset_group_values,
+                        newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
+                    )
+                    sheet_id = self.get_sheet_id(
+                        "NewAssetGroups", google_spread_sheet_id
+                    )
+                    self.update_asset_group_sheet_status(
+                        "UPLOADED", "", row_number, sheet_id, google_spread_sheet_id
+                    )
+
+                    asset_group_sheetlist[asset_group_alias][2] = (
+                        asset_group_response.mutate_operation_responses[
+                            0
+                        ].asset_group_result.resource_name.split("/")[-1]
+                    )
+                    sheet_id = self.get_sheet_id(
+                        "AssetGroupList", google_spread_sheet_id
+                    )
+
+                    self.add_new_asset_group_to_list_sheet(
+                        asset_group_sheetlist[asset_group_alias],
+                        sheet_id,
+                        google_spread_sheet_id
+                    )
+            # In case Asset Group creation returns an error string, updated the results object and process to sheet.
+            elif asset_group_error_message and mutate_type == "ASSET_GROUPS":
+                sheet_results.update(
+                    self.google_ads_service.process_asset_group_results(
+                        asset_group_error_message,
+                        mutate_operations[asset_group_alias],
+                        row_to_operations_mapping
+                    )
+                )
+                row_number = self.get_row_number_by_value(
+                    asset_group_alias,
+                    new_asset_group_values,
+                    newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
+                )
+
+                sheet_id = self.get_sheet_id(
+                    "NewAssetGroups", google_spread_sheet_id
+                )
+
+                self.update_asset_group_sheet_status(
+                    "ERROR",
+                    asset_group_error_message,
+                    row_number,
+                    sheet_id,
+                    google_spread_sheet_id
+                )
+
+        self.update_asset_sheet_status(
+            sheet_results,
+            self.get_sheet_id(
+                sheet_name, google_spread_sheet_id
+            ),
+            google_spread_sheet_id
         )

@@ -7,23 +7,23 @@ from enums.new_campaigns_column_map import newCampaignsColumnMap
 
 class CampaignService:
 
-  def __init__(self, googleAdsService, sheetService, googleAdsClient):
+  def __init__(self, google_ads_service, sheet_service, google_ads_client):
     """Constructs the CampaignService instance.
 
     Args:
       ads_account_file: Path to Google Ads API account file.
-      googleAdsService: instance of the googleAdsService for dependancy
+      google_ads_service: instance of the google_ads_service for dependancy
         injection.
-      sheetService: instance of sheetService for dependancy injection.
+      sheet_service: instance of sheet_service for dependancy injection.
     """
-    self._google_ads_client = googleAdsClient
+    self._google_ads_client = google_ads_client
     self._cache_ad_group_ad = {}
     self.prev_image_asset_list = None
     self.prev_customer_id = None
     self.budget_temporary_id = -2000
     self.performance_max_campaign_temporary_id = -100
-    self.googleAdsService = googleAdsService
-    self.sheetService = sheetService
+    self.google_ads_service = google_ads_service
+    self.sheet_service = sheet_service
 
   def _create_campaign(
       self,
@@ -129,15 +129,15 @@ class CampaignService:
 
     return mutate_operations
 
-  def _process_campaign_data_and_create_campaigns(
-      self, campaign_data, googleSpreadSheetId, googleCustomerId
+  def process_campaign_data_and_create_campaigns(
+      self, campaign_data, google_spread_sheet_id, google_customer_id
   ):
     """Creates campaigns via google API based on data provided and update the spreadsheet with the result or an error.
 
     Args:
       campaign_data: Actual data for creating new campaigns in array form.
-      googleSpreadSheetId: Id of the sheet for updating the status.
-      googleCustomerId: Google ads customer id.
+      google_spread_sheet_id: Id of the sheet for updating the status.
+      google_customer_id: Google ads customer id.
     """
     for campaign in campaign_data:
       mutate_campaign_operation = None
@@ -175,34 +175,34 @@ class CampaignService:
         )
 
         campaigns_response, campaigns_error_message = (
-            self.googleAdsService._bulk_mutate(
-                "Campaigns", mutate_campaign_operation, googleCustomerId
+            self.google_ads_service._bulk_mutate(
+                "Campaigns", mutate_campaign_operation, google_customer_id
             )
         )
-        row_number = self.sheetService._get_row_number_by_value(
+        row_number = self.sheet_service.get_row_number_by_value(
             campaign_name,
             campaign_data,
             newCampaignsColumnMap.CAMPAIGN_NAME
         )
 
-        sheet_id = self.sheetService.get_sheet_id(
-            "NewCampaigns", googleSpreadSheetId
+        sheet_id = self.sheet_service.get_sheet_id(
+            "NewCampaigns", google_spread_sheet_id
         )
 
         if campaigns_response:
-          self.sheetService.variable_update_sheet_status(
+          self.sheet_service.variable_update_sheet_status(
               row_number,
               sheet_id,
-              googleSpreadSheetId,
+              google_spread_sheet_id,
               newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
               "UPLOADED"
           )
 
         if campaigns_error_message:
-          self.sheetService.variable_update_sheet_status(
+          self.sheet_service.variable_update_sheet_status(
               row_number,
               sheet_id,
-              googleSpreadSheetId,
+              google_spread_sheet_id,
               newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
               "ERROR",
               campaigns_error_message,

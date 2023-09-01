@@ -1,23 +1,22 @@
 
 """Provides functionality to create campaigns."""
 
-import ads_api
 from uuid import uuid4
 from enums.asset_column_map import assetsColumnMap
 
 
 class AssetService:
-  def __init__(self):
+  def __init__(self, google_ads_service):
     """Constructs the AssetService instance.
 
     Args:
-      googleAdsService: instance of the googleAdsService for dependancy
+      google_ads_service: instance of the google_ads_service 
         injection.
     """
-    self.googleAdsService = ads_api.AdService("config.yaml")
+    self.google_ads_service = google_ads_service
 
 
-  def _create_asset_mutation(self, row, customer_id, asset_group_id, new_asset_group):
+  def create_asset_mutation(self, row, customer_id, asset_group_id, new_asset_group):
     """Set up mutate object for creating asset.
 
     Args:
@@ -37,14 +36,14 @@ class AssetService:
 
     if asset_type == "YOUTUBE_VIDEO":
         asset_creation_mutate_operation, asset_resource, field_type = (
-            self.googleAdsService._create_video_asset(
+            self.google_ads_service._create_video_asset(
                 asset_url, asset_type, customer_id
             )
         )
         operations.append(asset_creation_mutate_operation)
 
         asset_to_asset_group_mutate_operation = (
-            self.googleAdsService._add_asset_to_asset_group(
+            self.google_ads_service.add_asset_to_asset_group(
                 asset_resource, asset_group_id, field_type, customer_id
             )
         )
@@ -55,7 +54,7 @@ class AssetService:
       # TODO add removal of images if needed
       # TODO add image error handling
       asset_creation_mutate_operation, asset_resource, field_type = (
-          self.googleAdsService._create_image_asset(
+          self.google_ads_service._create_image_asset(
               asset_url,
               asset_name_or_text + f" #{uuid4()}",
               asset_type,
@@ -65,46 +64,46 @@ class AssetService:
       operations.append(asset_creation_mutate_operation)
 
       asset_to_asset_group_mutate_operation = (
-          self.googleAdsService._add_asset_to_asset_group(
+          self.google_ads_service.add_asset_to_asset_group(
               asset_resource, asset_group_id, field_type, customer_id
           )
       )
       operations.append(asset_to_asset_group_mutate_operation)
     elif asset_type == "HEADLINE" or asset_type == "DESCRIPTION":
       asset_creation_mutate_operation, asset_resource, field_type = (
-          self.googleAdsService._create_text_asset(
+          self.google_ads_service._create_text_asset(
               asset_name_or_text, asset_type, customer_id
           )
       )
       operations.append(asset_creation_mutate_operation)
 
       if not new_asset_group:
-        asset_to_asset_group_mutate_operation = self.googleAdsService._add_asset_to_asset_group(
+        asset_to_asset_group_mutate_operation = self.google_ads_service.add_asset_to_asset_group(
             asset_resource, asset_group_id, field_type, customer_id
         )
         operations.append(asset_to_asset_group_mutate_operation)
     elif asset_type == "LONG_HEADLINE" or asset_type == "BUSINESS_NAME":
       asset_creation_mutate_operation, asset_resource, field_type = (
-          self.googleAdsService._create_text_asset(
+          self.google_ads_service._create_text_asset(
               asset_name_or_text, asset_type, customer_id
           )
       )
       operations.append(asset_creation_mutate_operation)
 
-      asset_to_asset_group_mutate_operation = self.googleAdsService._add_asset_to_asset_group(
+      asset_to_asset_group_mutate_operation = self.google_ads_service.add_asset_to_asset_group(
           asset_resource, asset_group_id, field_type, customer_id
       )
       operations.append(asset_to_asset_group_mutate_operation)
     elif asset_type == "CALL_TO_ACTION":
         asset_creation_mutate_operation, asset_resource, field_type = (
-            self.googleAdsService._create_call_to_action_asset(
+            self.google_ads_service._create_call_to_action_asset(
                 asset_action_selection, customer_id
             )
         )
         operations.append(asset_creation_mutate_operation)
 
         asset_to_asset_group_mutate_operation = (
-            self.googleAdsService._add_asset_to_asset_group(
+            self.google_ads_service.add_asset_to_asset_group(
                 asset_resource, asset_group_id, field_type, customer_id
             )
         )

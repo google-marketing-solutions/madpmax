@@ -8,18 +8,18 @@ from enums.asset_status import assetStatus
 
 class DataProcessingService:
 
-  def __init__(self, sheet_service, googleAdsService, assetService):
+  def __init__(self, sheet_service, google_ads_service, asset_service):
     """Constructs the CampaignService instance.
 
     Args:
       ads_account_file: Path to Google Ads API account file.
-      googleAdsService: instance of the googleAdsService for dependancy
+      google_ads_service: instance of the google_ads_service for dependancy
         injection.
-      sheetService: instance of sheetService for dependancy injection.
+      sheet_service: instance of sheet_service for dependancy injection.
     """
-    self.sheetService = sheet_service
-    self.googleAdsService = googleAdsService
-    self.assetService = assetService
+    self.sheet_service = sheet_service
+    self.google_ads_service = google_ads_service
+    self.asset_service = asset_service
     
 
   def process_data(
@@ -66,7 +66,7 @@ class DataProcessingService:
         continue
 
       # Use the Asset Group Alias to get Asset Group info from the Google sheet.
-      asset_group_details = self.sheetService._get_sheet_row(
+      asset_group_details = self.sheet_service.get_sheet_row(
           row[assetsColumnMap.ASSET_GROUP_ALIAS],
           asset_group_values,
           assetGroupListColumnMap.ASSET_GROUP_ALIAS.value
@@ -87,13 +87,13 @@ class DataProcessingService:
       elif not asset_group_details:
         new_asset_group = True
         # GENERATE ASSET GROUP OPERATION.
-        new_asset_group_details = self.sheetService._get_sheet_row(
+        new_asset_group_details = self.sheet_service.get_sheet_row(
             row[assetsColumnMap.ASSET_GROUP_ALIAS],
             new_asset_group_values,
             newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
         )
 
-        campaign_details = self.sheetService._get_sheet_row(
+        campaign_details = self.sheet_service.get_sheet_row(
             new_asset_group_details[
                 newAssetGroupsColumnMap.CAMPAIGN_ALIAS
             ],
@@ -112,7 +112,7 @@ class DataProcessingService:
           asset_group_headline_operations[asset_group_alias] = []
           asset_group_description_operations[asset_group_alias] = []
           asset_group_mutate_operation, asset_group_id = (
-              self.googleAdsService._create_asset_group(
+              self.google_ads_service._create_asset_group(
                   new_asset_group_details, campaign_id, customer_id
               )
           )
@@ -139,7 +139,7 @@ class DataProcessingService:
       # Asset name / asset type
       asset_type = row[assetsColumnMap.ASSET_TYPE]
 
-      operations, asset_resource = self.assetService._create_asset_mutation(row, customer_id, asset_group_id, new_asset_group)  
+      operations, asset_resource = self.asset_service.create_asset_mutation(row, customer_id, asset_group_id, new_asset_group)  
       mutate_operations.extend(operations)
 
       # Check if asset operation for the Asset Group already exists. If not create a new list.

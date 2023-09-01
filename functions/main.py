@@ -25,7 +25,7 @@ class main:
         cfg["client_id"],
         cfg["client_secret"]
     )
-    self.googleAdsClient = (
+    self.google_ads_client = (
         googleads.client.GoogleAdsClient.load_from_storage(
             "config.yaml", version="v14"
         )
@@ -33,20 +33,20 @@ class main:
 
     # Configuration input values.
     self.includeVideo = False
-    self.sheetName = "Assets"
-    self.googleSpreadSheetId = cfg["spreadsheet_id"]
-    self.googleCustomerId = cfg["customer_id"]
-
-    self.sheetService = sheet_api.SheetsService(credentials)
-    self.googleAdsService = ads_api.AdService("config.yaml")
-    self.campaignService = campaign_creation.CampaignService(
-        self.googleAdsService, self.sheetService, self.googleAdsClient
+    self.sheet_name = "Assets"
+    self.google_spread_sheet_id = cfg["spreadsheet_id"]
+    self.google_customer_id = cfg["customer_id"]
+    
+    self.google_ads_service = ads_api.AdService(self.google_ads_client)
+    self.sheet_service = sheet_api.SheetsService(credentials, self.google_ads_service)
+    self.campaign_service = campaign_creation.CampaignService(
+        self.google_ads_service, self.sheet_service, self.google_ads_client
     )
-    self.assetService = asset_creation.AssetService()
-    self.dataProcessingService = data_processing.DataProcessingService(self.sheetService, self.googleAdsService, self.assetService)
+    self.asset_service = asset_creation.AssetService(self.google_ads_service)
+    self.data_processing_service = data_processing.DataProcessingService(self.sheet_service, self.google_ads_service, self.asset_service)
 
   def refresh_spreadsheet(self):
-      self.sheetService.refresh_spreadsheet()  
+      self.sheet_service.refresh_spreadsheet()  
 
 
   def create_api_operations(self):
@@ -55,51 +55,51 @@ class main:
     for the assets provided. Removes the provided placeholder assets, and writes
     the results back to the spreadsheet."""
     # Get Values from input sheet
-    asset_values = self.sheetService._get_sheet_values(
-        self.sheetName + "!A6:G", self.googleSpreadSheetId
+    asset_values = self.sheet_service.get_sheet_values(
+        self.sheet_name + "!A6:G", self.google_spread_sheet_id
     )
-    asset_group_values = self.sheetService._get_sheet_values(
-        "AssetGroupList!A6:H", self.googleSpreadSheetId
+    asset_group_values = self.sheet_service.get_sheet_values(
+        "AssetGroupList!A6:H", self.google_spread_sheet_id
     )
-    new_asset_group_values = self.sheetService._get_sheet_values(
-        "NewAssetGroups!A6:J", self.googleSpreadSheetId
+    new_asset_group_values = self.sheet_service.get_sheet_values(
+        "NewAssetGroups!A6:J", self.google_spread_sheet_id
     )
-    campaign_values = self.sheetService._get_sheet_values(
-        "CampaignList!A6:E", self.googleSpreadSheetId
+    campaign_values = self.sheet_service.get_sheet_values(
+        "CampaignList!A6:E", self.google_spread_sheet_id
     )
-    new_campaign_data = self.sheetService._get_sheet_values(
-        "NewCampaigns!A6:M", self.googleSpreadSheetId
+    new_campaign_data = self.sheet_service.get_sheet_values(
+        "NewCampaigns!A6:M", self.google_spread_sheet_id
     )
 
     # Load new Campaigns Spreadsheet and create campaigns
-    self.campaignService._process_campaign_data_and_create_campaigns(
-        new_campaign_data, self.googleSpreadSheetId, self.googleCustomerId
+    self.campaign_service.process_campaign_data_and_create_campaigns(
+        new_campaign_data, self.google_spread_sheet_id, self.google_customer_id
     )
 
-    customer_id, asset_operations, sheet_results, asset_group_sheetlist, asset_group_headline_operations, asset_group_description_operations, row_to_operations_mapping, asset_group_operations = self.dataProcessingService.process_data(asset_values, asset_group_values, new_asset_group_values, campaign_values) 
+    customer_id, asset_operations, sheet_results, asset_group_sheetlist, asset_group_headline_operations, asset_group_description_operations, row_to_operations_mapping, asset_group_operations = self.data_processing_service.process_data(asset_values, asset_group_values, new_asset_group_values, campaign_values) 
     
     if customer_id:
       # Update Assets only in Google Ads
-      self.sheetService.process_api_operations(
+      self.sheet_service.process_api_operations(
           "ASSETS",
           asset_operations,
           sheet_results,
           row_to_operations_mapping,
           asset_group_sheetlist,
           customer_id,
-          self.googleSpreadSheetId,
-          self.sheetName
+          self.google_spread_sheet_id,
+          self.sheet_name
       )
 
       # Create a new Asset Group and Update Assets.
-      headlines = self.googleAdsService._create_multiple_text_assets(
+      headlines = self.google_ads_service._create_multiple_text_assets(
           asset_group_headline_operations, customer_id
       )
-      descriptions = self.googleAdsService._create_multiple_text_assets(
+      descriptions = self.google_ads_service._create_multiple_text_assets(
           asset_group_description_operations, customer_id
       )
       asset_group_operations, row_to_operations_mapping = (
-          self.googleAdsService.compile_asset_group_operations(
+          self.google_ads_service.compile_asset_group_operations(
               asset_group_operations,
               headlines,
               descriptions,
@@ -107,15 +107,15 @@ class main:
               customer_id
           )
       )
-      self.sheetService.process_api_operations(
+      self.sheet_service.process_api_operations(
           "ASSET_GROUPS",
           asset_group_operations,
           sheet_results,
           row_to_operations_mapping,
           asset_group_sheetlist,
           customer_id,
-          self.googleSpreadSheetId,
-          self.sheetName
+          self.google_spread_sheet_id,
+          self.sheet_name
       )
 
 # Triggered from a message on a Cloud Pub/Sub topic.
@@ -143,3 +143,4 @@ def pubSubEntry(cloud_event: CloudEvent) -> None:
         + base64.b64decode(cloud_event.data["message"]["data"]).decode()
         + " EXECUTION -------"
     )
+    

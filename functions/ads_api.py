@@ -13,7 +13,6 @@
 # limitations under the License.
 """Provides functionality to interact with Google Ads platform."""
 
-from google.ads import googleads
 from google.ads.googleads.errors import GoogleAdsException
 from PIL import Image
 from io import BytesIO
@@ -31,14 +30,13 @@ _ASSET_GROUP_TEMP_ID = -1000
 class AdService():
     """Provides Google ads API service to interact with Ads platform."""
     
-    def __init__(self, ads_account_file):
+    def __init__(self, google_ads_client):
         """Constructs the AdService instance.
 
         Args:
           ads_account_file: Path to Google Ads API account file.
         """
-        self._google_ads_client = googleads.client.GoogleAdsClient.load_from_storage(
-            ads_account_file, version='v14')
+        self._google_ads_client = google_ads_client
         self._cache_ad_group_ad = {}
         self.prev_image_asset_list = None
         self.prev_customer_id = None
@@ -236,7 +234,7 @@ class AdService():
 
         return asset_operation, resource_name, field_type
 
-    def _add_asset_to_asset_group(self, asset_resource, asset_group_id, field_type, customer_id):
+    def add_asset_to_asset_group(self, asset_resource, asset_group_id, field_type, customer_id):
         """Adds the asset resource to an asset group.
 
         Args:
