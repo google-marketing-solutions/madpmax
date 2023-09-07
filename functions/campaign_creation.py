@@ -56,6 +56,7 @@ class CampaignService:
       start_time: Start time for the campaign in format 'YYYY-MM-DD'.
       end_time: End time for the campaign in format 'YYYY-MM-DD'.
     """
+    error_message = None
     mutate_operations = []
     mutate_operation_budget = self._google_ads_client.get_type(
         "MutateOperation"
@@ -65,6 +66,9 @@ class CampaignService:
     )
     campaign_budget = campaign_budget_operation.create
     campaign_budget.name = f"Performance Max campaign budget {campaign_name}"
+
+    if not budget: 
+      return None, "Budget can't be empty"
 
     budget = float(budget) * 1000000
     campaign_budget.amount_micros = budget
@@ -95,6 +99,8 @@ class CampaignService:
     )
 
     if bidding_strategy_type == "MaximizeConversions":
+      if not target_cpa: 
+        return None, "Target CPA can't be empty for MaximizeConversions bidding strategy"
       campaign.bidding_strategy_type = (
           self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSIONS
       )
@@ -102,6 +108,8 @@ class CampaignService:
           float(target_cpa) * 1000000
       )
     elif bidding_strategy_type == "MaximizeConversionValue":
+      if not target_roas: 
+        return None, "Target ROAS can't be empty for MaximizeConversionValue bidding strategy"
       campaign.bidding_strategy_type = (
           self._google_ads_client.enums.BiddingStrategyTypeEnum.MAXIMIZE_CONVERSION_VALUE
       )
@@ -127,7 +135,7 @@ class CampaignService:
     )
     mutate_operations.append(mutate_operation)
 
-    return mutate_operations
+    return mutate_operations, error_message
 
   def process_campaign_data_and_create_campaigns(
       self, campaign_data, google_spread_sheet_id, google_customer_id
@@ -141,8 +149,9 @@ class CampaignService:
     """
     for campaign in campaign_data:
       mutate_campaign_operation = None
-      campaign_name = campaign[newCampaignsColumnMap.CAMPAIGN_NAME]
+      campaign_name = campaign[newCampaignsColumnMap.CAMPAIGN_ALIAS]
       campaign_status = campaign[newCampaignsColumnMap.CAMPAIGN_STATUS]
+      campaign_upload_status = campaign[newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS]
       bidding_strategy = campaign[newCampaignsColumnMap.BIDDING_STRATEGY]
       campaign_target_roas = campaign[
           newCampaignsColumnMap.CAMPAIGN_TARGET_ROAS
@@ -159,9 +168,19 @@ class CampaignService:
       budget_delivery_method = campaign[
           newCampaignsColumnMap.BUDGET_DELIVERY_METHOD
       ]
+      row_number = self.sheet_service.get_row_number_by_value(
+              campaign_name,
+              campaign_data,
+              newCampaignsColumnMap.CAMPAIGN_ALIAS
+          )
 
-      if campaign_status != "UPLOADED":
-        mutate_campaign_operation = self._create_campaign(
+      sheet_id = self.sheet_service.get_sheet_id(
+              "NewCampaigns", google_spread_sheet_id
+          )
+      
+
+      if campaign_upload_status != "UPLOADED":
+        mutate_campaign_operation, error_message = self._create_campaign(
             campaign_customer_id,
             campaign_budget,
             budget_delivery_method,
@@ -174,37 +193,40 @@ class CampaignService:
             campaign_end_date
         )
 
-        campaigns_response, campaigns_error_message = (
-            self.google_ads_service._bulk_mutate(
-                "Campaigns", mutate_campaign_operation, google_customer_id
-            )
-        )
-        row_number = self.sheet_service.get_row_number_by_value(
-            campaign_name,
-            campaign_data,
-            newCampaignsColumnMap.CAMPAIGN_NAME
-        )
-
-        sheet_id = self.sheet_service.get_sheet_id(
-            "NewCampaigns", google_spread_sheet_id
-        )
-
-        if campaigns_response:
-          self.sheet_service.variable_update_sheet_status(
-              row_number,
-              sheet_id,
-              google_spread_sheet_id,
-              newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
-              "UPLOADED"
-          )
-
-        if campaigns_error_message:
+        if error_message:
           self.sheet_service.variable_update_sheet_status(
               row_number,
               sheet_id,
               google_spread_sheet_id,
               newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
               "ERROR",
-              campaigns_error_message,
+              error_message,
               newCampaignsColumnMap.ERROR_MESSAGE
           )
+        else:  
+          campaigns_response, campaigns_error_message = (
+              self.google_ads_service._bulk_mutate(
+                  "Campaigns", mutate_campaign_operation, google_customer_id
+              )
+          )
+
+          if campaigns_response:
+            self.sheet_service.variable_update_sheet_status(
+                row_number,
+                sheet_id,
+                google_spread_sheet_id,
+                newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
+                "UPLOADED"
+            )
+
+          print("Cmapaign error message: ", campaigns_error_message)
+          if campaigns_error_message:
+            self.sheet_service.variable_update_sheet_status(
+                row_number,
+                sheet_id,
+                google_spread_sheet_id,
+                newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
+                "ERROR",
+                campaigns_error_message,
+                newCampaignsColumnMap.ERROR_MESSAGE
+            )

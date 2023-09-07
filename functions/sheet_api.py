@@ -221,7 +221,7 @@ class SheetsService():
         }
         return sort
 
-    def variable_update_sheet_status(self, row_index, sheet_id, spreadsheet_id, status_row_id, upload_status, error_message=None, message_row_id=None):
+    def variable_update_sheet_status(self, row_index, sheet_id, spreadsheet_id, status_row_id, upload_status, error_message="", message_row_id=None):
         """Update status and error message (if provided) in the sheet.
         Args:
             sheet_results: row information and error message.

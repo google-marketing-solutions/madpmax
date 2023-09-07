@@ -30,7 +30,13 @@ class DataProcessingService:
       campaign_values
 
   ):
-    """TODO
+    """ Process data from spreadsheets to create mutation objects 
+
+    Args: 
+      asset_values: Values from Assets spreadsheet page to create in Asset mutate object.
+      asset_group_values: Values from exisitng AsseGrpup spreadsheet page. 
+      new_asset_group_values: Values from new Asset Group spreadsheet page to create AssetGroup muatte object.
+      campaign_values: Values from exisitng Campaing spreadsheet page. 
     """
     # all operations across multiple assetGroups where the key is an assetGroup
     asset_operations = {}

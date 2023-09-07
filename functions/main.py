@@ -92,10 +92,10 @@ class main:
       )
 
       # Create a new Asset Group and Update Assets.
-      headlines = self.google_ads_service._create_multiple_text_assets(
+      headlines = self.google_ads_service.create_multiple_text_assets(
           asset_group_headline_operations, customer_id
       )
-      descriptions = self.google_ads_service._create_multiple_text_assets(
+      descriptions = self.google_ads_service.create_multiple_text_assets(
           asset_group_description_operations, customer_id
       )
       asset_group_operations, row_to_operations_mapping = (
@@ -144,3 +144,8 @@ def pubSubEntry(cloud_event: CloudEvent) -> None:
         + " EXECUTION -------"
     )
     
+if __name__ == "__main__":
+  # GoogleAdsClient will read the google-ads.yaml configuration file in the
+  # home directory if none is specified.
+  cp = main()
+  cp.create_api_operations()    

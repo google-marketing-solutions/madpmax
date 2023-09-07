@@ -449,7 +449,7 @@ class AdService():
 
         return mutate_operation, asset_group_id
 
-    def _create_multiple_text_assets(self, operations, customer_id):
+    def create_multiple_text_assets(self, operations, customer_id):
         """Creates multiple text assets and returns the list of resource names.
         Args:
             client: an initialized GoogleAdsClient instance.
