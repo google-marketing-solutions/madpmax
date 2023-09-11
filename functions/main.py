@@ -50,7 +50,7 @@ class main:
 
 
   def create_api_operations(self):
-    """TODO 
+    """ 
     Reads the campaigns and asset groups from the input sheet, creates assets
     for the assets provided. Removes the provided placeholder assets, and writes
     the results back to the spreadsheet."""

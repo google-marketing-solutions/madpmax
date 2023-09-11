@@ -36,6 +36,7 @@ Performance Max Campaign Manager can be deployed on Google Cloud through Terrafo
         *   https://www.googleapis.com/auth/drive
         *   https://www.googleapis.com/auth/spreadsheets
         *   https://www.googleapis.com/auth/adwords
+
         **Important** Make sure to use the Client ID and Client Secret generated in step 4 for [pmax-api] to generate the tokens. 
     
     
@@ -55,7 +56,19 @@ Performance Max Campaign Manager can be deployed on Google Cloud through Terrafo
     Note: To optain Google Ads Developer token refer to Apply for access to the Google Ads API.
 
 5.  ### Using the tool
-    TODO
+    Template spreadsheet contains *pMax Execute* menu option with two functions:
+    * **Refresh Sheet** - loads all exisitng in your account Camapigns, Asset Groups and Assets into related pages in the spreadsheet
+    * **Upload to Google ads** - uploads all new Campaigns, Asset Groups and Assets into your account. All errors will be shown on related pages in the last column 
+
+    ### *Pages:*
+
+    - **NewCampaigns** - creation of new Camapigns page
+    - **CampaignList** - page showing exisitng Campaigns in your account after running *pMax Execute* -> *Refresh Sheet* 
+    - **NewAssetGroup** - creation of new Asset Group
+    - **AssetGroupList** - page showing exisitng Asset Groups in your account after running *pMax Execute* -> *Refresh Sheet* 
+    - **Assets** - contains Assets to create and exisitng Assets in the account after running *pMax Execute* -> *Refresh Sheet* 
+
+```
 
 ## Disclaimer
 Copyright 2023 Google LLC. This solution, including any related sample code or data, is made available on an “as is,” “as available,” and “with all faults” basis, solely for illustrative purposes, and without warranty or representation of any kind. This solution is experimental, unsupported and provided solely for your convenience. Your use of it is subject to your agreements with Google, as applicable, and may constitute a beta feature as defined under those agreements. To the extent that you make any data available to Google in connection with your use of the solution, you represent and warrant that you have all necessary and appropriate rights, consents and permissions to permit Google to use and process that data. By using any portion of this solution, you acknowledge, assume and accept all risks, known and unknown, associated with its usage, including with respect to your deployment of any portion of this solution in your systems, or usage in connection with your business, if at all.
