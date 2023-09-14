@@ -144,8 +144,8 @@ def pubSubEntry(cloud_event: CloudEvent) -> None:
         + " EXECUTION -------"
     )
     
-if __name__ == "__main__":
-  # GoogleAdsClient will read the google-ads.yaml configuration file in the
-  # home directory if none is specified.
-  cp = main()
-  cp.create_api_operations()    
+# if __name__ == "__main__":
+#   # GoogleAdsClient will read the google-ads.yaml configuration file in the
+#   # home directory if none is specified.
+#   cp = main()
+#   cp.create_api_operations()    
