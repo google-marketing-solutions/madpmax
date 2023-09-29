@@ -1,14 +1,14 @@
 import base64
 import ads_api
+import asset_creation
 import auth
 import campaign_creation
 from cloudevents.http import CloudEvent
+import data_processing
 import functions_framework
 from google.ads import googleads
 import sheet_api
 import yaml
-import asset_creation
-import data_processing
 
 
 class main:
@@ -23,12 +23,10 @@ class main:
         cfg["oauth_token"],
         cfg["refresh_token"],
         cfg["client_id"],
-        cfg["client_secret"]
+        cfg["client_secret"],
     )
-    self.google_ads_client = (
-        googleads.client.GoogleAdsClient.load_from_storage(
-            "config.yaml", version="v14"
-        )
+    self.google_ads_client = googleads.client.GoogleAdsClient.load_from_storage(
+        "config.yaml", version="v14"
     )
 
     # Configuration input values.
@@ -36,24 +34,28 @@ class main:
     self.sheet_name = "Assets"
     self.google_spread_sheet_id = cfg["spreadsheet_id"]
     self.google_customer_id = cfg["customer_id"]
-    
+
     self.google_ads_service = ads_api.AdService(self.google_ads_client)
-    self.sheet_service = sheet_api.SheetsService(credentials, self.google_ads_service)
+    self.sheet_service = sheet_api.SheetsService(
+        credentials, self.google_ads_service
+    )
     self.campaign_service = campaign_creation.CampaignService(
         self.google_ads_service, self.sheet_service, self.google_ads_client
     )
     self.asset_service = asset_creation.AssetService(self.google_ads_service)
-    self.data_processing_service = data_processing.DataProcessingService(self.sheet_service, self.google_ads_service, self.asset_service)
+    self.data_processing_service = data_processing.DataProcessingService(
+        self.sheet_service, self.google_ads_service, self.asset_service
+    )
 
   def refresh_spreadsheet(self):
-      self.sheet_service.refresh_spreadsheet()  
-
+    self.sheet_service.refresh_spreadsheet()
 
   def create_api_operations(self):
-    """ 
-    Reads the campaigns and asset groups from the input sheet, creates assets
+    """Reads the campaigns and asset groups from the input sheet, creates assets
+
     for the assets provided. Removes the provided placeholder assets, and writes
-    the results back to the spreadsheet."""
+    the results back to the spreadsheet.
+    """
     # Get Values from input sheet
     asset_values = self.sheet_service.get_sheet_values(
         self.sheet_name + "!A6:G", self.google_spread_sheet_id
@@ -76,8 +78,23 @@ class main:
         new_campaign_data, self.google_spread_sheet_id, self.google_customer_id
     )
 
-    customer_id, asset_operations, sheet_results, asset_group_sheetlist, asset_group_headline_operations, asset_group_description_operations, row_to_operations_mapping, asset_group_operations = self.data_processing_service.process_data(asset_values, asset_group_values, new_asset_group_values, campaign_values) 
-    
+    (
+        customer_id,
+        asset_operations,
+        sheet_results,
+        asset_group_sheetlist,
+        asset_group_headline_operations,
+        asset_group_description_operations,
+        row_to_operations_mapping,
+        asset_group_operations,
+    ) = self.data_processing_service.process_data(
+        asset_values,
+        asset_group_values,
+        new_asset_group_values,
+        campaign_values,
+        self.google_spread_sheet_id,
+    )
+
     if customer_id:
       # Update Assets only in Google Ads
       self.sheet_service.process_api_operations(
@@ -88,7 +105,7 @@ class main:
           asset_group_sheetlist,
           customer_id,
           self.google_spread_sheet_id,
-          self.sheet_name
+          self.sheet_name,
       )
 
       # Create a new Asset Group and Update Assets.
@@ -104,7 +121,7 @@ class main:
               headlines,
               descriptions,
               row_to_operations_mapping,
-              customer_id
+              customer_id,
           )
       )
       self.sheet_service.process_api_operations(
@@ -115,10 +132,13 @@ class main:
           asset_group_sheetlist,
           customer_id,
           self.google_spread_sheet_id,
-          self.sheet_name
+          self.sheet_name,
       )
 
+
 # Triggered from a message on a Cloud Pub/Sub topic.
+
+
 @functions_framework.cloud_event
 def pubSubEntry(cloud_event: CloudEvent) -> None:
   if cloud_event:
@@ -143,9 +163,11 @@ def pubSubEntry(cloud_event: CloudEvent) -> None:
         + base64.b64decode(cloud_event.data["message"]["data"]).decode()
         + " EXECUTION -------"
     )
-    
-# if __name__ == "__main__":
-#   # GoogleAdsClient will read the google-ads.yaml configuration file in the
-#   # home directory if none is specified.
-#   cp = main()
-#   cp.create_api_operations()    
+
+
+if __name__ == "__main__":
+  # GoogleAdsClient will read the google-ads.yaml configuration file in the
+  # home directory if none is specified.
+  cp = main()
+  cp.refresh_spreadsheet()
+  cp.create_api_operations()

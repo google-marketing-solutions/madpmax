@@ -1,10 +1,11 @@
 """Provides functionality to create campaigns."""
 
 from enums.asset_column_map import assetsColumnMap
-from enums.asset_group_list_column_map import assetGroupListColumnMap 
-from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
-from enums.campaign_list_column_map import campaignListColumnMap
+from enums.asset_group_list_column_map import assetGroupListColumnMap
 from enums.asset_status import assetStatus
+from enums.campaign_list_column_map import campaignListColumnMap
+from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
+
 
 class DataProcessingService:
 
@@ -20,23 +21,23 @@ class DataProcessingService:
     self.sheet_service = sheet_service
     self.google_ads_service = google_ads_service
     self.asset_service = asset_service
-    
 
   def process_data(
       self,
       asset_values,
       asset_group_values,
       new_asset_group_values,
-      campaign_values
-
+      campaign_values,
   ):
-    """ Process data from spreadsheets to create mutation objects 
+    """Process data from spreadsheets to create mutation objects
 
-    Args: 
-      asset_values: Values from Assets spreadsheet page to create in Asset mutate object.
-      asset_group_values: Values from exisitng AsseGrpup spreadsheet page. 
-      new_asset_group_values: Values from new Asset Group spreadsheet page to create AssetGroup muatte object.
-      campaign_values: Values from exisitng Campaing spreadsheet page. 
+    Args:
+      asset_values: Values from Assets spreadsheet page to create in Asset
+        mutate object.
+      asset_group_values: Values from exisitng AsseGrpup spreadsheet page.
+      new_asset_group_values: Values from new Asset Group spreadsheet page to
+        create AssetGroup muatte object.
+      campaign_values: Values from exisitng Campaing spreadsheet page.
     """
     # all operations across multiple assetGroups where the key is an assetGroup
     asset_operations = {}
@@ -69,22 +70,21 @@ class DataProcessingService:
       asset_group_alias = row[assetsColumnMap.ASSET_GROUP_ALIAS]
 
       if not asset_group_alias:
+        sheet_row_index += 1
         continue
 
       # Use the Asset Group Alias to get Asset Group info from the Google sheet.
       asset_group_details = self.sheet_service.get_sheet_row(
           row[assetsColumnMap.ASSET_GROUP_ALIAS],
           asset_group_values,
-          assetGroupListColumnMap.ASSET_GROUP_ALIAS.value
+          assetGroupListColumnMap.ASSET_GROUP_ALIAS.value,
       )
 
       if asset_group_details:
         asset_group_id = asset_group_details[
             assetGroupListColumnMap.ASSET_GROUP_ID
         ]
-        customer_id = asset_group_details[
-            assetGroupListColumnMap.CUSTOMER_ID
-        ]
+        customer_id = asset_group_details[assetGroupListColumnMap.CUSTOMER_ID]
 
         if asset_group_alias not in asset_operations:
           asset_operations[asset_group_alias] = []
@@ -96,18 +96,17 @@ class DataProcessingService:
         new_asset_group_details = self.sheet_service.get_sheet_row(
             row[assetsColumnMap.ASSET_GROUP_ALIAS],
             new_asset_group_values,
-            newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value
+            newAssetGroupsColumnMap.ASSET_GROUP_ALIAS.value,
         )
 
         campaign_details = self.sheet_service.get_sheet_row(
-            new_asset_group_details[
-                newAssetGroupsColumnMap.CAMPAIGN_ALIAS
-            ],
+            new_asset_group_details[newAssetGroupsColumnMap.CAMPAIGN_ALIAS],
             campaign_values,
-            campaignListColumnMap.CAMPAIGN_NAME.value,
+            campaignListColumnMap.CAMPAIGN_ALIAS.value,
         )
 
         if not campaign_details or not new_asset_group_details:
+          sheet_row_index += 1
           continue
 
         customer_id = campaign_details[campaignListColumnMap.CUSTOMER_ID]
@@ -127,10 +126,8 @@ class DataProcessingService:
           # Create AssetGroupList Sheet array.
           asset_group_sheetlist[asset_group_alias] = [
               asset_group_alias,
-              new_asset_group_details[
-                  newAssetGroupsColumnMap.ASSET_GROUP_NAME
-              ],
-              asset_group_id
+              new_asset_group_details[newAssetGroupsColumnMap.ASSET_GROUP_NAME],
+              asset_group_id,
           ] + campaign_details[1:]
 
       # Check if sheet results for the input sheet row already exists. If not create a new empty map.
@@ -145,11 +142,13 @@ class DataProcessingService:
       # Asset name / asset type
       asset_type = row[assetsColumnMap.ASSET_TYPE]
 
-      operations, asset_resource = self.asset_service.create_asset_mutation(row, customer_id, asset_group_id, new_asset_group)  
+      operations, asset_resource = self.asset_service.create_asset_mutation(
+          row, customer_id, asset_group_id, new_asset_group
+      )
+
       mutate_operations.extend(operations)
 
       # Check if asset operation for the Asset Group already exists. If not create a new list.
-      # TODO: check the asset_creation_operation part
       if not new_asset_group:
         asset_operations[asset_group_alias] += mutate_operations
       elif new_asset_group:
@@ -168,4 +167,13 @@ class DataProcessingService:
 
       sheet_row_index += 1
 
-    return customer_id, asset_operations, sheet_results, asset_group_sheetlist, asset_group_headline_operations, asset_group_description_operations, row_to_operations_mapping, asset_group_operations    
+    return (
+        customer_id,
+        asset_operations,
+        sheet_results,
+        asset_group_sheetlist,
+        asset_group_headline_operations,
+        asset_group_description_operations,
+        row_to_operations_mapping,
+        asset_group_operations,
+    )
