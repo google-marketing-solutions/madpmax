@@ -12,63 +12,68 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides functionality to interact with Google Drive platform."""
+
 import io
-from googleapiclient import http
-from googleapiclient.discovery import build
+import googleapiclient
 import requests
+
+
 # The format of Drive URL
-_DRIVE_URL = 'drive.google.com'
+_DRIVE_URL = "drive.google.com"
 
 
 class DriveService():
-    """Provides Drive APIs to download images from Drive.
-    Attributes:
-      _service: service that is used for making Drive v3 API calls.
+  """Provides Drive APIs to download images from Drive.
+  """
+
+  def __init__(self, credential):
+    """Creates a instance of drive service to handle requests.
+
+    Args:
+      credential: Drive APIs credentials.
     """
+    self._drive_service = googleapiclient.discovery.build(
+        "drive", "v3", credentials=credential)
 
-    def __init__(self, credential):
-        """Creates a instance of drive service to handle requests.
-        Args:
-          credential: Drive APIs credentials.
-        """
-        self._drive_service = build('drive', 'v3', credentials=credential)
+  def _download_asset(self, url):
+    """Downloads an asset based on url, from drive or the web.
 
-    def _download_asset(self, url):
-        """Downloads an asset based on url, from drive or the web.
-        Args:
-          url: url to fetch the asset from.
-        Returns:
-          asset data array.
-        """
-        if _DRIVE_URL in url:
-            return self._download_drive_asset(url)
-        else:
-            response = requests.get(url)
-        return io.BytesIO(response.content).read()
+    Args:
+      url: url to fetch the asset from.
 
-    def get_file_by_name(self, file_name):
-        """Get's the file by name and returns id.
-        Args:
-          filename: Name of the spreadsheet file to retrieve.
-        Returns:
-          file id of the spreadsheet.
-        """
-        try:
-            file_id = None
-            page_token = None
-            while True:
-                response = self._drive_service.files().list(q=f"name = '{file_name}'",
-                                                            spaces='drive',
-                                                            fields='nextPageToken, '
-                                                            'files(id)',
-                                                            pageToken=page_token).execute()
-                for file in response.get('files', []):
-                    file_id = file.get("id")
-                    break
-                page_token = response.get('nextPageToken', None)
-                if page_token is None:
-                    break
-        except HttpError as error:
-            print(F'An error occurred: {error}')
-            file = None
-        return file_id
+    Returns:
+      asset data array.
+    """
+    if _DRIVE_URL in url:
+      return self._download_drive_asset(url)
+    else:
+      response = requests.get(url)
+    return io.BytesIO(response.content).read()
+
+  def get_file_by_name(self, file_name):
+    """Retrieves the file by name and returns id.
+
+    Args:
+      file_name: Name of the spreadsheet file to retrieve.
+
+    Returns:
+      file id of the spreadsheet.
+    """
+    try:
+      file_id = None
+      page_token = None
+      while True:
+        response = self._drive_service.files().list(
+            q=f"name = '{file_name}'", spaces="drive",
+            fields="nextPageToken, "
+            "files(id)", pageToken=page_token).execute()
+        for file in response.get("files", []):
+          file_id = file.get("id")
+          break
+        page_token = response.get("nextPageToken", None)
+        if page_token is None:
+          break
+    except googleapiclient.http.HttpError as error:
+      print(F"An error occurred: {error}")
+      file = None
+    return file_id

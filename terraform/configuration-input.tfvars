@@ -20,7 +20,7 @@
 developer_token   = "" # Google Ads API Developer Token. Go to your Ads Account -> Tools and Settings -> Developer token
 client_id         = "" # "pmax-api" Client ID (from Cloud OAuth credentials)
 client_secret     = "" # "pmax-api" Client Secret (from Cloud OAuth credentials)
-oauth_token       = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
+access_token      = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
 refresh_token     = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
 login_customer_id = "" # [Optional] only if you setup under manager account
 customer_id       = "" # Google Ads Customer ID
