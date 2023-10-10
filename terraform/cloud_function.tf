@@ -14,7 +14,7 @@ resource "local_file" "ads_config" {
     developer_token    = "${var.developer_token}",
     client_id          = "${var.client_id}",
     client_secret      = "${var.client_secret}",
-    token              = "${var.token}",
+    access_token       = "${var.access_token}",
     refresh_token      = "${var.refresh_token}",
     login_customer_id  = "${var.login_customer_id}"
     customer_id        = "${var.customer_id}"
@@ -71,7 +71,7 @@ resource "google_cloudfunctions2_function" "function" {
 
   build_config {
     runtime     = "python39"
-    entry_point = "pubSubEntry" # Set the entry entry_point
+    entry_point = "pmax_trigger" # Set the entry entry_point
     source {
       storage_source {
         bucket = google_storage_bucket.cf_upload_bucket.name

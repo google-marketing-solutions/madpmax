@@ -27,7 +27,7 @@ spreadsheet_id    = "" # Google Spreadsheet ID
 # Config variables for the OAuth Authentication flow.
 client_id         = "" # "pmax-api" Client ID (from Cloud OAuth credentials)
 client_secret     = "" # "pmax-api" Client Secret (from Cloud OAuth credentials)
-token             = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
+access_token      = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
 refresh_token     = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
 
 # General Cloud Configuration
