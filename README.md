@@ -6,7 +6,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
 
 1. ### Access the repository
 
-    Check that you have access to the [solutions_pmax_asset_automation-readers](https://groups.google.com/a/professional-services.goog/g/Solutions_pmax_asset_automation-readers) Google group. If not, contact your Google representatives or email <mad-pmax@google.com>
+    Check that you have access to the [solutions_pmax_asset_automation-readers](https://groups.google.com/a/professional-services.goog/g/Solutions_pmax_asset_automation-readers) Google group (with your company email address). This is necessary to clone the project repository into your Google Cloud Project (you should have Project Owner or Project Editor permissions).  If you don’t have access or you are not sure, contact your Google representatives or email <mad-pmax@google.com>
 
 2. ### Make a copy of [Template sheet](https://docs.google.com/spreadsheets/d/16Gn5ImKQqf7p0tNUVtciJLWCCxC6etN1H9RIdzqlHxE/copy)
 
