@@ -329,10 +329,11 @@ class AdService:
         )
         for error in ex.failure.errors:
           if error.message != "Resource was not found.":
+            i = len(error.location.field_path_elements) - 1
             error_message = (
                 error_message
                 + "\n\tError message:"
-                f" [{error.location.field_path_elements[3].field_name}]"
+                f" [{error.location.field_path_elements[i].field_name}]"
                 f' "{error.message}".'
             )
         print(error_message)
@@ -513,6 +514,9 @@ class AdService:
     asset_group_id = _ASSET_GROUP_TEMP_ID
     _ASSET_GROUP_TEMP_ID -= 1
 
+    if len(asset_group_details) <= newAssetGroupsColumnMap.MOBILE_URL:
+      return None, None
+
     asset_group_service = self._google_ads_client.get_service(
         "AssetGroupService"
     )
@@ -535,7 +539,7 @@ class AdService:
         asset_group_details[newAssetGroupsColumnMap.MOBILE_URL]
     )
     asset_group.status = self._google_ads_client.enums.AssetGroupStatusEnum[
-        asset_group_details[newAssetGroupsColumnMap.CAMPAIGN_STATUS]
+        asset_group_details[newAssetGroupsColumnMap.ASSET_GROUP_STATUS]
     ]
     asset_group.resource_name = asset_group_service.asset_group_path(
         customer_id,
@@ -627,13 +631,13 @@ class AdService:
   def compile_asset_group_operations(self, asset_group_operations, headlines,
                                      descriptions, row_mapping):
     """Compile different parts of the asset group api operations.
-    
+
     Args:
       asset_group_operations: Asset group operations object.
       headlines: Headlines API operations object.
       descriptions: Descriptions API operations object.
       row_mapping: Object with mapping between sheets rows and api operations.
-    
+
     Returns:
       Objects, asset group operations, row_mapping.
     """
@@ -704,7 +708,7 @@ class AdService:
 
   def retrieve_all_assets(self, customer_id):
     """Retrieve all active pMax assets from Google Ads.
-    
+
     Args:
       customer_id: Google ads customer id.
 
@@ -712,40 +716,39 @@ class AdService:
       Results object with Google Ads api search results.
     """
     query = f"""SELECT
-                            customer.id,
-                            customer.descriptive_name,
-                            campaign.id,
-                            campaign.name,
-                            campaign.resource_name,
-                            asset_group.id,
-                            asset_group.name,
-                            asset_group.resource_name,
-                            asset_group_asset.resource_name,
-                            asset_group_asset.field_type,
-                            asset.id,
-                            asset.name,
-                            asset.resource_name,
-                            asset.text_asset.text,
-                            asset.youtube_video_asset.youtube_video_id,
-                            asset.lead_form_asset.business_name,
-                            asset.call_to_action_asset.call_to_action,
-                            asset.image_asset.full_size.url
-                        FROM asset_group_asset
-                        WHERE customer.id = {customer_id}
-                            AND campaign.advertising_channel_type = 'PERFORMANCE_MAX'
-                            AND asset_group.status != 'REMOVED'
-                            AND campaign.status != 'REMOVED'
-                            AND customer.status = 'ENABLED'
-                        ORDER BY
-                            asset_group.id ASC,
-                            asset_group_asset.field_type ASC"""
+                  customer.id,
+                  customer.descriptive_name,
+                  campaign.id,
+                  campaign.name,
+                  campaign.resource_name,
+                  asset_group.id,
+                  asset_group.name,
+                  asset_group.resource_name,
+                  asset_group_asset.resource_name,
+                  asset_group_asset.field_type,
+                  asset.id,
+                  asset.name,
+                  asset.resource_name,
+                  asset.text_asset.text,
+                  asset.youtube_video_asset.youtube_video_id,
+                  asset.lead_form_asset.business_name,
+                  asset.call_to_action_asset.call_to_action,
+                  asset.image_asset.full_size.url
+                FROM asset_group_asset
+                WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+                  AND asset_group.status != 'REMOVED'
+                  AND campaign.status != 'REMOVED'
+                  AND customer.status = 'ENABLED'
+                ORDER BY
+                  asset_group.id ASC,
+                  asset_group_asset.field_type ASC"""
 
     return self._google_ads_client.get_service("GoogleAdsService").search(
         customer_id=customer_id, query=query)
 
   def retrieve_all_asset_groups(self, customer_id):
     """Retrieve all active pMax asset groups from Google Ads.
-    
+
     Args:
       customer_id: Google ads customer id.
 
@@ -753,46 +756,67 @@ class AdService:
       Results object with Google Ads api search results.
     """
     query = f"""SELECT
-                            asset_group.name,
-                            asset_group.id,
-                            campaign.name,
-                            campaign.id,
-                            customer.descriptive_name,
-                            customer.id
-                        FROM asset_group
-                        WHERE customer.id = {customer_id}
-                            AND campaign.advertising_channel_type = 'PERFORMANCE_MAX'
-                            AND asset_group.status != 'REMOVED'
-                            AND campaign.status != 'REMOVED'
-                            AND customer.status = 'ENABLED'
-                        ORDER BY
-                            campaign.id ASC,
-                            asset_group.id ASC"""
+                  asset_group.name,
+                  asset_group.id,
+                  campaign.name,
+                  campaign.id,
+                  customer.descriptive_name,
+                  customer.id
+                FROM asset_group
+                WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+                  AND asset_group.status != 'REMOVED'
+                  AND campaign.status != 'REMOVED'
+                  AND customer.status = 'ENABLED'
+                ORDER BY
+                  campaign.id ASC,
+                  asset_group.id ASC"""
 
     return self._google_ads_client.get_service("GoogleAdsService").search(
         customer_id=customer_id, query=query)
 
   def retrieve_all_campaigns(self, customer_id):
     """Retrieve all active pMax campaigns from Google Ads.
-    
+
     Args:
       customer_id: Google ads customer id.
 
     Returns:
       Results object with Google Ads api search results.
     """
-    query = f"""SELECT
-                            campaign.name,
-                            campaign.id,
-                            customer.descriptive_name,
-                            customer.id
-                        FROM campaign
-                        WHERE customer.id = {customer_id}
-                            AND campaign.advertising_channel_type = 'PERFORMANCE_MAX'
-                            AND campaign.status != 'REMOVED'
-                            AND customer.status = 'ENABLED'
-                        ORDER BY
-                            campaign.id ASC"""
+    query = f"""
+        SELECT
+          campaign.name,
+          campaign.id,
+          customer.descriptive_name,
+          customer.id
+        FROM campaign
+        WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+          AND campaign.status != 'REMOVED'
+          AND customer.status = 'ENABLED'
+        ORDER BY
+          campaign.id ASC"""
 
     return self._google_ads_client.get_service("GoogleAdsService").search(
         customer_id=customer_id, query=query)
+
+  def retrieve_all_customers(self, login_customer_id):
+    """Retrieve all active customers from Google Ads.
+
+    Args:
+      login_customer_id: Google ads customer id.
+
+    Returns:
+      Results object with Google Ads api search results.
+    """
+    query = f"""SELECT
+                  customer.id,
+                  customer_client.descriptive_name,
+                  customer_client.id
+                FROM customer_client
+                WHERE customer_client.status = 'ENABLED'
+                AND customer_client.id != {login_customer_id}
+                ORDER BY
+                  customer.id ASC"""
+
+    return self._google_ads_client.get_service("GoogleAdsService").search(
+        customer_id=login_customer_id, query=query)

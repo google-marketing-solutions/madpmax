@@ -14,6 +14,7 @@
 
 import enum
 
+
 class assetStatus(enum.Enum):
     UPLOADED = "UPLOADED",
     ERROR = "ERROR",

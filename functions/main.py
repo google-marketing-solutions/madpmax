@@ -24,6 +24,7 @@ import functions_framework
 from google.ads import googleads
 import sheet_api
 import yaml
+from pprint import pprint
 
 
 class main:
@@ -44,7 +45,9 @@ class main:
     # Configuration input values.
     self.sheet_name = "Assets"
     self.google_spread_sheet_id = cfg["spreadsheet_id"]
-    self.google_customer_id = cfg["customer_id"]
+
+    self.customer_id = cfg["customer_id"]
+    self.login_customer_id = cfg["login_customer_id"]
 
     self.google_ads_service = ads_api.AdService(self.google_ads_client)
     self.sheet_service = sheet_api.SheetsService(
@@ -65,20 +68,22 @@ class main:
         writes the results back to the spreadsheet.
     """
     # Get Values from input sheet
-    asset_values = self.sheet_service.get_sheet_values(
-        self.sheet_name + "!A6:G")
-    asset_group_values = self.sheet_service.get_sheet_values(
-        "AssetGroupList!A6:H")
-    new_asset_group_values = self.sheet_service.get_sheet_values(
-        "NewAssetGroups!A6:J")
-    campaign_values = self.sheet_service.get_sheet_values(
-        "CampaignList!A6:E")
     new_campaign_data = self.sheet_service.get_sheet_values(
-        "NewCampaigns!A6:M")
+        "NewCampaigns!A6:L")
 
     # Load new Campaigns Spreadsheet and create campaigns
     self.campaign_service.process_campaign_data_and_create_campaigns(
-        new_campaign_data, self.google_spread_sheet_id, self.google_customer_id)
+        new_campaign_data, self.google_spread_sheet_id, self.login_customer_id)
+
+    # Get Values from input sheet
+    asset_data = self.sheet_service.get_sheet_values(
+        self.sheet_name + "!A6:L")
+    asset_group_data = self.sheet_service.get_sheet_values(
+        "AssetGroupList!A6:F")
+    new_asset_group_data = self.sheet_service.get_sheet_values(
+        "NewAssetGroups!A6:K")
+    campaign_data = self.sheet_service.get_sheet_values(
+        "CampaignList!A6:D")
 
     (customer_id, asset_operations, sheet_results, asset_group_sheetlist,
         asset_group_headline_operations, asset_group_description_operations,
@@ -145,4 +150,4 @@ if __name__ == "__main__":
   # home directory if none is specified.
   pmax_operations = main()
   pmax_operations.refresh_spreadsheet()
-  pmax_operations.create_api_operations()
+  # pmax_operations.create_api_operations()
