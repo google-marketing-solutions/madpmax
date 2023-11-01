@@ -24,7 +24,6 @@ import functions_framework
 from google.ads import googleads
 import sheet_api
 import yaml
-from pprint import pprint
 
 
 class main:
@@ -85,34 +84,38 @@ class main:
     campaign_data = self.sheet_service.get_sheet_values(
         "CampaignList!A6:D")
 
-    (customer_id, asset_operations, sheet_results, asset_group_sheetlist,
+    (asset_operations, sheet_results, asset_group_sheetlist,
         asset_group_headline_operations, asset_group_description_operations,
         row_to_operations_mapping, asset_group_operations
-    ) = self.data_processing_service.process_data(
-        asset_values, asset_group_values, new_asset_group_values,
-        campaign_values
+     ) = self.data_processing_service.process_data(
+        asset_data, asset_group_data, new_asset_group_data,
+        campaign_data
     )
 
-    if customer_id:
+    if len(asset_operations) > 0:
       # Update Assets only in Google Ads
-      self.sheet_service.process_api_operations("ASSETS", asset_operations,
-          sheet_results, row_to_operations_mapping, asset_group_sheetlist,
-          customer_id, self.sheet_name)
-
+      self.sheet_service.process_api_operations(
+          "ASSETS", asset_operations, sheet_results, row_to_operations_mapping,
+          asset_group_sheetlist, self.sheet_name)
+    if len(asset_group_operations) > 0:
       # Create a new Asset Group and Update Assets.
       headlines = self.google_ads_service.create_multiple_text_assets(
-          asset_group_headline_operations, customer_id)
+          asset_group_headline_operations)
       descriptions = self.google_ads_service.create_multiple_text_assets(
-          asset_group_description_operations, customer_id)
+          asset_group_description_operations)
       asset_group_operations, row_to_operations_mapping = (
           self.google_ads_service.compile_asset_group_operations(
-              asset_group_operations, headlines, descriptions,
+              asset_group_operations, headlines, "HEADLINES",
+              row_to_operations_mapping
+          ))
+      asset_group_operations, row_to_operations_mapping = (
+          self.google_ads_service.compile_asset_group_operations(
+              asset_group_operations, descriptions, "DESCRIPTIONS",
               row_to_operations_mapping
           ))
       self.sheet_service.process_api_operations(
           "ASSET_GROUPS", asset_group_operations, sheet_results,
-          row_to_operations_mapping, asset_group_sheetlist, customer_id,
-          self.sheet_name
+          row_to_operations_mapping, asset_group_sheetlist, self.sheet_name
       )
 
 
@@ -150,4 +153,4 @@ if __name__ == "__main__":
   # home directory if none is specified.
   pmax_operations = main()
   pmax_operations.refresh_spreadsheet()
-  # pmax_operations.create_api_operations()
+  pmax_operations.create_api_operations()

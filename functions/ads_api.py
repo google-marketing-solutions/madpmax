@@ -393,13 +393,11 @@ class AdService:
           # Construct a list that details which element in
           # the above ad_group_operations list failed (by index number)
           # as well as the error message and error code.
-          error_obj[error.location.field_path_elements[0].index] = [
-              (
-                  "A partial failure creating a(n)"
-                  f" {error.location.field_path_elements[1].field_name[:-10]} at"
-                  " index"
-                  f" {error.location.field_path_elements[0].index} occurred"
-              ),
+          error_obj[error.location.field_path_elements[0].index] = [(
+              "A partial failure creating a(n)"
+              f" {error.location.field_path_elements[1].field_name[:-10]} at"
+              " index"
+              f" {error.location.field_path_elements[0].index} occurred"),
               f"Error message: {error.message}\n",
               f"Error code: {str(error.error_code).strip()}\n",
               f"Error trigger: {error.trigger.string_value}"]
@@ -440,7 +438,7 @@ class AdService:
           for op in operations:
             if (op.asset_operation.create.resource_name and
                 op.asset_operation.create.resource_name ==
-                error_asset_resource):
+                    error_asset_resource):
               sheet_row = row_mapping[op.asset_operation.create.resource_name]
               if op.asset_operation.create.text_asset:
                 print(
@@ -541,6 +539,12 @@ class AdService:
     asset_group.status = self._google_ads_client.enums.AssetGroupStatusEnum[
         asset_group_details[newAssetGroupsColumnMap.ASSET_GROUP_STATUS]
     ]
+    if asset_group_details[newAssetGroupsColumnMap.PATH1]:
+      asset_group.path1 = asset_group_details[newAssetGroupsColumnMap.PATH1]
+
+    if asset_group_details[newAssetGroupsColumnMap.PATH2]:
+      asset_group.path2 = asset_group_details[newAssetGroupsColumnMap.PATH2]
+
     asset_group.resource_name = asset_group_service.asset_group_path(
         customer_id,
         asset_group_id,
@@ -548,13 +552,12 @@ class AdService:
 
     return mutate_operation, asset_group_id
 
-  def create_multiple_text_assets(self, operations, customer_id):
+  def create_multiple_text_assets(self, operations):
     """Creates multiple text assets and returns the list of resource names.
 
     Args:
       operations: a list of api operations, each of which will be used to
         create a text asset.
-      customer_id: a client customer ID.
 
     Returns:
       asset_resource_names: a list of asset resource names.
@@ -568,43 +571,45 @@ class AdService:
 
     response = None
 
-    for asset_group_alias in operations:
-      error_message = None
+    for customer_id in operations:
+      for asset_group_alias in operations[customer_id]:
+        error_message = None
 
-      request = self._google_ads_client.get_type(
-          "MutateGoogleAdsRequest")
-      request.customer_id = customer_id
-      request.mutate_operations = operations[asset_group_alias]
-      request.partial_failure = True
+        request = self._google_ads_client.get_type(
+            "MutateGoogleAdsRequest")
+        request.customer_id = customer_id
+        request.mutate_operations = operations[customer_id][asset_group_alias]
+        request.partial_failure = True
 
-      try:
-        # Send the operations in a single Mutate request.
-        response = googleads_service.mutate(request=request)
-      except GoogleAdsException as ex:
-        error_message = (
-            f'Request with ID "{ex.request_id}" failed and includes the'
-            " following errors:"
-        )
-        for error in ex.failure.errors:
-          if error.message != "Resource was not found.":
-            error_message = (
-                error_message +
-                f'\n\tError message: "{error.message}".'
-            )
-        print(error_message)
-
-      asset_resource_names[asset_group_alias] = []
-      index = 0
-      for result in response.mutate_operation_responses:
-        temp_id = operations[asset_group_alias][
-            index
-        ].asset_operation.create.resource_name
-        if result._pb.HasField("asset_result"):
-          asset_resource_names[asset_group_alias].append(
-              (result.asset_result.resource_name, temp_id)
+        try:
+          # Send the operations in a single Mutate request.
+          response = googleads_service.mutate(request=request)
+        except GoogleAdsException as ex:
+          error_message = (
+              f'Request with ID "{ex.request_id}" failed and includes the'
+              " following errors:"
           )
-        index += 1
-      self.print_response_details(response)
+          for error in ex.failure.errors:
+            if error.message != "Resource was not found.":
+              error_message = (
+                  error_message +
+                  f'\n\tError message: "{error.message}".'
+              )
+          print(error_message)
+
+        asset_resource_names[customer_id] = {}
+        asset_resource_names[customer_id][asset_group_alias] = []
+        index = 0
+        for result in response.mutate_operation_responses:
+          temp_id = operations[customer_id][asset_group_alias][
+              index
+          ].asset_operation.create.resource_name
+          if result._pb.HasField("asset_result"):
+            asset_resource_names[customer_id][asset_group_alias].append(
+                (result.asset_result.resource_name, temp_id)
+            )
+          index += 1
+        self.print_response_details(response)
 
     return asset_resource_names
 
@@ -628,51 +633,42 @@ class AdService:
           name = field_descriptor.name
         print(f"Created a(n) {name} with {str(value).strip()}.")
 
-  def compile_asset_group_operations(self, asset_group_operations, headlines,
-                                     descriptions, row_mapping):
+  def compile_asset_group_operations(
+          self, asset_group_operations, asset_operations, asset_type,
+          row_mapping):
     """Compile different parts of the asset group api operations.
 
     Args:
       asset_group_operations: Asset group operations object.
-      headlines: Headlines API operations object.
-      descriptions: Descriptions API operations object.
+      asset_operations: Assets API operations object.
+      asset_type: String value "HEADLINES" or "DESCRIPTIONS"
       row_mapping: Object with mapping between sheets rows and api operations.
 
     Returns:
       Objects, asset group operations, row_mapping.
     """
-    for asset_group_alias in asset_group_operations:
-      asset_group_id = asset_group_operations[asset_group_alias][
-          0
-      ].asset_group_operation.create.resource_name
+    if asset_type == "HEADLINES":
+      asset_field_type = self._google_ads_client.enums.AssetFieldTypeEnum.HEADLINE
+    if asset_type == "DESCRIPTIONS":
+      asset_field_type = self._google_ads_client.enums.AssetFieldTypeEnum.DESCRIPTION
+    
+    for customer_id in asset_group_operations:
+      for asset_group_alias in asset_group_operations[customer_id]:
+        asset_group_id = asset_group_operations[customer_id][
+            asset_group_alias][0].asset_group_operation.create.resource_name
 
-      #  Link the description assets.
-      for resource_name in descriptions[asset_group_alias]:
-        mutate_operation = self._google_ads_client.get_type(
-            "MutateOperation")
-        asset_group_asset = mutate_operation.asset_group_asset_operation.create
-        asset_group_asset.field_type = (
-            self._google_ads_client.enums.AssetFieldTypeEnum.DESCRIPTION
-        )
-        asset_group_asset.asset_group = asset_group_id
-        asset_group_asset.asset = resource_name[0]
-        asset_group_operations[asset_group_alias].insert(
-            1, mutate_operation)
-        row_mapping[resource_name[0]] = row_mapping[resource_name[1]]
-
-      # Link the headline assets.
-      for resource_name in headlines[asset_group_alias]:
-        mutate_operation = self._google_ads_client.get_type(
-            "MutateOperation")
-        asset_group_asset = mutate_operation.asset_group_asset_operation.create
-        asset_group_asset.field_type = (
-            self._google_ads_client.enums.AssetFieldTypeEnum.HEADLINE
-        )
-        asset_group_asset.asset_group = asset_group_id
-        asset_group_asset.asset = resource_name[0]
-        asset_group_operations[asset_group_alias].insert(
-            1, mutate_operation)
-        row_mapping[resource_name[0]] = row_mapping[resource_name[1]]
+        if asset_group_alias in asset_operations[customer_id]:
+          #  Link the description assets.
+          for resource_name in asset_operations[customer_id][asset_group_alias]:
+            mutate_operation = self._google_ads_client.get_type(
+                "MutateOperation")
+            asset_group_asset = mutate_operation.asset_group_asset_operation.create
+            asset_group_asset.field_type = asset_field_type
+            asset_group_asset.asset_group = asset_group_id
+            asset_group_asset.asset = resource_name[0]
+            asset_group_operations[customer_id][asset_group_alias].insert(
+                1, mutate_operation)
+            row_mapping[resource_name[0]] = row_mapping[resource_name[1]]
 
     return asset_group_operations, row_mapping
 
@@ -706,11 +702,11 @@ class AdService:
 
     return results
 
-  def retrieve_all_assets(self, customer_id):
+  def retrieve_all_assets(self, login_customer_id):
     """Retrieve all active pMax assets from Google Ads.
 
     Args:
-      customer_id: Google ads customer id.
+      login_customer_id: Google ads customer id.
 
     Returns:
       Results object with Google Ads api search results.
@@ -744,13 +740,15 @@ class AdService:
                   asset_group_asset.field_type ASC"""
 
     return self._google_ads_client.get_service("GoogleAdsService").search(
-        customer_id=customer_id, query=query)
+        customer_id=login_customer_id, query=query)
 
   def retrieve_all_asset_groups(self, customer_id):
     """Retrieve all active pMax asset groups from Google Ads.
 
     Args:
-      customer_id: Google ads customer id.
+      login_customer_id: Google ads customer id.
+      customer_id: [optional] Google ads customer id.
+      campaign_id: [optional] Google ads pmax campaign id.
 
     Returns:
       Results object with Google Ads api search results.
@@ -778,7 +776,8 @@ class AdService:
     """Retrieve all active pMax campaigns from Google Ads.
 
     Args:
-      customer_id: Google ads customer id.
+      login_customer_id: Google ads customer id.
+      customer_id: [optional] Google ads customer id.
 
     Returns:
       Results object with Google Ads api search results.
@@ -801,7 +800,7 @@ class AdService:
 
   def retrieve_all_customers(self, login_customer_id):
     """Retrieve all active customers from Google Ads.
-
+    
     Args:
       login_customer_id: Google ads customer id.
 
