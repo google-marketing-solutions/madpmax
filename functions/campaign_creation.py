@@ -80,6 +80,7 @@ class CampaignService:
       return None, "Budget can't be empty"
 
     budget = float(budget) * 1000000
+
     campaign_budget.amount_micros = budget
 
     campaign_budget.delivery_method = budget_delivery_method

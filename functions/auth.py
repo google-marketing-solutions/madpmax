@@ -32,7 +32,7 @@ def get_credentials_from_file(access_token, refresh_token, client_id, client_sec
     refresh_token: OAuth refresh token.
     client_id: OAuth Client id.
     client_secret: OAuth client secret.
-  
+
   Returns:
     An OAuth Credentials object for the authenticated user.
 
@@ -40,7 +40,7 @@ def get_credentials_from_file(access_token, refresh_token, client_id, client_sec
     Error when credentials cannot be generated.
   """
   creds = google.oauth2.credentials.Credentials(
-      access_token=access_token,
+      token=access_token,
       refresh_token=refresh_token,
       token_uri=_TOKEN_URI,
       client_id=client_id,
