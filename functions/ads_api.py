@@ -753,6 +753,40 @@ class AdService:
     return self._google_ads_client.get_service("GoogleAdsService").search(
         customer_id=customer_id, query=query)
 
+  def retrieve_sitelinks(self, customer_id):
+    """Retrieve all active pMax asset groups from Google Ads.
+
+    Args:
+      customer_id: Google ads customer id.
+
+    Returns:
+      Results object with Google Ads api search results.
+    """
+    query = f"""SELECT
+                  customer.id,
+                  customer.descriptive_name,
+                  campaign.id,
+                  campaign.name,
+                  campaign.resource_name,
+                  campaign_asset.resource_name,
+                  campaign_asset.field_type,
+                  campaign.advertising_channel_type,
+                  campaign.status,
+                  asset.sitelink_asset.description1,
+                  asset.sitelink_asset.description2,
+                  asset.sitelink_asset.link_text,
+                  asset.final_urls,
+                  asset.final_url_suffix
+                  FROM campaign_asset
+                  WHERE campaign.advertising_channel_type = 'PERFORMANCE_MAX'
+                  AND campaign_asset.primary_status NOT IN ('NOT_ELIGIBLE', 'REMOVED', 'UNKNOWN')
+                  AND campaign_asset.field_type = 'SITELINK'
+                  AND campaign.status != 'REMOVED'
+                  AND customer.status = 'ENABLED'"""
+
+    return self._google_ads_client.get_service('GoogleAdsService').search(
+        customer_id=customer_id, query=query)
+
   def retrieve_all_asset_groups(self, customer_id):
     """Retrieve all active pMax asset groups from Google Ads.
 
