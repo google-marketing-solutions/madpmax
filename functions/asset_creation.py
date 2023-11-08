@@ -61,10 +61,6 @@ class AssetService:
     if assetsColumnMap.ASSET_CALL_TO_ACTION.value < len(row):
       asset_action_selection = row[assetsColumnMap.ASSET_CALL_TO_ACTION.value]
 
-    print(
-        "asset Text after try: ", asset_name_or_text, " with type ", asset_type
-    )
-
     # List of all image asset types in Google Ads pmax campaings.
     image_asset_types = {
         "MARKETING_IMAGE",

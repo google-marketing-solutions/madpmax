@@ -539,8 +539,9 @@ class SheetsService():
     """
     asset_group_asset_values = self.get_sheet_values(
         sheet_name + "!L:L")
-
+    sheet_range = sheet_name + "!A:L"
     sheet_output = []
+
     index = 0
     last_row = len(self.get_sheet_values(sheet_name + "!C:C")) + 1
     for row in results:
@@ -598,7 +599,6 @@ class SheetsService():
         index += 1
 
     # The ID of the spreadsheet to update
-    range_ = sheet_name + "!A:L"
     value_input_option = "USER_ENTERED"
     insert_data_option = "INSERT_ROWS"
     value_range_body = {
@@ -607,7 +607,7 @@ class SheetsService():
 
     try:
       request = self._sheets_service.values().append(
-          spreadsheetId=self.spread_sheet_id, range=range_,
+          spreadsheetId=self.spread_sheet_id, range=sheet_range,
           valueInputOption=value_input_option,
           insertDataOption=insert_data_option, body=value_range_body)
       response = request.execute()
@@ -628,7 +628,7 @@ class SheetsService():
     """
 
     if response["tableRange"]:
-      sheet_id = self.get_sheet_id("Assets")
+      sheet_id = self.get_sheet_id(sheet_name)
       start_row = int(
           re.search("([0-9]*$)", response["tableRange"]).group())
       update_request_list = []
@@ -763,19 +763,20 @@ class SheetsService():
     Returns:
       Array of sheet values.
     """
-    output = [None] * len(column_map)
-
     if sheet_name == "CustomerList":
+      output = [None] * len(customerListColumnMap)
       output[
           customerListColumnMap.
           CUSTOMER_NAME.value] = row.customer_client.descriptive_name
       output[customerListColumnMap.CUSTOMER_ID.value] = row.customer_client.id
-    if sheet_name == "CampaignList" or sheet_name == "AssetGroupList":
+    if sheet_name == "CampaignList":
+      output = [None] * len(campaignListColumnMap)
       output[campaignListColumnMap.CAMPAIGN_NAME.value] = row.campaign.name
       output[campaignListColumnMap.CAMPAIGN_ID.value] = row.campaign.id
       output[campaignListColumnMap.CUSTOMER_NAME.value] = row.customer.descriptive_name
       output[campaignListColumnMap.CUSTOMER_ID.value] = row.customer.id
     if sheet_name == "AssetGroupList":
+      output = [None] * len(assetGroupListColumnMap)
       output[assetGroupListColumnMap.ASSET_GROUP_NAME.value] = row.asset_group.name
       output[assetGroupListColumnMap.ASSET_GROUP_ID.value] = row.asset_group.id
       output[assetGroupListColumnMap.CAMPAIGN_NAME.value] = row.campaign.name
