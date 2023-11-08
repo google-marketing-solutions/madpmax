@@ -367,7 +367,7 @@ class AdService:
       response:  A MutateAdGroupsResponse message instance.
       operations: API operations object of lists.
       row_mapping: Ocject with the mapping between rows and status messages.
-    
+
     Returns:
       results
     """
@@ -439,7 +439,7 @@ class AdService:
             if (op.asset_operation.create.resource_name and
                 op.asset_operation.create.resource_name ==
                     error_asset_resource):
-              sheet_row = row_mapping[op.asset_operation.create.resource_name]
+              sheet_row_list = row_mapping[op.asset_operation.create.resource_name]
               if op.asset_operation.create.text_asset:
                 print(
                     "\tText: " + op.asset_operation.create.text_asset.text)
@@ -449,46 +449,43 @@ class AdService:
                 print(
                     "\tImage URL: "
                     + op.asset_operation.create.image_asset.full_size.url
-                    + "\n"
-                )
+                    + "\n")
 
-          if sheet_row not in results:
-            results[sheet_row] = {}
+          for sheet_row in sheet_row_list:
+            if sheet_row not in results:
+              results[sheet_row] = {}
 
-          results[sheet_row]["status"] = assetStatus.ERROR.value[0]
+            results[sheet_row]["status"] = assetStatus.ERROR.value[0]
 
-          if "message" in results[sheet_row]:
-            asset_message = results[sheet_row]["message"]
-          else:
-            asset_message = ""
+            if "message" in results[sheet_row]:
+              asset_message = results[sheet_row]["message"]
+            else:
+              asset_message = ""
 
-          results[sheet_row]["message"] = (
-              error_obj[i][1] + error_obj[i][2] + error_obj[i][3]
-          )
+            results[sheet_row]["message"] = (
+                error_obj[i][1] + error_obj[i][2] + error_obj[i][3])
 
-          print(results[sheet_row]["message"])
+            print(results[sheet_row]["message"])
 
-          results[sheet_row]["message"] = (asset_message +
-                                           results[sheet_row]["message"])
+            results[sheet_row]["message"] = (asset_message +
+                                            results[sheet_row]["message"])
 
-          results[sheet_row]["asset_group_asset"] = ""
+            results[sheet_row]["asset_group_asset"] = ""
 
         else:
           print(f"Created a(n) {name} with {str(value).strip()}.")
-          if (
-              operations[i].asset_group_asset_operation.create.asset
+          if (operations[i].asset_group_asset_operation.create.asset
               and operations[i].asset_group_asset_operation.create.asset
-              in row_mapping
-          ):
-            sheet_row = row_mapping[
-                operations[i].asset_group_asset_operation.create.asset
-            ]
+              in row_mapping):
+            sheet_row_list = row_mapping[
+                operations[i].asset_group_asset_operation.create.asset]
 
-            if sheet_row not in results:
-              results[sheet_row] = {}
-              results[sheet_row]["status"] = assetStatus.UPLOADED.value[0]
-              results[sheet_row]["message"] = ""
-              results[sheet_row]["asset_group_asset"] = value.resource_name
+            for sheet_row in sheet_row_list:
+              if sheet_row not in results:
+                results[sheet_row] = {}
+                results[sheet_row]["status"] = assetStatus.UPLOADED.value[0]
+                results[sheet_row]["message"] = ""
+                results[sheet_row]["asset_group_asset"] = value.resource_name
 
         i += 1
     return results
@@ -597,19 +594,22 @@ class AdService:
               )
           print(error_message)
 
-        asset_resource_names[customer_id] = {}
-        asset_resource_names[customer_id][asset_group_alias] = []
+        if customer_id not in asset_resource_names:
+          asset_resource_names[customer_id] = {}
+        if asset_group_alias not in asset_resource_names[customer_id]:
+          asset_resource_names[customer_id][asset_group_alias] = []
         index = 0
-        for result in response.mutate_operation_responses:
-          temp_id = operations[customer_id][asset_group_alias][
-              index
-          ].asset_operation.create.resource_name
-          if result._pb.HasField("asset_result"):
-            asset_resource_names[customer_id][asset_group_alias].append(
-                (result.asset_result.resource_name, temp_id)
-            )
-          index += 1
-        self.print_response_details(response)
+        if response:
+          for result in response.mutate_operation_responses:
+            temp_id = operations[customer_id][asset_group_alias][
+                index
+            ].asset_operation.create.resource_name
+            if result._pb.HasField("asset_result"):
+              asset_resource_names[customer_id][asset_group_alias].append(
+                  (result.asset_result.resource_name, temp_id)
+              )
+            index += 1
+          self.print_response_details(response)
 
     return asset_resource_names
 
@@ -651,7 +651,7 @@ class AdService:
       asset_field_type = self._google_ads_client.enums.AssetFieldTypeEnum.HEADLINE
     if asset_type == "DESCRIPTIONS":
       asset_field_type = self._google_ads_client.enums.AssetFieldTypeEnum.DESCRIPTION
-    
+
     for customer_id in asset_group_operations:
       for asset_group_alias in asset_group_operations[customer_id]:
         asset_group_id = asset_group_operations[customer_id][
@@ -668,7 +668,17 @@ class AdService:
             asset_group_asset.asset = resource_name[0]
             asset_group_operations[customer_id][asset_group_alias].insert(
                 1, mutate_operation)
-            row_mapping[resource_name[0]] = row_mapping[resource_name[1]]
+
+            # Adding logic to replace mapping from temp resource name to row
+            # to google ads resource name to row. Resource names can be 
+            # duplicate --> providing ability to assign multiple row numbers
+            # to the same resource. 
+            if resource_name[0] in row_mapping:
+              row_mapping[resource_name[0]] += row_mapping[resource_name[1]]
+              del row_mapping[resource_name[1]]
+            else:
+              row_mapping[resource_name[0]] = row_mapping[resource_name[1]]
+              del row_mapping[resource_name[1]]
 
     return asset_group_operations, row_mapping
 
@@ -679,7 +689,7 @@ class AdService:
       error_message: String value with error message.
       operations: API operations lists.
       row_mapping: Object with mapping between sheets rows and api operations.
-    
+
     Returns:
       results object.
     """
@@ -692,21 +702,22 @@ class AdService:
 
     for op in operations:
       if op.asset_operation.create.resource_name in row_mapping:
-        sheet_row = row_mapping[op.asset_operation.create.resource_name]
+        sheet_row_list = row_mapping[op.asset_operation.create.resource_name]
 
-        if sheet_row not in results:
-          results[sheet_row] = {}
+        for sheet_row in sheet_row_list:
+          if sheet_row not in results:
+            results[sheet_row] = {}
 
-        results[sheet_row]["status"] = "ERROR"
-        results[sheet_row]["message"] = error_message
+          results[sheet_row]["status"] = "ERROR"
+          results[sheet_row]["message"] = error_message
 
     return results
 
-  def retrieve_all_assets(self, login_customer_id):
+  def retrieve_all_assets(self, customer_id):
     """Retrieve all active pMax assets from Google Ads.
 
     Args:
-      login_customer_id: Google ads customer id.
+      customer_id: Google ads customer id.
 
     Returns:
       Results object with Google Ads api search results.
@@ -740,15 +751,13 @@ class AdService:
                   asset_group_asset.field_type ASC"""
 
     return self._google_ads_client.get_service("GoogleAdsService").search(
-        customer_id=login_customer_id, query=query)
+        customer_id=customer_id, query=query)
 
   def retrieve_all_asset_groups(self, customer_id):
     """Retrieve all active pMax asset groups from Google Ads.
 
     Args:
-      login_customer_id: Google ads customer id.
-      customer_id: [optional] Google ads customer id.
-      campaign_id: [optional] Google ads pmax campaign id.
+      customer_id: Google ads customer id.
 
     Returns:
       Results object with Google Ads api search results.
@@ -776,8 +785,7 @@ class AdService:
     """Retrieve all active pMax campaigns from Google Ads.
 
     Args:
-      login_customer_id: Google ads customer id.
-      customer_id: [optional] Google ads customer id.
+      customer_id: Google ads customer id.
 
     Returns:
       Results object with Google Ads api search results.
