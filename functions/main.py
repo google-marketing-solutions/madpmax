@@ -17,12 +17,13 @@ import base64
 import ads_api
 import asset_creation
 import auth
-import campaign_creation
 from cloudevents.http import CloudEvent
 import data_processing
 import functions_framework
 from google.ads import googleads
 import sheet_api
+import campaign_creation
+import sitelink_creation
 import yaml
 
 
@@ -52,6 +53,8 @@ class main:
     self.sheet_service = sheet_api.SheetsService(
       credentials, self.google_ads_client, self.google_ads_service)
     self.campaign_service = campaign_creation.CampaignService(
+        self.google_ads_service, self.sheet_service, self.google_ads_client)
+    self.sitelink_service = sitelink_creation.SitelinkService(
         self.google_ads_service, self.sheet_service, self.google_ads_client)
     self.asset_service = asset_creation.AssetService(self.google_ads_service)
     self.data_processing_service = data_processing.DataProcessingService(
@@ -83,6 +86,8 @@ class main:
         "NewAssetGroups!A6:K")
     campaign_data = self.sheet_service.get_sheet_values(
         "CampaignList!A6:D")
+    sitelink_data = self.sheet_service.get_sheet_values(
+        "Sitelinks!A6:J")
 
     (asset_operations, sheet_results, asset_group_sheetlist,
         asset_group_headline_operations, asset_group_description_operations,
@@ -98,25 +103,28 @@ class main:
           "ASSETS", asset_operations, sheet_results, row_to_operations_mapping,
           asset_group_sheetlist, self.sheet_name)
     if len(asset_group_operations) > 0:
-      # Create a new Asset Group and Update Assets.
-      headlines = self.google_ads_service.create_multiple_text_assets(
-          asset_group_headline_operations)
+      # create asset group description api objects.
       descriptions = self.google_ads_service.create_multiple_text_assets(
           asset_group_description_operations)
       asset_group_operations, row_to_operations_mapping = (
           self.google_ads_service.compile_asset_group_operations(
-              asset_group_operations, headlines, "HEADLINES",
-              row_to_operations_mapping
-          ))
+              asset_group_operations, descriptions, "DESCRIPTIONS",
+              row_to_operations_mapping))
+
+      # create asset group headlines api objects.
+      headlines = self.google_ads_service.create_multiple_text_assets(
+          asset_group_headline_operations)
       asset_group_operations, row_to_operations_mapping = (
           self.google_ads_service.compile_asset_group_operations(
-              asset_group_operations, descriptions, "DESCRIPTIONS",
-              row_to_operations_mapping
-          ))
+              asset_group_operations, headlines, "HEADLINES",
+              row_to_operations_mapping))
+
       self.sheet_service.process_api_operations(
           "ASSET_GROUPS", asset_group_operations, sheet_results,
-          row_to_operations_mapping, asset_group_sheetlist, self.sheet_name
-      )
+          row_to_operations_mapping, asset_group_sheetlist, self.sheet_name)
+
+    # Load new Sitelinks Spreadsheet and create Sitelinks
+    self.sitelink_service.process_sitelink_data(sitelink_data, campaign_data)
 
 
 @functions_framework.cloud_event

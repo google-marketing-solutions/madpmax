@@ -302,7 +302,7 @@ class AdService:
     request = self._google_ads_client.get_type("MutateGoogleAdsRequest")
     request.customer_id = customer_id
     request.mutate_operations = mutate_operations
-    if mutate_type == "ASSETS":
+    if mutate_type in ("ASSETS", "SITELINKS"):
       request.partial_failure = True
 
       try:
@@ -350,9 +350,9 @@ class AdService:
     https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
 
     Args:
-      response:  A MutateAdGroupsResponse message instance.
+      response: A MutateAdGroupsResponse message instance.
 
-    Returns: 
+    Returns:
       A boolean, whether or not the response message has a partial
       failure error.
     """
@@ -360,13 +360,15 @@ class AdService:
     code = getattr(partial_failure, "code", None)
     return code != 0
 
-  def process_asset_results(self, response, operations, row_mapping):
+  def process_asset_results(self, response, operations,
+      row_mapping, mutate_type):
     """Prints partial failure errors and success messages from a response.
 
     Args:
       response:  A MutateAdGroupsResponse message instance.
       operations: API operations object of lists.
       row_mapping: Ocject with the mapping between rows and status messages.
+      mutate_type: Type of API mutation  "ASSETS" "ASSET_GROUPS" or "SITELINKS"
 
     Returns:
       results
@@ -428,12 +430,17 @@ class AdService:
           # the error message.
           print(error_obj[i][0])
           error_asset_resource = operations[
-              i
-          ].asset_group_asset_operation.create.asset
+              i].asset_group_asset_operation.create.asset
+          if mutate_type == "SITELINKS":
+            error_asset_resource = operations[
+                i].campaign_asset_operation.create.asset
+
           if not error_asset_resource:
             error_asset_resource = operations[
-                i + 1
-            ].asset_group_asset_operation.create.asset
+                i + 1].asset_group_asset_operation.create.asset
+            if mutate_type == "SITELINKS":
+              error_asset_resource = operations[
+                  i + 1].campaign_asset_operation.create.asset
 
           for op in operations:
             if (op.asset_operation.create.resource_name and
@@ -474,11 +481,15 @@ class AdService:
 
         else:
           print(f"Created a(n) {name} with {str(value).strip()}.")
-          if (operations[i].asset_group_asset_operation.create.asset
-              and operations[i].asset_group_asset_operation.create.asset
-              in row_mapping):
-            sheet_row_list = row_mapping[
-                operations[i].asset_group_asset_operation.create.asset]
+
+          operations_create = operations[
+              i].asset_group_asset_operation.create.asset
+          if mutate_type == "SITELINKS":
+            operations_create = operations[
+                i].campaign_asset_operation.create.asset
+
+          if operations_create and operations_create in row_mapping:
+            sheet_row_list = row_mapping[operations_create]
 
             for sheet_row in sheet_row_list:
               if sheet_row not in results:
@@ -536,10 +547,10 @@ class AdService:
     asset_group.status = self._google_ads_client.enums.AssetGroupStatusEnum[
         asset_group_details[newAssetGroupsColumnMap.ASSET_GROUP_STATUS]
     ]
-    if asset_group_details[newAssetGroupsColumnMap.PATH1]:
+    if len(asset_group_details) > newAssetGroupsColumnMap.PATH1:
       asset_group.path1 = asset_group_details[newAssetGroupsColumnMap.PATH1]
 
-    if asset_group_details[newAssetGroupsColumnMap.PATH2]:
+    if len(asset_group_details) > newAssetGroupsColumnMap.PATH2:
       asset_group.path2 = asset_group_details[newAssetGroupsColumnMap.PATH2]
 
     asset_group.resource_name = asset_group_service.asset_group_path(

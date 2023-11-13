@@ -210,7 +210,7 @@ class DataProcessingService:
           # processing error and status messages to sheet.
           row_to_operations_mapping[asset_resource] = [sheet_row_index]
 
-          sheet_row_index += 1
+      sheet_row_index += 1
 
     return (
         asset_operations,

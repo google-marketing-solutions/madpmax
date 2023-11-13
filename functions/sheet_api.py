@@ -384,7 +384,6 @@ class SheetsService():
     except Exception as e:
       print(f"Unable to update Sheet rows: {str(e)}")
 
-
   def update_asset_sheet_status(self, sheet_results, sheet_name):
     """Update error message in the sheet.
 
@@ -410,7 +409,7 @@ class SheetsService():
 
       if sheet_results[row_index]["status"] == assetStatus.UPLOADED.value[0]:
         checkbox = self.get_checkbox(row_index + _SHEET_HEADER_SIZE,
-                                     assetsColumnMap.DELETE_ASSET.value,
+                                     column_map.DELETE_ASSET.value,
                                      sheet_id)
         update_request_list.append(checkbox)
 
@@ -587,6 +586,7 @@ class SheetsService():
             column_map.CUSTOMER_NAME.value] = row.customer.descriptive_name
         sheet_output[index][
             column_map.CAMPAIGN_NAME.value] = row.campaign.name
+
         sheet_output[index][column_map.ERROR_MESSAGE.value] = ""
         sheet_output[index][
             column_map.
@@ -624,8 +624,7 @@ class SheetsService():
               ASSET_URL.value] = ("https://www.youtube.com/watch?v=" +
                                   row.asset.youtube_video_asset.
                                   youtube_video_id)
-        if (row.campaign_asset.field_type.name == 'SITELINK' and
-            sheet_name == 'Sitelinks'):
+        if asset_type == 'SITELINK' and sheet_name == 'Sitelinks':
           sheet_output[index][
               column_map.FINAL_URLS.value] = row.asset.final_urls[0]
           sheet_output[index][
@@ -669,8 +668,8 @@ class SheetsService():
       account_map: Google Ads account map, account ids and names.
     """
     column_map = assetsColumnMap
-    if sheet_name == 'Sitelinks':
-        column_map = sitelinksColumnMap
+    if sheet_name == "Sitelinks":
+      column_map = sitelinksColumnMap
 
     if response["tableRange"]:
       sheet_id = self.get_sheet_id(sheet_name)
@@ -851,7 +850,8 @@ class SheetsService():
     Sheet.
 
     Args:
-      mutate_type: Type of mutate operations (string)
+      mutate_type: Type of mutate operations (string) "ASSETS", "SITELINKS"
+        ASSET_GROUPS.
       mutate_operations: Object of Google Ads API mutate operations.
       sheet_results: Results object for sheet output.
       row_to_operations_mapping: Sheet row to API operations mapping
@@ -880,7 +880,7 @@ class SheetsService():
               self.google_ads_service.process_asset_results(
                   asset_group_response,
                   mutate_operations[customer_id][asset_group_alias],
-                  row_to_operations_mapping
+                  row_to_operations_mapping, mutate_type
               )
           )
 
