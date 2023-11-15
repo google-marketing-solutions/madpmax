@@ -9,7 +9,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Google Ads 
+# Google Ads
 # To optain Google Ads Developer token refer to:
 #   https://developers.google.com/google-ads/api/docs/first-call/dev-token
 # To obtain client_id and client_secret generate OAuth2 Credentials for Web Application, for guidance refer to:
@@ -18,10 +18,10 @@
 
 # Config variables for the Google Ads Yaml file.
 developer_token   = "" # Google Ads API Developer Token
-login_customer_id = "" # [Optional] only if you setup under manager account
+login_customer_id = "" # [Optional] only if you setup under manager account (without dashes)
 
 # Application Config variable.
-customer_id       = "" # Google Ads Customer ID
+customer_id       = "" # Google Ads Customer ID (without dashes)
 spreadsheet_id    = "" # Google Spreadsheet ID
 
 # Config variables for the OAuth Authentication flow.
@@ -31,8 +31,8 @@ access_token      = "" # https://developers.google.com/google-ads/api/docs/oauth
 refresh_token     = "" # https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens
 
 # General Cloud Configuration
-project_id            = ""   # defaults to current project. Project id were the solution will run.
-cloud_function_name   = ""   # defaults to current project. Project id were the solution will run.
-cloud_function_region = ""   # Cloud Region where the solutions will run.
+project_id            = ""   # Project id were the solution will run.
+cloud_function_name   = ""   # Name of the cloud function running the solution.
+cloud_function_region = ""   # Cloud Region where the solutions will run. i.e. europe-west2
 cloud_storage_region  = ""   # or US
 solution_user_list    = [""] # Comma separated list of solution users e.g. ["user:example@example.com"] (gives permissions to publish the pubsub trigger)

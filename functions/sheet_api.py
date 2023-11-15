@@ -42,7 +42,7 @@ class SheetsService():
 
   def __init__(self, credentials, google_ads_client, google_ads_service):
     """Creates a instance of sheets service to handle requests.
-    
+
     Args:
       credentials: API OAuth credentials object.
       google_ads_client: Google Ads API client.
@@ -139,7 +139,7 @@ class SheetsService():
     Args:
       input_list: List of string values as input for the cell.
       sheet_values: Array of arrays representation of sheet_name.
-      col_index: index of the column where to find value 
+      col_index: index of the column where to find value
 
     Returns:
       Row number
@@ -274,8 +274,8 @@ class SheetsService():
             },
             "rule": {
                 "condition": {
-                  "type": "ONE_OF_LIST",
-                  "values": dropdown_values
+                    "type": "ONE_OF_LIST",
+                    "values": dropdown_values
                 },
                 "showCustomUi": True,
                 "strict": False
@@ -360,11 +360,11 @@ class SheetsService():
       sheet_id: Sheet id.
       status_row_id: Row of status position.
       upload_status: Status of API operation.
-      error_message: Optional string value with error. 
+      error_message: Optional string value with error.
       message_row_id: column of error messgae position.
 
     Raises:
-      Exception: If unknown error occurs while updating rows in the Time 
+      Exception: If unknown error occurs while updating rows in the Time
         Managed Sheet.
     """
     update_request_list = []
@@ -575,8 +575,8 @@ class SheetsService():
               column_map.ASSET_GROUP_NAME.value] = row.asset_group.name
           sheet_output[index][column_map.ASSET_THUMBNAIL.value] = ""
           sheet_output[index][
-                column_map.
-                ASSET_TYPE.value] = asset_type
+              column_map.
+              ASSET_TYPE.value] = asset_type
         if sheet_name == "Sitelinks":
           asset_type = row.campaign_asset.field_type.name
 
@@ -734,7 +734,8 @@ class SheetsService():
         account_map = self.update_sheet_lists(
             results, "CampaignList", "!D:D", account_map)
 
-        results = self.google_ads_service.retrieve_all_asset_groups(customer_id)
+        results = self.google_ads_service.retrieve_all_asset_groups(
+            customer_id)
         account_map = self.update_sheet_lists(
             results, "AssetGroupList", "!F:F", account_map)
 
@@ -759,7 +760,7 @@ class SheetsService():
       account_map: Google Ads account map, account ids and names.
     """
     existing_values = self.get_sheet_values(sheet_name + column)
-
+    sheet_range = ""
     sheet_output = []
     index = 0
     for row in results:
@@ -778,7 +779,7 @@ class SheetsService():
                 row.customer.descriptive_name][
                 row.campaign.name]:
           account_map[row.customer.descriptive_name][row.campaign.name].append(
-            row.asset_group.name)
+              row.asset_group.name)
         row_item_id = str(row.asset_group.id)
         sheet_range = sheet_name + "!A:F"
 
@@ -803,7 +804,7 @@ class SheetsService():
       request.execute()
     except Exception as e:
       print(f"Unable to update Sheet rows: {str(e)}")
-    
+
     return account_map
 
   def generate_list_sheet_output(self, row, sheet_name):

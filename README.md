@@ -22,7 +22,18 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
       4. In the **Location** field, click Browse to display potential locations for your project.
       5. Click **Create**.
 
-4. ### Generate OAuth Credentials
+4. ### Enable the following APIs
+
+      Navigate to the [API Library](https://console.cloud.google.com/apis/library) and enable the following APIs
+
+      * [Google Drive API](https://console.cloud.google.com/apis/library/drive.googleapis.com)
+      * [Google Sheets API](https://console.cloud.google.com/apis/library/sheets.googleapis.com)
+      * [Google Ads API](https://console.cloud.google.com/apis/library/googleads.googleapis.com)
+      * [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com)
+      * [Identity and Access Management (IAM) API](https://console.cloud.google.com/apis/library/iam.googleapis.com)
+      * [Cloud Resource Manager API](https://console.cloud.google.com/apis/library/cloudresourcemanager.googleapis.com)
+
+5. ### Generate OAuth Credentials
 
     The Credentials are required 1) for pMax API access permissions (pmax-api) and 2) for permissions to trigger the application to run (pmax-trigger).
 
@@ -30,7 +41,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
     2. If you haven’t configured a Consent Screen, configure a new [OAuth Consent Screen](https://console.cloud.google.com/apis/credentials/consent)
         * User Type: “Internal”
         * Add following "scopes":
-            Google Ads API, Google Drive API, Google Sheets API, Cloud Pub/Sub API
+            Google Ads API (.../auth/adwords), Google Drive API (.../auth/drive.readonly), Google Sheets API (.../auth/spreadsheets), Cloud Pub/Sub API (.../auth/pubsub)
     3. [Create 'OAuth client ID'](https://console.cloud.google.com/apis/credentials/oauthclient) with Application Type: 'Web application'
     4. Add the following 'Authorized redirect URIs' :
         * [**pmax-trigger**] `'https://script.google.com/macros/d/<YOUR_APPS_SCRIPT_SCRIPT_ID>/usercallback'`
@@ -47,9 +58,9 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
 
         **Important**: Make sure to use the **Client ID** and **Client Secret** generated in step 4 for [pmax-api] to generate the tokens.
 
-5. ### Terraform Deployment
+6. ### Terraform Deployment
 
-    1. Open the cloud project where you want to deploy the solution and open the [Cloud Editor](https://shell.cloud.google.com/?show=ide%2Cterminal).
+    1. Open the cloud project where you want to deploy the solution and open the [Cloud Editor](https://shell.cloud.google.com/?show=ide%2Cterminal). Make sure to select the project where you want to deploy the solution using `gcloud config set project [PROJECT_ID]`
     2. Create a cookie for the Git client to use by visiting <https://professional-services.googlesource.com/new-password> and following the instructions.
     3. In the terminal, run
 
@@ -64,6 +75,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
         ```
 
     5. Open `/terraform/configuration-input.tfvars` file and complete all required input variables in the `configuration-input.tfvars` file.
+
     6. Run
 
         ```bash
@@ -83,7 +95,8 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
         ```
 
     9. Wait for terraform to deploy the solution.
-    10. In case you want to delete the service, run
+
+    10. In case you want to **delete** the service, run
 
         ```bash
         terraform destroy -var-file="configuration-input.tfvars"
@@ -91,7 +104,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
 
     **Note**: To obtain Google Ads Developer token refer to Apply for access to the Google Ads API.
 
-6. ### Using the tool
+7. ### Using the tool
 
     Template spreadsheet contains *pMax Execute* menu option with two functions:
     * **Refresh Sheet**: loads all existing in your account Campaigns, Asset Groups and Assets into related pages in the spreadsheet
