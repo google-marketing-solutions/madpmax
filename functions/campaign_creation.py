@@ -152,12 +152,11 @@ class CampaignService:
     return mutate_operations, error_message
 
   def process_campaign_data_and_create_campaigns(
-      self, campaign_data, google_spread_sheet_id, login_customer_id):
+      self, campaign_data, login_customer_id):
     """Creates campaigns via google API based.
 
     Args:
       campaign_data: Actual data for creating new campaigns in array form.
-      google_spread_sheet_id: Id of the sheet for updating the status.
       login_customer_id: Google ads customer id.
     """
     results = self.google_ads_service.retrieve_all_customers(login_customer_id)
