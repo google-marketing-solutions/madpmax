@@ -121,7 +121,7 @@ function onEdit(e) {
         }
         if(square_marketing_image_cnt < square_marketing_image_required){
           status = false
-          message = message + "\n\tNot enough square images assigned to the Asset Group. (" + (marketing_image_required - marketing_image_cnt) + " square marketing image missing)" 
+          message = message + "\n\tNot enough square images assigned to the Asset Group. (" + (square_marketing_image_required - square_marketing_image_cnt) + " square marketing image missing)" 
         }
         if(logo_cnt < logo_required){
           status = false
