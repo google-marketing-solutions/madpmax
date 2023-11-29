@@ -29,7 +29,7 @@ import yaml
 _SHEET_HEADER_SIZE = 5
 
 
-class SheetsService():
+class SheetsService:
   """Creates sheets service to read and write sheets.
 
   Attributes:
@@ -57,7 +57,8 @@ class SheetsService():
     self.google_ads_service = google_ads_service
     self.google_ads_client = google_ads_client
     self._sheets_service = discovery.build(
-        "sheets", "v4", credentials=credentials).spreadsheets()
+        "sheets", "v4", credentials=credentials
+    ).spreadsheets()
 
   def get_sheet_values(self, cell_range):
     """Retrieves values from sheet.
@@ -69,8 +70,11 @@ class SheetsService():
     Returns:
       Array of arrays of values in selectd field range.
     """
-    result = self._sheets_service.values().get(
-        spreadsheetId=self.spread_sheet_id, range=cell_range).execute()
+    result = (
+        self._sheets_service.values()
+        .get(spreadsheetId=self.spread_sheet_id, range=cell_range)
+        .execute()
+    )
     return result.get("values", [])
 
   def _set_cell_value(self, value, cell_range):
@@ -81,15 +85,13 @@ class SheetsService():
       cell_range: string representation of cell range. For example,
         "sheet_name!B2".
     """
-    value_range_body = {
-        "range": cell_range,
-        "values": [
-            [value]
-        ]
-    }
+    value_range_body = {"range": cell_range, "values": [[value]]}
     request = self._sheets_service.values().update(
-        spreadsheetId=self.spread_sheet_id, valueInputOption="USER_ENTERED",
-        range=cell_range, body=value_range_body)
+        spreadsheetId=self.spread_sheet_id,
+        valueInputOption="USER_ENTERED",
+        range=cell_range,
+        body=value_range_body,
+    )
     request.execute()
 
   def get_sheet_row(self, key, sheet_values, type):
@@ -111,21 +113,39 @@ class SheetsService():
       if type == "CUSTOMER":
         row_key = row[customerListColumnMap.CUSTOMER_NAME]
       if type == "CAMPAIGN":
-        row_key = (row[campaignListColumnMap.CUSTOMER_NAME] + ";" +
-                   row[campaignListColumnMap.CAMPAIGN_NAME])
-      if (type == "NEW_CAMPAIGN" and len(row) >
-              newCampaignsColumnMap.CAMPAIGN_NAME.value):
-        row_key = (row[newCampaignsColumnMap.CUSTOMER_NAME] + ";" +
-                   row[newCampaignsColumnMap.CAMPAIGN_NAME])
+        row_key = (
+            row[campaignListColumnMap.CUSTOMER_NAME]
+            + ";"
+            + row[campaignListColumnMap.CAMPAIGN_NAME]
+        )
+      if (
+          type == "NEW_CAMPAIGN"
+          and len(row) > newCampaignsColumnMap.CAMPAIGN_NAME.value
+      ):
+        row_key = (
+            row[newCampaignsColumnMap.CUSTOMER_NAME]
+            + ";"
+            + row[newCampaignsColumnMap.CAMPAIGN_NAME]
+        )
       if type == "ASSET_GROUP":
-        row_key = (row[assetGroupListColumnMap.CUSTOMER_NAME] + ";" +
-                   row[assetGroupListColumnMap.CAMPAIGN_NAME] + ";" +
-                   row[assetGroupListColumnMap.ASSET_GROUP_NAME])
-      if (type == "NEW_ASSET_GROUP" and len(row) >
-              newAssetGroupsColumnMap.ASSET_GROUP_NAME.value):
-        row_key = (row[newAssetGroupsColumnMap.CUSTOMER_NAME] + ";" +
-                   row[newAssetGroupsColumnMap.CAMPAIGN_NAME] + ";" +
-                   row[newAssetGroupsColumnMap.ASSET_GROUP_NAME])
+        row_key = (
+            row[assetGroupListColumnMap.CUSTOMER_NAME]
+            + ";"
+            + row[assetGroupListColumnMap.CAMPAIGN_NAME]
+            + ";"
+            + row[assetGroupListColumnMap.ASSET_GROUP_NAME]
+        )
+      if (
+          type == "NEW_ASSET_GROUP"
+          and len(row) > newAssetGroupsColumnMap.ASSET_GROUP_NAME.value
+      ):
+        row_key = (
+            row[newAssetGroupsColumnMap.CUSTOMER_NAME]
+            + ";"
+            + row[newAssetGroupsColumnMap.CAMPAIGN_NAME]
+            + ";"
+            + row[newAssetGroupsColumnMap.ASSET_GROUP_NAME]
+        )
 
       if row_key == key:
         result = row
@@ -165,7 +185,8 @@ class SheetsService():
     batch_update_spreadsheet_request_body = {"requests": request_lists}
     self._sheets_service.batchUpdate(
         spreadsheetId=self.spread_sheet_id,
-        body=batch_update_spreadsheet_request_body).execute()
+        body=batch_update_spreadsheet_request_body,
+    ).execute()
 
   def get_sheet_id_by_name(self, sheet_name):
     """Get sheet id by sheet name.
@@ -177,7 +198,8 @@ class SheetsService():
       sheet_id: id of the sheet with the given name. Not a spreadsheet id.
     """
     spreadsheet = self._sheets_service.get(
-        spreadsheetId=self.spread_sheet_id).execute()
+        spreadsheetId=self.spread_sheet_id
+    ).execute()
     for sheet in spreadsheet["sheets"]:
       if sheet["properties"]["title"] == sheet_name:
         return sheet["properties"]["sheetId"]
@@ -199,16 +221,12 @@ class SheetsService():
             "start": {
                 "sheetId": sheet_id,
                 "rowIndex": row_index,
-                "columnIndex": col_index
+                "columnIndex": col_index,
             },
-            "rows": [{
-                "values": [{
-                    "userEnteredValue": {
-                        "stringValue": input_value
-                    }
-                }]
-            }],
-            "fields": "userEnteredValue"
+            "rows": [
+                {"values": [{"userEnteredValue": {"stringValue": input_value}}]}
+            ],
+            "fields": "userEnteredValue",
         }
     }
     return error_note
@@ -229,24 +247,25 @@ class SheetsService():
             "start": {
                 "sheetId": sheet_id,
                 "rowIndex": row_index,
-                "columnIndex": col_index
+                "columnIndex": col_index,
             },
             "rows": [{
-                "values": [{
-                    "dataValidation": {
-                        "condition": {
-                            "type": "BOOLEAN",
+                "values": [
+                    {
+                        "dataValidation": {
+                            "condition": {
+                                "type": "BOOLEAN",
+                            }
                         }
                     }
-                }]
+                ]
             }],
-            "fields": "dataValidation"
+            "fields": "dataValidation",
         }
     }
     return checkbox
 
-  def get_dropdown(self, row_index, col_index,
-                   input_value, sheet_id):
+  def get_dropdown(self, row_index, col_index, input_value, sheet_id):
     """Retrieves target cells to update checkbox in the Sheet.
 
     Args:
@@ -261,7 +280,9 @@ class SheetsService():
     dropdown_values = []
 
     for value in input_value:
-      dropdown_values.append({"userEnteredValue": value, })
+      dropdown_values.append({
+          "userEnteredValue": value,
+      })
 
     dropdown = {
         "setDataValidation": {
@@ -270,16 +291,13 @@ class SheetsService():
                 "startRowIndex": row_index,
                 "endRowIndex": row_index + 1,
                 "startColumnIndex": col_index,
-                "endColumnIndex": col_index + 1
+                "endColumnIndex": col_index + 1,
             },
             "rule": {
-                "condition": {
-                    "type": "ONE_OF_LIST",
-                    "values": dropdown_values
-                },
+                "condition": {"type": "ONE_OF_LIST", "values": dropdown_values},
                 "showCustomUi": True,
-                "strict": False
-            }
+                "strict": False,
+            },
         }
     }
     return dropdown
@@ -301,22 +319,19 @@ class SheetsService():
             "start": {
                 "sheetId": sheet_id,
                 "rowIndex": row_index,
-                "columnIndex": col_index
+                "columnIndex": col_index,
             },
-            "rows": [{
-                "values": [{
-                    "userEnteredValue": {
-                        "formulaValue": formula
-                    }
-                }]
-            }],
-            "fields": "userEnteredValue"
+            "rows": [
+                {"values": [{"userEnteredValue": {"formulaValue": formula}}]}
+            ],
+            "fields": "userEnteredValue",
         }
     }
     return thumbnail
 
-  def get_sort_request(self, row_index, col_index, sheet_id, sort_col_1,
-                       sort_col_2):
+  def get_sort_request(
+      self, row_index, col_index, sheet_id, sort_col_1, sort_col_2
+  ):
     """Sorts range in sheet.
 
     Args:
@@ -337,22 +352,22 @@ class SheetsService():
                 "startColumnIndex": col_index,
             },
             "sortSpecs": [
-                {
-                    "sortOrder": "ASCENDING",
-                    "dimensionIndex": sort_col_1
-                },
-                {
-                    "sortOrder": "ASCENDING",
-                    "dimensionIndex": sort_col_2
-                }
-            ]
+                {"sortOrder": "ASCENDING", "dimensionIndex": sort_col_1},
+                {"sortOrder": "ASCENDING", "dimensionIndex": sort_col_2},
+            ],
         }
     }
     return sort
 
-  def variable_update_sheet_status(self, row_index, sheet_id, status_row_id,
-                                   upload_status, error_message="",
-                                   message_row_id=None):
+  def variable_update_sheet_status(
+      self,
+      row_index,
+      sheet_id,
+      status_row_id,
+      upload_status,
+      error_message="",
+      message_row_id=None,
+  ):
     """Update status and error message (if provided) in the sheet.
 
     Args:
@@ -369,14 +384,18 @@ class SheetsService():
     """
     update_request_list = []
 
-    status = self.get_status_note(row_index + _SHEET_HEADER_SIZE,
-                                  status_row_id, upload_status, sheet_id)
+    status = self.get_status_note(
+        row_index + _SHEET_HEADER_SIZE, status_row_id, upload_status, sheet_id
+    )
     update_request_list.append(status)
 
     if error_message and message_row_id:
-      error_note = self.get_status_note(row_index + _SHEET_HEADER_SIZE,
-                                        message_row_id, error_message,
-                                        sheet_id)
+      error_note = self.get_status_note(
+          row_index + _SHEET_HEADER_SIZE,
+          message_row_id,
+          error_message,
+          sheet_id,
+      )
       update_request_list.append(error_note)
 
     try:
@@ -402,28 +421,36 @@ class SheetsService():
     update_request_list = []
     for row_index in sheet_results:
       error_status = self.get_status_note(
-          row_index + _SHEET_HEADER_SIZE, column_map.ASSET_STATUS.value,
+          row_index + _SHEET_HEADER_SIZE,
+          column_map.ASSET_STATUS.value,
           sheet_results[row_index]["status"],
-          sheet_id)
+          sheet_id,
+      )
       update_request_list.append(error_status)
 
       if sheet_results[row_index]["status"] == assetStatus.UPLOADED.value[0]:
-        checkbox = self.get_checkbox(row_index + _SHEET_HEADER_SIZE,
-                                     column_map.DELETE_ASSET.value,
-                                     sheet_id)
+        checkbox = self.get_checkbox(
+            row_index + _SHEET_HEADER_SIZE,
+            column_map.DELETE_ASSET.value,
+            sheet_id,
+        )
         update_request_list.append(checkbox)
 
       error_note = self.get_status_note(
-          row_index + _SHEET_HEADER_SIZE, column_map.ERROR_MESSAGE.value,
+          row_index + _SHEET_HEADER_SIZE,
+          column_map.ERROR_MESSAGE.value,
           sheet_results[row_index]["message"],
-          sheet_id)
+          sheet_id,
+      )
       update_request_list.append(error_note)
 
       if "asset_group_asset" in sheet_results[row_index]:
         asset_group_asset_resource = self.get_status_note(
             row_index + _SHEET_HEADER_SIZE,
             column_map.ASSET_GROUP_ASSET.value,
-            sheet_results[row_index]["asset_group_asset"], sheet_id)
+            sheet_results[row_index]["asset_group_asset"],
+            sheet_id,
+        )
         update_request_list.append(asset_group_asset_resource)
     try:
       self.batch_update_requests(update_request_list)
@@ -444,14 +471,14 @@ class SheetsService():
     """
     sheet_id = None
     try:
-      sheet_id = self.get_sheet_id_by_name(
-          sheet_name)
+      sheet_id = self.get_sheet_id_by_name(sheet_name)
     except Exception as e:
       print(f"Error while retrieving the Sheet ID: {str(e)}")
     return sheet_id
 
-  def update_asset_group_sheet_status(self, status, error_message,
-                                      row_index, sheet_id):
+  def update_asset_group_sheet_status(
+      self, status, error_message, row_index, sheet_id
+  ):
     """Update error message in the sheet.
 
     Args:
@@ -466,14 +493,20 @@ class SheetsService():
     """
     update_request_list = []
 
-    error_note = self.get_status_note(row_index + _SHEET_HEADER_SIZE,
-                                      newAssetGroupsColumnMap.STATUS.value,
-                                      status, sheet_id)
+    error_note = self.get_status_note(
+        row_index + _SHEET_HEADER_SIZE,
+        newAssetGroupsColumnMap.STATUS.value,
+        status,
+        sheet_id,
+    )
     update_request_list.append(error_note)
 
     error_note = self.get_status_note(
-        row_index + _SHEET_HEADER_SIZE, newAssetGroupsColumnMap.MESSAGE.value,
-        error_message, sheet_id)
+        row_index + _SHEET_HEADER_SIZE,
+        newAssetGroupsColumnMap.MESSAGE.value,
+        error_message,
+        sheet_id,
+    )
     update_request_list.append(error_note)
 
     try:
@@ -485,17 +518,14 @@ class SheetsService():
     """Update error message in the sheet.
 
     Args:
-        asset_group_sheetlist: Array containing the information of the new
-          asset group.
+        asset_group_sheetlist: Array containing the information of the new asset
+          group.
 
     Raises:
         Exception: If unknown error occurs while updating rows in the Time
           Managed Sheet.
     """
-    resource = {
-        "majorDimension": "ROWS",
-        "values": [asset_group_sheetlist]
-    }
+    resource = {"majorDimension": "ROWS", "values": [asset_group_sheetlist]}
     sheet_range = "AssetGroupList!A:G"
 
     try:
@@ -503,7 +533,7 @@ class SheetsService():
           spreadsheetId=self.spread_sheet_id,
           range=sheet_range,
           body=resource,
-          valueInputOption="USER_ENTERED"
+          valueInputOption="USER_ENTERED",
       ).execute()
     except Exception as e:
       print(f"Unable to update Sheet rows: {str(e)}")
@@ -512,17 +542,14 @@ class SheetsService():
     """Update error message in the sheet.
 
     Args:
-        campaign_sheetlist: Array containing the information of the new
-          asset group.
+        campaign_sheetlist: Array containing the information of the new asset
+          group.
 
     Raises:
         Exception: If unknown error occurs while updating rows in the Time
           Managed Sheet.
     """
-    resource = {
-        "majorDimension": "ROWS",
-        "values": [campaign_sheetlist]
-    }
+    resource = {"majorDimension": "ROWS", "values": [campaign_sheetlist]}
     sheet_range = "CampaignList!A:D"
 
     try:
@@ -530,7 +557,7 @@ class SheetsService():
           spreadsheetId=self.spread_sheet_id,
           range=sheet_range,
           body=resource,
-          valueInputOption="USER_ENTERED"
+          valueInputOption="USER_ENTERED",
       ).execute()
     except Exception as e:
       print(f"Unable to update Sheet rows: {str(e)}")
@@ -545,17 +572,18 @@ class SheetsService():
     """
     sheet_output = []
 
-    asset_resource_column = '!L:L'
-    sheet_range = sheet_name + '!A:L'
+    asset_resource_column = "!L:L"
+    sheet_range = sheet_name + "!A:L"
     column_map = assetsColumnMap
 
-    if sheet_name == 'Sitelinks':
-      asset_resource_column = '!J:J'
-      sheet_range = sheet_name + '!A:J'
+    if sheet_name == "Sitelinks":
+      asset_resource_column = "!J:J"
+      sheet_range = sheet_name + "!A:J"
       column_map = sitelinksColumnMap
 
     asset_group_asset_values = self.get_sheet_values(
-        sheet_name + asset_resource_column)
+        sheet_name + asset_resource_column
+    )
 
     index = 0
     last_row = len(self.get_sheet_values(sheet_name + "!C:C")) + 1
@@ -572,91 +600,102 @@ class SheetsService():
           asset_type = row.asset_group_asset.field_type.name
 
           sheet_output[index][
-              column_map.ASSET_GROUP_NAME.value] = row.asset_group.name
+              column_map.ASSET_GROUP_NAME.value
+          ] = row.asset_group.name
           sheet_output[index][column_map.ASSET_THUMBNAIL.value] = ""
-          sheet_output[index][
-              column_map.
-              ASSET_TYPE.value] = asset_type
+          sheet_output[index][column_map.ASSET_TYPE.value] = asset_type
         if sheet_name == "Sitelinks":
           asset_type = row.campaign_asset.field_type.name
 
         sheet_output[index][column_map.ASSET_STATUS.value] = "UPLOADED"
         sheet_output[index][column_map.DELETE_ASSET.value] = ""
         sheet_output[index][
-            column_map.CUSTOMER_NAME.value] = row.customer.descriptive_name
-        sheet_output[index][
-            column_map.CAMPAIGN_NAME.value] = row.campaign.name
+            column_map.CUSTOMER_NAME.value
+        ] = row.customer.descriptive_name
+        sheet_output[index][column_map.CAMPAIGN_NAME.value] = row.campaign.name
 
         sheet_output[index][column_map.ERROR_MESSAGE.value] = ""
-        sheet_output[index][
-            column_map.
-            ASSET_GROUP_ASSET.value] = resource_name
+        sheet_output[index][column_map.ASSET_GROUP_ASSET.value] = resource_name
 
         if asset_type in (
-                "HEADLINE", "LONG_HEADLINE", "DESCRIPTION", "BUSINESS_NAME"):
+            "HEADLINE",
+            "LONG_HEADLINE",
+            "DESCRIPTION",
+            "BUSINESS_NAME",
+        ):
           sheet_output[index][
-              assetsColumnMap.ASSET_TEXT.value] = row.asset.text_asset.text
+              assetsColumnMap.ASSET_TEXT.value
+          ] = row.asset.text_asset.text
           sheet_output[index][assetsColumnMap.ASSET_CALL_TO_ACTION.value] = ""
           sheet_output[index][assetsColumnMap.ASSET_URL.value] = ""
         if asset_type in (
-            "LOGO", "LANDSCAPE_LOGO", "MARKETING_IMAGE",
-                "SQUARE_MARKETING_IMAGE", "PORTRAIT_MARKETING_IMAGE"):
-          sheet_output[index][
-              assetsColumnMap.ASSET_TEXT.value] = row.asset.name
+            "LOGO",
+            "LANDSCAPE_LOGO",
+            "MARKETING_IMAGE",
+            "SQUARE_MARKETING_IMAGE",
+            "PORTRAIT_MARKETING_IMAGE",
+        ):
+          sheet_output[index][assetsColumnMap.ASSET_TEXT.value] = row.asset.name
           sheet_output[index][assetsColumnMap.ASSET_CALL_TO_ACTION.value] = ""
           sheet_output[index][
-              assetsColumnMap.
-              ASSET_URL.value] = row.asset.image_asset.full_size.url
+              assetsColumnMap.ASSET_URL.value
+          ] = row.asset.image_asset.full_size.url
         if asset_type == "CALL_TO_ACTION_SELECTION":
-          sheet_output[index][
-              assetsColumnMap.ASSET_TEXT.value] = row.asset.name
-          sheet_output[index][
-              assetsColumnMap.
-              ASSET_CALL_TO_ACTION.
-              value] = self.google_ads_client.enums.CallToActionTypeEnum(
-                  row.asset.call_to_action_asset.call_to_action).name
+          sheet_output[index][assetsColumnMap.ASSET_TEXT.value] = row.asset.name
+          sheet_output[index][assetsColumnMap.ASSET_CALL_TO_ACTION.value] = (
+              self.google_ads_client.enums.CallToActionTypeEnum(
+                  row.asset.call_to_action_asset.call_to_action
+              ).name
+          )
           sheet_output[index][assetsColumnMap.ASSET_URL.value] = ""
         if asset_type == "YOUTUBE_VIDEO":
           sheet_output[index][assetsColumnMap.ASSET_TEXT.value] = row.asset.name
           sheet_output[index][assetsColumnMap.ASSET_CALL_TO_ACTION.value] = ""
+          sheet_output[index][assetsColumnMap.ASSET_URL.value] = (
+              "https://www.youtube.com/watch?v="
+              + row.asset.youtube_video_asset.youtube_video_id
+          )
+        if asset_type == "SITELINK" and sheet_name == "Sitelinks":
+          sheet_output[index][column_map.FINAL_URLS.value] = (
+              row.asset.final_urls[0]
+          )
           sheet_output[index][
-              assetsColumnMap.
-              ASSET_URL.value] = ("https://www.youtube.com/watch?v=" +
-                                  row.asset.youtube_video_asset.
-                                  youtube_video_id)
-        if asset_type == 'SITELINK' and sheet_name == 'Sitelinks':
+              column_map.LINK_TEXT.value
+          ] = row.asset.sitelink_asset.link_text
           sheet_output[index][
-              column_map.FINAL_URLS.value] = row.asset.final_urls[0]
+              column_map.DESCRIPTION1.value
+          ] = row.asset.sitelink_asset.description1
           sheet_output[index][
-              column_map.LINK_TEXT.value] = row.asset.sitelink_asset.link_text
+              column_map.DESCRIPTION2.value
+          ] = row.asset.sitelink_asset.description2
           sheet_output[index][
-              column_map.DESCRIPTION1.value] = row.asset.sitelink_asset.description1
-          sheet_output[index][
-              column_map.DESCRIPTION2.value] = row.asset.sitelink_asset.description2
-          sheet_output[index][
-              column_map.ASSET_GROUP_ASSET.value] = row.campaign_asset.resource_name
+              column_map.ASSET_GROUP_ASSET.value
+          ] = row.campaign_asset.resource_name
 
         index += 1
 
     # The ID of the spreadsheet to update
     value_input_option = "USER_ENTERED"
     insert_data_option = "INSERT_ROWS"
-    value_range_body = {
-        "values": sheet_output
-    }
+    value_range_body = {"values": sheet_output}
 
     try:
       request = self._sheets_service.values().append(
-          spreadsheetId=self.spread_sheet_id, range=sheet_range,
+          spreadsheetId=self.spread_sheet_id,
+          range=sheet_range,
           valueInputOption=value_input_option,
-          insertDataOption=insert_data_option, body=value_range_body)
+          insertDataOption=insert_data_option,
+          body=value_range_body,
+      )
       response = request.execute()
     except Exception as e:
       print(f"Unable to update Sheet rows: {str(e)}")
 
     self.update_assets_columns(response, sheet_output, sheet_name, account_map)
 
-  def update_assets_columns(self, response, sheet_output, sheet_name, account_map):
+  def update_assets_columns(
+      self, response, sheet_output, sheet_name, account_map
+  ):
     """Update custom columns in Assets Sheet.
 
     Includes the deletion checkbox, thumbnail formula and dropdown config.
@@ -673,39 +712,58 @@ class SheetsService():
 
     if response["tableRange"]:
       sheet_id = self.get_sheet_id(sheet_name)
-      start_row = int(
-          re.search("([0-9]*$)", response["tableRange"]).group())
+      start_row = int(re.search("([0-9]*$)", response["tableRange"]).group())
       update_request_list = []
       i = 0
       if "updatedRows" in response["updates"]:
         customer_list = list(account_map.keys())
         while i < response["updates"]["updatedRows"]:
-          update_request_list.append(self.get_checkbox(
-              start_row + i, column_map.DELETE_ASSET.value, sheet_id))
+          update_request_list.append(
+              self.get_checkbox(
+                  start_row + i, column_map.DELETE_ASSET.value, sheet_id
+              )
+          )
           if sheet_name == "Assets":
-            update_request_list.append(self.get_thumbnail(
-                start_row + i, column_map.ASSET_THUMBNAIL.value, sheet_id))
+            update_request_list.append(
+                self.get_thumbnail(
+                    start_row + i, column_map.ASSET_THUMBNAIL.value, sheet_id
+                )
+            )
           update_request_list.append(
               self.get_dropdown(
-                  start_row + i, column_map.CUSTOMER_NAME,
-                  customer_list, sheet_id))
+                  start_row + i,
+                  column_map.CUSTOMER_NAME,
+                  customer_list,
+                  sheet_id,
+              )
+          )
           if sheet_output[i][column_map.CUSTOMER_NAME]:
             campaign_list = list(
-                account_map[sheet_output[i][
-                    column_map.CUSTOMER_NAME]].keys())
+                account_map[sheet_output[i][column_map.CUSTOMER_NAME]].keys()
+            )
             update_request_list.append(
                 self.get_dropdown(
-                    start_row + i, column_map.CAMPAIGN_NAME,
-                    campaign_list, sheet_id))
-          if sheet_output[i][
-                  column_map.CAMPAIGN_NAME] and sheet_name == "Assets":
-            asset_group_list = account_map[sheet_output[i][
-                column_map.CUSTOMER_NAME]][sheet_output[i][
-                    column_map.CAMPAIGN_NAME]]
+                    start_row + i,
+                    column_map.CAMPAIGN_NAME,
+                    campaign_list,
+                    sheet_id,
+                )
+            )
+          if (
+              sheet_output[i][column_map.CAMPAIGN_NAME]
+              and sheet_name == "Assets"
+          ):
+            asset_group_list = account_map[
+                sheet_output[i][column_map.CUSTOMER_NAME]
+            ][sheet_output[i][column_map.CAMPAIGN_NAME]]
             update_request_list.append(
                 self.get_dropdown(
-                    start_row + i, column_map.ASSET_GROUP_NAME,
-                    asset_group_list, sheet_id))
+                    start_row + i,
+                    column_map.ASSET_GROUP_NAME,
+                    asset_group_list,
+                    sheet_id,
+                )
+            )
 
           i += 1
 
@@ -718,13 +776,14 @@ class SheetsService():
           print(f"Unable to update Sheet rows: {str(e)}")
 
   def refresh_spreadsheet(self):
-    """Update spreadsheet with exisitng assets, asset groups and campaigns.
-    """
+    """Update spreadsheet with exisitng assets, asset groups and campaigns."""
     account_map = {}
     results = self.google_ads_service.retrieve_all_customers(
-        self.login_customer_id)
+        self.login_customer_id
+    )
     account_map = self.update_sheet_lists(
-        results, "CustomerList", "!B:B", account_map)
+        results, "CustomerList", "!B:B", account_map
+    )
 
     for row in results:
       customer_id = str(row.customer_client.id)
@@ -732,29 +791,109 @@ class SheetsService():
       if customer_id:
         results = self.google_ads_service.retrieve_all_campaigns(customer_id)
         account_map = self.update_sheet_lists(
-            results, "CampaignList", "!D:D", account_map)
+            results, "CampaignList", "!D:D", account_map
+        )
 
-        results = self.google_ads_service.retrieve_all_asset_groups(
-            customer_id)
+        results = self.google_ads_service.retrieve_all_asset_groups(customer_id)
         account_map = self.update_sheet_lists(
-            results, "AssetGroupList", "!F:F", account_map)
+            results, "AssetGroupList", "!F:F", account_map
+        )
 
         results = self.google_ads_service.retrieve_all_assets(customer_id)
         self.update_asset_sheet_output(results, "Assets", account_map)
 
         results = self.google_ads_service.retrieve_sitelinks(customer_id)
-        self.update_asset_sheet_output(results, 'Sitelinks', account_map)
+        self.update_asset_sheet_output(results, "Sitelinks", account_map)
 
     self._set_cell_value(
-        "=SORT(UNIQUE({CustomerList!$A$5:$A}))",
-        "DropDownConfig!N3")
+        "=SORT(UNIQUE({CustomerList!$A$5:$A}))", "DropDownConfig!N3"
+    )
+
+  def refresh_campaign_list(self):
+    """Update spreadsheet with Campaign list."""
+    account_map = {}
+    results = self.google_ads_service.retrieve_all_customers(
+        self.login_customer_id
+    )
+    account_map = self.update_sheet_lists(
+        results, "CustomerList", "!B:B", account_map
+    )
+
+    for row in results:
+      customer_id = str(row.customer_client.id)
+
+      if customer_id:
+        results = self.google_ads_service.retrieve_all_campaigns(customer_id)
+        self.update_sheet_lists(results, "CampaignList", "!D:D", account_map)
+
+  def refresh_asset_group_list(self):
+    """Update spreadsheet with Asset Group list."""
+    account_map = {}
+    results = self.google_ads_service.retrieve_all_customers(
+        self.login_customer_id
+    )
+    account_map = self.update_sheet_lists(
+        results, "CustomerList", "!B:B", account_map
+    )
+
+    for row in results:
+      customer_id = str(row.customer_client.id)
+
+      if customer_id:
+        results = self.google_ads_service.retrieve_all_asset_groups(customer_id)
+        self.update_sheet_lists(results, "AssetGroupList", "!F:F", account_map)
+
+  def refresh_assets_list(self):
+    """Update spreadsheet with Assets list."""
+    account_map = {}
+    results = self.google_ads_service.retrieve_all_customers(
+        self.login_customer_id
+    )
+    account_map = self.update_sheet_lists(
+        results, "CustomerList", "!B:B", account_map
+    )
+
+    for row in results:
+      customer_id = str(row.customer_client.id)
+
+      if customer_id:
+        results = self.google_ads_service.retrieve_all_assets(customer_id)
+        self.update_asset_sheet_output(results, "Assets", account_map)
+
+  def refresh_sitelinks_list(self):
+    """Update spreadsheet with Sitelinks list."""
+    account_map = {}
+    results = self.google_ads_service.retrieve_all_customers(
+        self.login_customer_id
+    )
+    account_map = self.update_sheet_lists(
+        results, "CustomerList", "!B:B", account_map
+    )
+
+    for row in results:
+      customer_id = str(row.customer_client.id)
+
+      if customer_id:
+        results = self.google_ads_service.retrieve_sitelinks(customer_id)
+        self.update_asset_sheet_output(results, "Sitelinks", account_map)
+
+  def refresh_customer_id_list(self):
+    """Update spreadsheet with customer id list."""
+    results = self.google_ads_service.retrieve_all_customers(
+        self.login_customer_id
+    )
+    self.update_sheet_lists(results, "CustomerList", "!B:B", {})
+
+    self._set_cell_value(
+        "=SORT(UNIQUE({CustomerList!$A$5:$A}))", "DropDownConfig!N3"
+    )
 
   def update_sheet_lists(self, results, sheet_name, column, account_map):
-    """Write exisitng campaigns to campaign list sheet.
+    """Write exisitng customer list, campaigns, asset groups, assets and sitelinks to relative list sheet.
 
     Args:
-      results: Array of array containing the existing asset groups in
-        Google Ads.
+      results: Array of array containing the existing asset groups in Google
+        Ads.
       sheet_name: Name of the sheet to write the results to.
       column: string value representation of sheet column, with unique id.
       account_map: Google Ads account map, account ids and names.
@@ -775,32 +914,34 @@ class SheetsService():
         row_item_id = str(row.campaign.id)
         sheet_range = sheet_name + "!A:D"
       elif sheet_name == "AssetGroupList":
-        if row.asset_group.name not in account_map[
-                row.customer.descriptive_name][
-                row.campaign.name]:
+        if (
+            row.asset_group.name
+            not in account_map[row.customer.descriptive_name][row.campaign.name]
+        ):
           account_map[row.customer.descriptive_name][row.campaign.name].append(
-              row.asset_group.name)
+              row.asset_group.name
+          )
         row_item_id = str(row.asset_group.id)
         sheet_range = sheet_name + "!A:F"
 
       if [row_item_id] not in existing_values:
         sheet_output.append([])
-        sheet_output[index] = self.generate_list_sheet_output(
-            row, sheet_name)
+        sheet_output[index] = self.generate_list_sheet_output(row, sheet_name)
 
         index += 1
 
     value_input_option = "USER_ENTERED"
     insert_data_option = "INSERT_ROWS"
-    value_range_body = {
-        "values": sheet_output
-    }
+    value_range_body = {"values": sheet_output}
 
     try:
       request = self._sheets_service.values().append(
-          spreadsheetId=self.spread_sheet_id, range=sheet_range,
+          spreadsheetId=self.spread_sheet_id,
+          range=sheet_range,
           valueInputOption=value_input_option,
-          insertDataOption=insert_data_option, body=value_range_body)
+          insertDataOption=insert_data_option,
+          body=value_range_body,
+      )
       request.execute()
     except Exception as e:
       print(f"Unable to update Sheet rows: {str(e)}")
@@ -819,30 +960,42 @@ class SheetsService():
     """
     if sheet_name == "CustomerList":
       output = [None] * len(customerListColumnMap)
-      output[
-          customerListColumnMap.
-          CUSTOMER_NAME.value] = row.customer_client.descriptive_name
+      output[customerListColumnMap.CUSTOMER_NAME.value] = (
+          row.customer_client.descriptive_name
+      )
       output[customerListColumnMap.CUSTOMER_ID.value] = row.customer_client.id
     if sheet_name == "CampaignList":
       output = [None] * len(campaignListColumnMap)
       output[campaignListColumnMap.CAMPAIGN_NAME.value] = row.campaign.name
       output[campaignListColumnMap.CAMPAIGN_ID.value] = row.campaign.id
-      output[campaignListColumnMap.CUSTOMER_NAME.value] = row.customer.descriptive_name
+      output[campaignListColumnMap.CUSTOMER_NAME.value] = (
+          row.customer.descriptive_name
+      )
       output[campaignListColumnMap.CUSTOMER_ID.value] = row.customer.id
     if sheet_name == "AssetGroupList":
       output = [None] * len(assetGroupListColumnMap)
-      output[assetGroupListColumnMap.ASSET_GROUP_NAME.value] = row.asset_group.name
+      output[assetGroupListColumnMap.ASSET_GROUP_NAME.value] = (
+          row.asset_group.name
+      )
       output[assetGroupListColumnMap.ASSET_GROUP_ID.value] = row.asset_group.id
       output[assetGroupListColumnMap.CAMPAIGN_NAME.value] = row.campaign.name
       output[assetGroupListColumnMap.CAMPAIGN_ID.value] = row.campaign.id
-      output[assetGroupListColumnMap.CUSTOMER_NAME.value] = row.customer.descriptive_name
+      output[assetGroupListColumnMap.CUSTOMER_NAME.value] = (
+          row.customer.descriptive_name
+      )
       output[assetGroupListColumnMap.CUSTOMER_ID.value] = row.customer.id
 
     return output
 
-  def process_api_operations(self, mutate_type, mutate_operations,
-                             sheet_results, row_to_operations_mapping,
-                             asset_group_sheetlist, sheet_name):
+  def process_api_operations(
+      self,
+      mutate_type,
+      mutate_operations,
+      sheet_results,
+      row_to_operations_mapping,
+      asset_group_sheetlist,
+      sheet_name,
+  ):
     """Logic to process API bulk operations based on type.
 
     Based on the request type, the bulk API requests will be send to the API.
@@ -862,8 +1015,7 @@ class SheetsService():
     # Bulk requests are grouped by Asset Group Alias and are processed
     # one by one in bulk.
 
-    new_asset_group_values = self.get_sheet_values(
-        "NewAssetGroups!A6:L")
+    new_asset_group_values = self.get_sheet_values("NewAssetGroups!A6:L")
 
     for customer_id in mutate_operations:
       for asset_group_alias in mutate_operations[customer_id]:
@@ -872,8 +1024,11 @@ class SheetsService():
         # Error message for asset Groups.
         asset_group_response, asset_group_error_message = (
             self.google_ads_service.bulk_mutate(
-                mutate_type, mutate_operations[customer_id][asset_group_alias],
-                customer_id))
+                mutate_type,
+                mutate_operations[customer_id][asset_group_alias],
+                customer_id,
+            )
+        )
 
         # Check if a successful API response, if so, process output.
         if asset_group_response:
@@ -881,7 +1036,8 @@ class SheetsService():
               self.google_ads_service.process_asset_results(
                   asset_group_response,
                   mutate_operations[customer_id][asset_group_alias],
-                  row_to_operations_mapping, mutate_type
+                  row_to_operations_mapping,
+                  mutate_type,
               )
           )
 
@@ -889,24 +1045,28 @@ class SheetsService():
             row_number = self.get_row_number_by_value(
                 asset_group_alias.split(";"),
                 new_asset_group_values,
-                newAssetGroupsColumnMap.CUSTOMER_NAME.value
+                newAssetGroupsColumnMap.CUSTOMER_NAME.value,
             )
 
             sheet_id = self.get_sheet_id("NewAssetGroups")
             self.update_asset_group_sheet_status(
-                "UPLOADED", "", row_number, sheet_id)
-
-            asset_group_sheetlist[
-                asset_group_alias][
-                assetGroupListColumnMap.ASSET_GROUP_ID.value] = (
-                asset_group_response.mutate_operation_responses[
-                    0
-                ].asset_group_result.resource_name.split("/")[-1]
+                "UPLOADED", "", row_number, sheet_id
             )
+
+            asset_group_sheetlist[asset_group_alias][
+                assetGroupListColumnMap.ASSET_GROUP_ID.value
+            ] = asset_group_response.mutate_operation_responses[
+                0
+            ].asset_group_result.resource_name.split(
+                "/"
+            )[
+                -1
+            ]
             sheet_id = self.get_sheet_id("AssetGroupList")
 
             self.add_new_asset_group_to_list_sheet(
-                asset_group_sheetlist[asset_group_alias])
+                asset_group_sheetlist[asset_group_alias]
+            )
 
         # In case Asset Group creation returns an error string, updated the
         # results object and process to sheet.
@@ -915,19 +1075,19 @@ class SheetsService():
               self.google_ads_service.process_asset_group_results(
                   asset_group_error_message,
                   mutate_operations[customer_id][asset_group_alias],
-                  row_to_operations_mapping
+                  row_to_operations_mapping,
               )
           )
           row_number = self.get_row_number_by_value(
-            asset_group_alias.split(";"),
-            new_asset_group_values,
-            newAssetGroupsColumnMap.CUSTOMER_NAME.value
+              asset_group_alias.split(";"),
+              new_asset_group_values,
+              newAssetGroupsColumnMap.CUSTOMER_NAME.value,
           )
 
           sheet_id = self.get_sheet_id("NewAssetGroups")
 
           self.update_asset_group_sheet_status(
-              "ERROR", asset_group_error_message, row_number, sheet_id)
+              "ERROR", asset_group_error_message, row_number, sheet_id
+          )
 
-    self.update_asset_sheet_status(
-        sheet_results, sheet_name)
+    self.update_asset_sheet_status(sheet_results, sheet_name)
