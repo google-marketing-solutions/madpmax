@@ -34,9 +34,9 @@ variable "refresh_token" {
   description = "refresh_token"
 }
 
-variable "access_token" {
+variable "token" {
   type        = string
-  description = "access_token"
+  description = "Oauth api access token"
 }
 
 variable "login_customer_id" {
