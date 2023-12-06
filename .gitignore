@@ -1,0 +1,5 @@
+google-ads.yaml
+.venv/*
+__pycache__/
+path/*
+functions/config.yaml

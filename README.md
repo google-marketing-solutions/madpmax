@@ -1,18 +1,17 @@
 # Mad PMax: PMax Asset Automation
 
+Mad PMax is a solution for bulk upload or creation of Assets, Asset Groups and Campaiogns into Google PMax campaigns. 
+
 ## Instructions
 
 The Performance Max Asset Automation solution can be deployed on Google Cloud through Terraform. See the steps below. This will require roughly 2-4 hours to deploy.
 
-1. ### Access the repository
 
-    Check that you have access to the [solutions_pmax_asset_automation-readers](https://groups.google.com/a/professional-services.goog/g/Solutions_pmax_asset_automation-readers) Google group (with your company email address). This is necessary to clone the project repository into your Google Cloud Project (you should have Project Owner or Project Editor permissions).  If you don’t have access or you are not sure, contact your Google representatives or email <mad-pmax@google.com>
-
-2. ### Make a copy of [Template sheet](https://docs.google.com/spreadsheets/d/1TBzqzp6dvlNGRjsuFlfBbErBC_BSHlzQPzRcBahxn-Q/copy)
+1. ### Make a copy of [Template sheet](https://docs.google.com/spreadsheets/d/1TBzqzp6dvlNGRjsuFlfBbErBC_BSHlzQPzRcBahxn-Q/copy)
 
      See usage instructions in the [Template Sheet Guide](#template-sheet-guide) section.
 
-3. ### Create a new or Select an existing Google Cloud Project
+2. ### Create a new or Select an existing Google Cloud Project
 
       Select an **existing Cloud Project** to deploy the solution, or follow the next steps to **create a new cloud project**.
 
@@ -22,7 +21,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
       4. In the **Location** field, click Browse to display potential locations for your project.
       5. Click **Create**.
 
-4. ### Enable the following APIs
+3. ### Enable the following APIs
 
       Navigate to the [API Library](https://console.cloud.google.com/apis/library) and enable the following APIs
 
@@ -33,7 +32,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
       * [Identity and Access Management (IAM) API](https://console.cloud.google.com/apis/library/iam.googleapis.com)
       * [Cloud Resource Manager API](https://console.cloud.google.com/apis/library/cloudresourcemanager.googleapis.com)
 
-5. ### Generate OAuth Credentials
+4. ### Generate OAuth Credentials
 
     The Credentials are required 1) for pMax API access permissions (pmax-api) and 2) for permissions to trigger the application to run (pmax-trigger).
 
@@ -58,7 +57,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
 
         **Important**: Make sure to use the **Client ID** and **Client Secret** generated in step 4 for [pmax-api] to generate the tokens.
 
-6. ### Terraform Deployment
+5. ### Terraform Deployment
 
     1. Open the cloud project where you want to deploy the solution and open the [Cloud Editor](https://shell.cloud.google.com/?show=ide%2Cterminal). Make sure to select the project where you want to deploy the solution using `gcloud config set project [PROJECT_ID]`
     2. Create a cookie for the Git client to use by visiting <https://professional-services.googlesource.com/new-password> and following the instructions.
@@ -104,7 +103,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
 
     **Note**: To obtain Google Ads Developer token refer to Apply for access to the Google Ads API.
 
-7. ### Using the tool
+6. ### Using the tool
 
     Template spreadsheet contains *pMax Execute* menu option with two functions:
     * **Refresh Sheet**: loads all existing in your account Campaigns, Asset Groups and Assets into related pages in the spreadsheet
