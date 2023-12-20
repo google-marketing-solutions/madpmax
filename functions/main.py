@@ -72,20 +72,21 @@ def pmax_trigger(cloud_event: CloudEvent):
         cloud_event.data["message"]["data"]
     ).decode()
 
-    if message_data == "REFRESH":
-      cp.refresh_spreadsheet()
-    if message_data == "UPLOAD":
-      cp.create_api_operations()
-    if message_data == "REFRESH_CUSTOMER_LIST":
-      cp.refresh_customer_id_list()
-    if message_data == "REFRESH_CAMPAIGN_LIST":
-      cp.refresh_campaign_list()
-    if message_data == "REFRESH_ASSET_GROUP_LIST":
-      cp.refresh_asset_group_list()
-    if message_data == "REFRESH_ASSETS_LIST":
-      cp.refresh_assets_list()
-    if message_data == "REFRESH_SITELINK_LIST":
-      cp.refresh_sitelinks_list()
+    match message_data:
+      case "REFRESH":
+        cp.refresh_spreadsheet()
+      case "UPLOAD":
+        cp.create_api_operations()
+      case "REFRESH_CUSTOMER_LIST":
+        cp.refresh_customer_id_list()
+      case "REFRESH_CAMPAIGN_LIST":
+        cp.refresh_campaign_list()
+      case "REFRESH_ASSET_GROUP_LIST":
+        cp.refresh_asset_group_list()
+      case "REFRESH_ASSETS_LIST":
+        cp.refresh_assets_list()
+      case "REFRESH_SITELINK_LIST":
+        cp.refresh_sitelinks_list()
 
     print(
         "------- END "
