@@ -31,61 +31,58 @@ class AssetService:
     """
     self.google_ads_service = google_ads_service
 
-  def create_asset_mutation(self, row, customer_id, asset_group_id,
-                            new_asset_group):
+  def create_asset_mutation(
+      self, row, customer_id, asset_group_id, new_asset_group
+  ):
     """Set up mutate object for creating asset.
 
     Args:
       row: Sheet Row list.
       customer_id: Google Ads Customer id.
       asset_group_id: Google Ads Asset group id.
-      new_asset_group: Boolean, indicating if asset group is new or
-        already existing in Google Ads.
-    
+      new_asset_group: Boolean, indicating if asset group is new or already
+        existing in Google Ads.
+
     Returns:
       operations, asset_resource
     """
     operations = []
-    if assetsColumnMap.ASSET_URL.value < len(row):
-      asset_url = row[assetsColumnMap.ASSET_URL.value]
-    else:
-      asset_url = ""
+    asset_resource = None
 
-    # Asset name / asset type / call to action selection
+    asset_url = (
+        row[assetsColumnMap.ASSET_URL.value]
+        if assetsColumnMap.ASSET_URL.value < len(row)
+        else ""
+    )
     asset_type = row[assetsColumnMap.ASSET_TYPE.value]
-    asset_name_or_text = ""
+    asset_name_or_text = (
+        row[assetsColumnMap.ASSET_TEXT.value]
+        if assetsColumnMap.ASSET_TEXT.value < len(row)
+        else ""
+    )
+    asset_action_selection = (
+        row[assetsColumnMap.ASSET_CALL_TO_ACTION.value]
+        if assetsColumnMap.ASSET_CALL_TO_ACTION.value < len(row)
+        else ""
+    )
 
-    if assetsColumnMap.ASSET_TEXT.value < len(row):
-      asset_name_or_text = row[assetsColumnMap.ASSET_TEXT.value]
-
-    if assetsColumnMap.ASSET_CALL_TO_ACTION.value < len(row):
-      asset_action_selection = row[assetsColumnMap.ASSET_CALL_TO_ACTION.value]
-
-    # List of all image asset types in Google Ads pmax campaings.
     image_asset_types = {
         "MARKETING_IMAGE",
         "SQUARE_MARKETING_IMAGE",
         "PORTRAIT_MARKETING_IMAGE",
         "LOGO",
-        "LANDSCAPE_LOGO"}
+        "LANDSCAPE_LOGO",
+    }
 
     if asset_type == "YOUTUBE_VIDEO":
-      asset_creation_mutate_operation, asset_resource, field_type = (
+      mutate_operation, asset_resource, field_type = (
           self.google_ads_service.create_video_asset(
               asset_url, asset_type, customer_id
           )
       )
-      operations.append(asset_creation_mutate_operation)
-
-      asset_to_asset_group_mutate_operation = (
-          self.google_ads_service.add_asset_to_asset_group(
-              asset_resource, asset_group_id, field_type, customer_id
-          )
-      )
-      operations.append(asset_to_asset_group_mutate_operation)
-
+      operations.append(mutate_operation)
     elif asset_type in image_asset_types:
-      asset_creation_mutate_operation, asset_resource, field_type = (
+      mutate_operation, asset_resource, field_type = (
           self.google_ads_service.create_image_asset(
               asset_url,
               asset_name_or_text + f" #{uuid.uuid4()}",
@@ -93,56 +90,37 @@ class AssetService:
               customer_id,
           )
       )
-      operations.append(asset_creation_mutate_operation)
-
-      asset_to_asset_group_mutate_operation = (
-          self.google_ads_service.add_asset_to_asset_group(
-              asset_resource, asset_group_id, field_type, customer_id
-          )
-      )
-      operations.append(asset_to_asset_group_mutate_operation)
-    elif asset_type == "HEADLINE" or asset_type == "DESCRIPTION":
-      asset_creation_mutate_operation, asset_resource, field_type = (
+      operations.append(mutate_operation)
+    elif asset_type in [
+        "HEADLINE",
+        "DESCRIPTION",
+        "LONG_HEADLINE",
+        "BUSINESS_NAME",
+    ]:
+      mutate_operation, asset_resource, field_type = (
           self.google_ads_service.create_text_asset(
               asset_name_or_text, asset_type, customer_id
           )
       )
-      operations.append(asset_creation_mutate_operation)
-
       if not new_asset_group:
-        asset_to_asset_group_mutate_operation = (
+        operations.append(
             self.google_ads_service.add_asset_to_asset_group(
                 asset_resource, asset_group_id, field_type, customer_id
             )
         )
-        operations.append(asset_to_asset_group_mutate_operation)
-    elif asset_type == "LONG_HEADLINE" or asset_type == "BUSINESS_NAME":
-      asset_creation_mutate_operation, asset_resource, field_type = (
-          self.google_ads_service.create_text_asset(
-              asset_name_or_text, asset_type, customer_id
-          )
-      )
-      operations.append(asset_creation_mutate_operation)
-
-      asset_to_asset_group_mutate_operation = (
-          self.google_ads_service.add_asset_to_asset_group(
-              asset_resource, asset_group_id, field_type, customer_id
-          )
-      )
-      operations.append(asset_to_asset_group_mutate_operation)
     elif asset_type == "CALL_TO_ACTION_SELECTION":
-      asset_creation_mutate_operation, asset_resource, field_type = (
+      mutate_operation, asset_resource, field_type = (
           self.google_ads_service.create_call_to_action_asset(
               asset_action_selection, asset_type, customer_id
           )
       )
-      operations.append(asset_creation_mutate_operation)
+      operations.append(mutate_operation)
 
-      asset_to_asset_group_mutate_operation = (
+    if asset_resource:
+      operations.append(
           self.google_ads_service.add_asset_to_asset_group(
               asset_resource, asset_group_id, field_type, customer_id
           )
       )
-      operations.append(asset_to_asset_group_mutate_operation)
 
     return operations, asset_resource
