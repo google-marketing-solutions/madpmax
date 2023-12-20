@@ -14,14 +14,17 @@
 
 import enum
 
+
 class assetsColumnMap(enum.IntEnum):
-    ASSET_GROUP_ALIAS = 0,
-    ASSET_STATUS = 1,
-    DELETE_ASSET = 2,
-    ASSET_TYPE = 3,
-    ASSET_TEXT = 4,
-    ASSET_CALL_TO_ACTION = 5,
-    ASSET_URL = 6,
-    ASSET_THUMBNAIL = 7,
-    ERROR_MESSAGE = 8,
-    ASSET_GROUP_ASSET = 9
+    ASSET_STATUS = 0,
+    DELETE_ASSET = 1,
+    CUSTOMER_NAME = 2,
+    CAMPAIGN_NAME = 3,
+    ASSET_GROUP_NAME = 4,
+    ASSET_TYPE = 5,
+    ASSET_TEXT = 6,
+    ASSET_CALL_TO_ACTION = 7,
+    ASSET_URL = 8,
+    ASSET_THUMBNAIL = 9,
+    ERROR_MESSAGE = 10,
+    ASSET_GROUP_ASSET = 11
