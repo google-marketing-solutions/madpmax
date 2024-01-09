@@ -102,6 +102,8 @@ class AssetService:
               asset_name_or_text, asset_type, customer_id
           )
       )
+      operations.append(mutate_operation)
+
       if not new_asset_group:
         operations.append(
             self.google_ads_service.add_asset_to_asset_group(

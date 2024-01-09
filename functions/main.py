@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Main function, Used to run the mad pMax Creative Management tools."""
+"""Main trigger, Used to run the mad pMax Creative Management tools."""
 
 import base64
 import auth
@@ -27,24 +27,24 @@ class main:
   # RawData sheet.
 
   def __init__(self):
-    with open("config.yaml", "r") as ymlfile:
-      cfg = yaml.safe_load(ymlfile)
+    with open("config.yaml", "r") as config_file:
+      config = yaml.safe_load(config_file)
 
     credentials = auth.get_credentials_from_file(
-        cfg["access_token"],
-        cfg["refresh_token"],
-        cfg["client_id"],
-        cfg["client_secret"],
+        config["access_token"],
+        config["refresh_token"],
+        config["client_id"],
+        config["client_secret"],
     )
     self.google_ads_client = googleads.client.GoogleAdsClient.load_from_storage(
         "config.yaml", version="v14"
     )
 
     # Configuration input values.
-    self.google_spread_sheet_id = cfg["spreadsheet_id"]
+    self.google_spread_sheet_id = config["spreadsheet_id"]
 
-    self.customer_id = cfg["customer_id"]
-    self.login_customer_id = cfg["login_customer_id"]
+    self.customer_id = config["customer_id"]
+    self.login_customer_id = config["login_customer_id"]
 
     self.pubsub_utils = pubsub.PubSub(credentials, self.google_ads_client)
 
@@ -76,7 +76,7 @@ def pmax_trigger(cloud_event: CloudEvent):
       case "REFRESH":
         cp.refresh_spreadsheet()
       case "UPLOAD":
-        cp.create_api_operations()
+        cp.create_api_operations(self.login_customer_id)
       case "REFRESH_CUSTOMER_LIST":
         cp.refresh_customer_id_list()
       case "REFRESH_CAMPAIGN_LIST":
@@ -98,6 +98,9 @@ def pmax_trigger(cloud_event: CloudEvent):
 if __name__ == "__main__":
   # GoogleAdsClient will read the google-ads.yaml configuration file in the
   # home directory if none is specified.
-  pmax_operations = main()
+  pmax_operations = main().pubsub_utils
   pmax_operations.refresh_spreadsheet()
-  pmax_operations.create_api_operations()
+
+  with open("config.yaml", "r") as ymlfile:
+    cfg = yaml.safe_load(ymlfile)
+  pmax_operations.create_api_operations(cfg["login_customer_id"])
