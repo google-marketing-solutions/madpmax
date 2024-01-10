@@ -33,7 +33,9 @@ class PubSub:
     self.campaign_service = campaign_creation.CampaignService(
         self.google_ads_service, self.sheet_service, google_ads_client
     )
-    self.asset_service = asset_creation.AssetService(self.google_ads_service)
+    self.asset_service = asset_creation.AssetService(
+        google_ads_client, self.google_ads_service
+    )
     self.asset_group_service = asset_group_creation.AssetGroupService(
         self.google_ads_service, self.sheet_service, google_ads_client
     )
