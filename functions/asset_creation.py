@@ -16,6 +16,7 @@
 import requests
 import uuid
 from enums.asset_column_map import assetsColumnMap
+import validators
 
 
 class AssetService:
@@ -61,7 +62,7 @@ class AssetService:
         existing in Google Ads.
 
     Returns:
-      operations, asset_resource
+      operations
     """
     operations = []
     asset_resource = None
@@ -84,12 +85,22 @@ class AssetService:
 
     match asset_type:
       case "YOUTUBE_VIDEO":
+        if not asset_url:
+          raise ValueError(f"Asset URL is required to create a {asset_type} "
+              "Asset")
+        if not validators.url(asset_url):
+          raise ValueError(f"Asset URL '{asset_url}' is not a valid URL")
         mutate_operation = (
             self.create_video_asset(
                 asset_url, customer_id
             )
         )
       case asset_type if asset_type in self.image_asset_types:
+        if not asset_url:
+          raise ValueError(f"Asset URL is required to create a {asset_type} "
+              "Asset")
+        if not validators.url(asset_url):
+          raise ValueError(f"Asset URL '{asset_url}' is not a valid URL")
         mutate_operation = (
             self.create_image_asset(
                 asset_url,
@@ -98,12 +109,18 @@ class AssetService:
             )
         )
       case asset_type if asset_type in self.text_asset_types:
+        if not asset_name_or_text:
+          raise ValueError(f"Asset Text is required to create a {asset_type} "
+              "Asset")
         mutate_operation = (
             self.create_text_asset(
                 asset_name_or_text, customer_id
             )
         )
       case "CALL_TO_ACTION_SELECTION":
+        if not asset_action_selection:
+          raise ValueError(f"Call To Action required to create a {asset_type} "
+              "Asset")
         mutate_operation = (
             self.create_call_to_action_asset(
                 asset_action_selection, customer_id
@@ -120,7 +137,7 @@ class AssetService:
           )
       )
 
-    return operations, asset_resource
+    return operations
 
   def create_text_asset(self, text, customer_id):
     """Generates the image asset and returns the resource name.

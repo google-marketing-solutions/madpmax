@@ -1,5 +1,19 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests for Asset Creation"""
+
 from datetime import datetime, timedelta
-import pprint
 import unittest
 import re
 from unittest.mock import MagicMock
@@ -37,14 +51,13 @@ class TestAssetService(unittest.TestCase):
       "Test Headline"
     ]
     new_asset_group = False
-    operations, asset_resource = self.asset_service.create_asset_mutation(
+    operations = self.asset_service.create_asset_mutation(
         row,
         customer_id,
         asset_group_id,
         new_asset_group,
     )
     self.assertIsNotNone(operations)
-    self.assertIsNotNone(asset_resource)
     self.assertEqual(len(operations), 2)
     self.assertEqual(
         operations[0].asset_operation.create.text_asset.text, "Test Headline"
@@ -55,10 +68,8 @@ class TestAssetService(unittest.TestCase):
     )
     self.assertEqual(
         operations[
-            1].asset_group_asset_operation.create.asset, asset_resource
-    )
-    self.assertEqual(
-        operations[0].asset_operation.create.resource_name, asset_resource
+            1].asset_group_asset_operation.create.asset,
+            operations[0].asset_operation.create.resource_name
     )
 
   def test_create_video_asset_when_data_is_valid(self):
@@ -77,7 +88,7 @@ class TestAssetService(unittest.TestCase):
       "https://www.youtube.com/watch?v=qqiqlJEvTvg"
     ]
     new_asset_group = False
-    operations, asset_resource = self.asset_service.create_asset_mutation(
+    operations = self.asset_service.create_asset_mutation(
         row,
         customer_id,
         asset_group_id,
@@ -85,7 +96,6 @@ class TestAssetService(unittest.TestCase):
     )
     self.assertIsNotNone(operations)
     self.assertEqual(len(operations), 2)
-    self.assertIsNotNone(asset_resource)
     self.assertEqual(
         operations[
             1].asset_group_asset_operation.create.field_type, "YOUTUBE_VIDEO"
@@ -96,10 +106,8 @@ class TestAssetService(unittest.TestCase):
     )
     self.assertEqual(
         operations[
-            1].asset_group_asset_operation.create.asset, asset_resource
-    )
-    self.assertEqual(
-        operations[0].asset_operation.create.resource_name, asset_resource
+            1].asset_group_asset_operation.create.asset,
+            operations[0].asset_operation.create.resource_name
     )
 
   def test_create_image_asset_when_data_is_valid(self):
@@ -117,7 +125,7 @@ class TestAssetService(unittest.TestCase):
       "https://tpc.googlesyndication.com/simgad/17627663494327917134"
     ]
     new_asset_group = False
-    operations, asset_resource = self.asset_service.create_asset_mutation(
+    operations = self.asset_service.create_asset_mutation(
         row,
         customer_id,
         asset_group_id,
@@ -125,7 +133,6 @@ class TestAssetService(unittest.TestCase):
     )
     self.assertIsNotNone(operations)
     self.assertEqual(len(operations), 2)
-    self.assertIsNotNone(asset_resource)
     self.assertEqual(
         operations[
             1].asset_group_asset_operation.create.field_type, "SQUARE_MARKETING_IMAGE"
@@ -140,11 +147,82 @@ class TestAssetService(unittest.TestCase):
     )
     self.assertEqual(
         operations[
-            1].asset_group_asset_operation.create.asset, asset_resource
+            1].asset_group_asset_operation.create.asset,
+            operations[0].asset_operation.create.resource_name
     )
-    self.assertEqual(
-        operations[0].asset_operation.create.resource_name, asset_resource
-    )
+
+  def test_throw_error_when_no_text_for_text_asset(self):
+    customer_id = 456789
+    asset_group_id = 123456
+    row = [
+      "",
+      "FALSE",
+      "Test Customer",
+      "Test Campaign",
+      "Test Asset Group",
+      "HEADLINE",
+      None
+    ]
+    new_asset_group = False
+    with self.assertRaises(ValueError) as error:
+      self.asset_service.create_asset_mutation(
+            row,
+            customer_id,
+            asset_group_id,
+            new_asset_group,
+        )
+    self.assertEqual(str(error.exception), "Asset Text is required to create "
+        "a HEADLINE Asset")
+
+  def test_throw_error_when_no_image_for_image_asset(self):
+    customer_id = 456789
+    asset_group_id = 123456
+    row = [
+      "",
+      "FALSE",
+      "Test Customer",
+      "Test Campaign",
+      "Test Asset Group",
+      "SQUARE_MARKETING_IMAGE",
+      "",
+      "",
+      ""
+    ]
+    new_asset_group = False
+    with self.assertRaises(ValueError) as error:
+      self.asset_service.create_asset_mutation(
+            row,
+            customer_id,
+            asset_group_id,
+            new_asset_group,
+        )
+    self.assertEqual(str(error.exception), "Asset URL is required to create "
+        "a SQUARE_MARKETING_IMAGE Asset")
+
+  def test_throw_error_when_no_valid_URL_for_video_asset(self):
+    customer_id = 456789
+    asset_group_id = 123456
+    row = [
+      "",
+      "FALSE",
+      "Test Customer",
+      "Test Campaign",
+      "Test Asset Group",
+      "YOUTUBE_VIDEO",
+      "",
+      "",
+      "youtube.com/watch?v=qqiqlJEvTvg"
+    ]
+    new_asset_group = False
+    with self.assertRaises(ValueError) as error:
+      self.asset_service.create_asset_mutation(
+            row,
+            customer_id,
+            asset_group_id,
+            new_asset_group,
+        )
+    self.assertEqual(str(error.exception), "Asset URL 'youtube.com/watch?v=qqiqlJEvTvg' "
+        "is not a valid URL")
 
 if __name__ == '__main__':
     unittest.main()

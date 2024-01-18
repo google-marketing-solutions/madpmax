@@ -184,11 +184,12 @@ class DataProcessingService:
           # Asset name / asset type
           asset_type = row[assetsColumnMap.ASSET_TYPE]
 
-          operations, asset_resource = (
+          operations = (
               self.asset_service.create_asset_mutation(
                   row, customer_id, asset_group_id, new_asset_group)
               )
 
+          asset_resource = operations[0].asset_operation.create.resource_name
           mutate_operations.extend(operations)
 
           # Check if asset operation for the Asset Group already exists.
