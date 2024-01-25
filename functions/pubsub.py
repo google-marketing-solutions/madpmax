@@ -16,6 +16,7 @@
 import ads_api
 import asset_creation
 import asset_group_creation
+import auth
 import campaign_creation
 import data_processing
 import sheet_api
@@ -25,7 +26,16 @@ import sitelink_creation
 class PubSub:
   """Main function to call classes and methods to upload to api."""
 
-  def __init__(self, credentials, google_ads_client):
+  def __init__(self, config, google_ads_client):
+    credentials = auth.get_credentials_from_file(
+        config["access_token"],
+        config["refresh_token"],
+        config["client_id"],
+        config["client_secret"],
+    )
+
+    self.login_customer_id = config["login_customer_id"]
+
     self.google_ads_service = ads_api.AdService(google_ads_client)
     self.sheet_service = sheet_api.SheetsService(
         credentials, google_ads_client, self.google_ads_service
@@ -65,7 +75,7 @@ class PubSub:
   def refresh_sitelinks_list(self):
     self.sheet_service.refresh_sitelinks_list()
 
-  def create_api_operations(self, login_customer_id):
+  def create_api_operations(self):
     """Reads the campaigns and asset groups from the input sheet, creates assets.
 
     For the assets provided. Removes the provided placeholder assets, and
@@ -79,7 +89,7 @@ class PubSub:
 
     # Load new Campaigns Spreadsheet and create campaigns
     self.campaign_service.process_campaign_data_and_create_campaigns(
-        new_campaign_data, login_customer_id
+        new_campaign_data, self.login_customer_id
     )
 
     asset_sheet_name = "Assets"
