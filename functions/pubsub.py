@@ -16,6 +16,7 @@
 import ads_api
 import asset_creation
 import asset_group_creation
+import auth
 import campaign_creation
 import data_processing
 import sheet_api
@@ -25,7 +26,16 @@ import sitelink_creation
 class PubSub:
   """Main function to call classes and methods to upload to api."""
 
-  def __init__(self, credentials, google_ads_client):
+  def __init__(self, config, google_ads_client):
+    credentials = auth.get_credentials_from_file(
+        config["access_token"],
+        config["refresh_token"],
+        config["client_id"],
+        config["client_secret"],
+    )
+
+    self.login_customer_id = config["login_customer_id"]
+
     self.google_ads_service = ads_api.AdService(google_ads_client)
     self.sheet_service = sheet_api.SheetsService(
         credentials, google_ads_client, self.google_ads_service
@@ -37,7 +47,8 @@ class PubSub:
         google_ads_client, self.google_ads_service
     )
     self.asset_group_service = asset_group_creation.AssetGroupService(
-        self.google_ads_service, self.sheet_service, google_ads_client
+        self.google_ads_service, self.sheet_service, self.asset_service,
+        google_ads_client
     )
     self.data_processing_service = data_processing.DataProcessingService(
         self.sheet_service, self.google_ads_service, self.asset_service,
@@ -65,92 +76,37 @@ class PubSub:
   def refresh_sitelinks_list(self):
     self.sheet_service.refresh_sitelinks_list()
 
-  def create_api_operations(self, login_customer_id):
+  def create_api_operations(self):
     """Reads the campaigns and asset groups from the input sheet, creates assets.
 
     For the assets provided. Removes the provided placeholder assets, and
     writes the results back to the spreadsheet.
 
-    Args:
-      login_customer_id: Google ads customer id.
     """
     # Get Values from input sheet
+    asset_sheet_name = "Assets"
+    # Get Values from input sheet
     new_campaign_data = self.sheet_service.get_sheet_values("NewCampaigns!A6:L")
+    sitelink_data = self.sheet_service.get_sheet_values("Sitelinks!A6:J")
+    asset_data = self.sheet_service.get_sheet_values(asset_sheet_name + "!A6:L")
+    new_asset_group_data = self.sheet_service.get_sheet_values(
+        "NewAssetGroups!A6:T"
+    )
 
     # Load new Campaigns Spreadsheet and create campaigns
     self.campaign_service.process_campaign_data_and_create_campaigns(
-        new_campaign_data, login_customer_id
+        new_campaign_data, self.login_customer_id
     )
 
-    asset_sheet_name = "Assets"
-    # Get Values from input sheet
-    asset_data = self.sheet_service.get_sheet_values(asset_sheet_name + "!A6:L")
+    campaign_data = self.sheet_service.get_sheet_values("CampaignList!A6:D")
+
+    if new_asset_group_data:
+      self.asset_group_service.process_asset_group_data_and_create(
+          new_asset_group_data, campaign_data)
+
     asset_group_data = self.sheet_service.get_sheet_values(
         "AssetGroupList!A6:F"
     )
-    new_asset_group_data = self.sheet_service.get_sheet_values(
-        "NewAssetGroups!A6:K"
-    )
-    campaign_data = self.sheet_service.get_sheet_values("CampaignList!A6:D")
-    sitelink_data = self.sheet_service.get_sheet_values("Sitelinks!A6:J")
-
-    (
-        asset_operations,
-        sheet_results,
-        asset_group_sheetlist,
-        asset_group_headline_operations,
-        asset_group_description_operations,
-        row_to_operations_mapping,
-        asset_group_operations,
-    ) = self.data_processing_service.process_data(
-        asset_data, asset_group_data, new_asset_group_data, campaign_data
-    )
-
-    if asset_operations:
-      # Update Assets only in Google Ads
-      self.sheet_service.process_api_operations(
-          "ASSETS",
-          asset_operations,
-          sheet_results,
-          row_to_operations_mapping,
-          asset_group_sheetlist,
-          asset_sheet_name,
-      )
-    if asset_group_operations:
-      # create asset group description api objects.
-      descriptions = self.google_ads_service.create_multiple_text_assets(
-          asset_group_description_operations
-      )
-      asset_group_operations, row_to_operations_mapping = (
-          self.google_ads_service.compile_asset_group_operations(
-              asset_group_operations,
-              descriptions,
-              "DESCRIPTIONS",
-              row_to_operations_mapping,
-          )
-      )
-
-      # create asset group headlines api objects.
-      headlines = self.google_ads_service.create_multiple_text_assets(
-          asset_group_headline_operations
-      )
-      asset_group_operations, row_to_operations_mapping = (
-          self.google_ads_service.compile_asset_group_operations(
-              asset_group_operations,
-              headlines,
-              "HEADLINES",
-              row_to_operations_mapping,
-          )
-      )
-
-      self.sheet_service.process_api_operations(
-          "ASSET_GROUPS",
-          asset_group_operations,
-          sheet_results,
-          row_to_operations_mapping,
-          asset_group_sheetlist,
-          asset_sheet_name,
-      )
 
     # Load new Sitelinks Spreadsheet and create Sitelinks
     self.sitelink_service.process_sitelink_data(sitelink_data, campaign_data)

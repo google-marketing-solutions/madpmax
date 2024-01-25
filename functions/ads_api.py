@@ -119,24 +119,46 @@ class AdService:
                 f'\n\tError message: "{error.message}".'
             )
         print(error_message)
-    else:
-      try:
-        response = googleads_service.mutate(request=request)
-      except GoogleAdsException as ex:
-        error_message = (
-            f'Request with ID "{ex.request_id}" failed and includes the'
-            " following errors:"
-        )
-        for error in ex.failure.errors:
-          if error.message != "Resource was not found.":
-            i = len(error.location.field_path_elements) - 1
-            error_message = (
-                error_message
-                + "\n\tError message:"
-                f" [{error.location.field_path_elements[i].field_name}]"
-                f' "{error.message}".'
-            )
-        print(error_message)
+
+    return response, error_message
+
+  def bulk_mutate_asset_group(self, mutate_operations, customer_id):
+    """Process Bulk Mutate operation via Google Ads API.
+
+    Args:
+      mutate_operations: Array of mutate operations.
+      customer_id: customer id.
+
+    Returns:
+      Response API object.
+    """
+    response = None
+    error_message = None
+
+    googleads_service = self._google_ads_client.get_service(
+        "GoogleAdsService")
+
+    request = self._google_ads_client.get_type("MutateGoogleAdsRequest")
+    request.customer_id = customer_id
+    request.mutate_operations = mutate_operations
+
+    try:
+      response = googleads_service.mutate(request=request)
+    except GoogleAdsException as ex:
+      error_message = (
+          f'Request with ID "{ex.request_id}" failed and includes the'
+          " following errors:"
+      )
+      for error in ex.failure.errors:
+        if error.message != "Resource was not found.":
+          i = len(error.location.field_path_elements) - 1
+          error_message = (
+              error_message
+              + "\n\tError message:"
+              f" [{error.location.field_path_elements[i].field_name}]"
+              f' "{error.message}".'
+          )
+      print(error_message)
 
     return response, error_message
 
@@ -304,67 +326,55 @@ class AdService:
         i += 1
     return results
 
-  def create_multiple_text_assets(self, operations):
+  def create_multiple_text_assets(self, operations, customer_id):
     """Creates multiple text assets and returns the list of resource names.
 
     Args:
       operations: a list of api operations, each of which will be used to
         create a text asset.
+      customer_id: Google Ads customer id.
 
     Returns:
       asset_resource_names: a list of asset resource names.
     """
     # Here again we use the GoogleAdService to create multiple text
     # assets in a single request.
+    asset_resource_names = []
+    error_message = None
+    response = None
+
     googleads_service = self._google_ads_client.get_service(
         "GoogleAdsService")
 
-    asset_resource_names = {}
+    request = self._google_ads_client.get_type(
+        "MutateGoogleAdsRequest")
+    request.customer_id = customer_id
+    request.mutate_operations = operations
+    request.partial_failure = True
 
-    response = None
-
-    for customer_id in operations:
-      for asset_group_alias in operations[customer_id]:
-        error_message = None
-
-        request = self._google_ads_client.get_type(
-            "MutateGoogleAdsRequest")
-        request.customer_id = customer_id
-        request.mutate_operations = operations[customer_id][asset_group_alias]
-        request.partial_failure = True
-
-        try:
-          # Send the operations in a single Mutate request.
-          response = googleads_service.mutate(request=request)
-        except GoogleAdsException as ex:
+    try:
+      # Send the operations in a single Mutate request.
+      response = googleads_service.mutate(request=request)
+    except GoogleAdsException as ex:
+      error_message = (
+          f'Request with ID "{ex.request_id}" failed and includes the'
+          " following errors:"
+      )
+      for error in ex.failure.errors:
+        if error.message != "Resource was not found.":
           error_message = (
-              f'Request with ID "{ex.request_id}" failed and includes the'
-              " following errors:"
+              error_message +
+              f'\n\tError message: "{error.message}".'
           )
-          for error in ex.failure.errors:
-            if error.message != "Resource was not found.":
-              error_message = (
-                  error_message +
-                  f'\n\tError message: "{error.message}".'
-              )
-          print(error_message)
+      raise Exception(error_message)
 
-        if customer_id not in asset_resource_names:
-          asset_resource_names[customer_id] = {}
-        if asset_group_alias not in asset_resource_names[customer_id]:
-          asset_resource_names[customer_id][asset_group_alias] = []
-        index = 0
-        if response:
-          for result in response.mutate_operation_responses:
-            temp_id = operations[customer_id][asset_group_alias][
-                index
-            ].asset_operation.create.resource_name
-            if result._pb.HasField("asset_result"):
-              asset_resource_names[customer_id][asset_group_alias].append(
-                  (result.asset_result.resource_name, temp_id)
-              )
-            index += 1
-          self.print_response_details(response)
+    if response:
+      for result in response.mutate_operation_responses:
+        if result._pb.HasField("asset_result"):
+          asset_resource_names.append(
+              result.asset_result.resource_name
+          )
+      self.print_response_details(response)
 
     return asset_resource_names
 
@@ -387,58 +397,6 @@ class AdService:
         else:
           name = field_descriptor.name
         print(f"Created a(n) {name} with {str(value).strip()}.")
-
-  def compile_asset_group_operations(
-      self, asset_group_operations, asset_operations, asset_type,
-      row_mapping):
-    """Compile different parts of the asset group api operations.
-
-    Args:
-      asset_group_operations: Asset group operations object.
-      asset_operations: Assets API operations object.
-      asset_type: String value "HEADLINES" or "DESCRIPTIONS"
-      row_mapping: Object with mapping between sheets rows and api operations.
-
-    Returns:
-      Objects, asset group operations, row_mapping.
-    """
-    if asset_type == "HEADLINES":
-      asset_field_type = (
-          self._google_ads_client.enums.AssetFieldTypeEnum.HEADLINE)
-    if asset_type == "DESCRIPTIONS":
-      asset_field_type = (
-          self._google_ads_client.enums.AssetFieldTypeEnum.DESCRIPTION)
-
-    for customer_id in asset_group_operations:
-      for asset_group_alias in asset_group_operations[customer_id]:
-        asset_group_id = asset_group_operations[customer_id][
-            asset_group_alias][0].asset_group_operation.create.resource_name
-
-        if asset_group_alias in asset_operations[customer_id]:
-          #  Link the description assets.
-          for resource_name in asset_operations[customer_id][asset_group_alias]:
-            mutate_operation = self._google_ads_client.get_type(
-                "MutateOperation")
-            asset_group_asset = (
-                mutate_operation.asset_group_asset_operation.create)
-            asset_group_asset.field_type = asset_field_type
-            asset_group_asset.asset_group = asset_group_id
-            asset_group_asset.asset = resource_name[0]
-            asset_group_operations[customer_id][asset_group_alias].insert(
-                1, mutate_operation)
-
-            # Adding logic to replace mapping from temp resource name to row
-            # to google ads resource name to row. Resource names can be
-            # duplicate --> providing ability to assign multiple row numbers
-            # to the same resource.
-            if resource_name[0] in row_mapping:
-              row_mapping[resource_name[0]] += row_mapping[resource_name[1]]
-              del row_mapping[resource_name[1]]
-            else:
-              row_mapping[resource_name[0]] = row_mapping[resource_name[1]]
-              del row_mapping[resource_name[1]]
-
-    return asset_group_operations, row_mapping
 
   def process_asset_group_results(self, error_message, operations, row_mapping):
     """Prints partial failure errors and success messages from a response.

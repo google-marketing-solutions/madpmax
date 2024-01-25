@@ -26,4 +26,14 @@ class newAssetGroupsColumnMap(enum.IntEnum):
     MOBILE_URL = 7,
     PATH1 = 8,
     PATH2 = 9,
-    MESSAGE = 10
+    HEADLINE1 = 10,
+    HEADLINE2 = 11,
+    HEADLINE3 = 12,
+    DESCRIPTION1 = 13,
+    DESCRIPTION2 = 14,
+    LONG_HEADLINE = 15,
+    BUSINESS_NAME = 16,
+    MARKETING_IMAGE= 17,
+    SQUARE_MARKETING_IMAGE = 18,
+    LOGO = 19,
+    MESSAGE = 20

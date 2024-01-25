@@ -290,7 +290,6 @@ class CampaignService:
                 )
 
               if campaigns_error_message:
-                print(campaigns_error_message)
                 self.sheet_service.variable_update_sheet_status(
                     row_number,
                     sheet_id,
