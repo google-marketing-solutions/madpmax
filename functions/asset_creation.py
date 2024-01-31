@@ -13,9 +13,8 @@
 # limitations under the License.
 """Provides functionality to create assets in Google Ads."""
 
-import requests
 import uuid
-from enums.asset_column_map import assetsColumnMap
+import requests
 import validators
 
 
@@ -49,95 +48,64 @@ class AssetService:
     }
     self.asset_temp_id = -10000
 
-  def create_asset_mutation(
-      self, row, customer_id, asset_group_id, new_asset_group
-  ):
+  def create_asset(self, asset_type, asset_value, customer_id):
     """Set up mutate object for creating asset.
 
     Args:
-      row: Sheet Row list.
+      asset_type: Type of Asset.
+      asset_value: Input value used to create asset (string).
       customer_id: Google Ads Customer id.
-      asset_group_id: Google Ads Asset group id.
-      new_asset_group: Boolean, indicating if asset group is new or already
-        existing in Google Ads.
 
     Returns:
-      operations
+      asset operation Array
     """
-    operations = []
-    asset_resource = None
-
-    asset_type = row[assetsColumnMap.ASSET_TYPE.value]
-    asset_url = (
-        row[assetsColumnMap.ASSET_URL.value]
-        if assetsColumnMap.ASSET_URL.value < len(row) else ""
-    )
-    asset_name_or_text = (
-        row[assetsColumnMap.ASSET_TEXT.value]
-        if assetsColumnMap.ASSET_TEXT.value < len(row)
-        else ""
-    )
-    asset_action_selection = (
-        row[assetsColumnMap.ASSET_CALL_TO_ACTION.value]
-        if assetsColumnMap.ASSET_CALL_TO_ACTION.value < len(row)
-        else ""
-    )
+    mutate_operation = None
 
     match asset_type:
       case "YOUTUBE_VIDEO":
-        if not asset_url:
+        if not asset_value:
           raise ValueError(f"Asset URL is required to create a {asset_type} "
-              "Asset")
-        if not validators.url(asset_url):
-          raise ValueError(f"Asset URL '{asset_url}' is not a valid URL")
+                           "Asset")
+        if not validators.url(asset_value):
+          raise ValueError(f"Asset URL '{asset_value}' is not a valid URL")
         mutate_operation = (
             self.create_video_asset(
-                asset_url, customer_id
+                asset_value, customer_id
             )
         )
       case asset_type if asset_type in self.image_asset_types:
-        if not asset_url:
+        if not asset_value:
           raise ValueError(f"Asset URL is required to create a {asset_type} "
-              "Asset")
-        if not validators.url(asset_url):
-          raise ValueError(f"Asset URL '{asset_url}' is not a valid URL")
+                           "Asset")
+        if not validators.url(asset_value):
+          raise ValueError(f"Asset URL '{asset_value}' is not a valid URL")
         mutate_operation = (
             self.create_image_asset(
-                asset_url,
-                asset_name_or_text + f" #{uuid.uuid4()}",
+                asset_value,
+                f"#{uuid.uuid4()}",
                 customer_id,
             )
         )
       case asset_type if asset_type in self.text_asset_types:
-        if not asset_name_or_text:
+        if not asset_value:
           raise ValueError(f"Asset Text is required to create a {asset_type} "
-              "Asset")
+                           "Asset")
         mutate_operation = (
             self.create_text_asset(
-                asset_name_or_text, customer_id
+                asset_value, customer_id
             )
         )
       case "CALL_TO_ACTION_SELECTION":
-        if not asset_action_selection:
+        if not asset_value:
           raise ValueError(f"Call To Action required to create a {asset_type} "
-              "Asset")
+                           "Asset")
         mutate_operation = (
             self.create_call_to_action_asset(
-                asset_action_selection, customer_id
+                asset_value, customer_id
             )
         )
 
-    asset_resource = mutate_operation.asset_operation.create.resource_name
-    operations.append(mutate_operation)
-
-    if asset_resource:
-      operations.append(
-          self.add_asset_to_asset_group(
-              asset_resource, asset_group_id, asset_type, customer_id
-          )
-      )
-
-    return operations
+    return mutate_operation
 
   def create_text_asset(self, text, customer_id):
     """Generates the image asset and returns the resource name.
@@ -247,12 +215,12 @@ class AssetService:
 
     return asset_operation
 
-  def add_asset_to_asset_group(self, asset_resource, asset_group_id, asset_type,
+  def add_asset_to_asset_group(self, resource_name, asset_group_id, asset_type,
                                customer_id):
     """Adds the asset resource to an asset group.
 
     Args:
-      asset_resource: resource name of the asset group.
+      resource_name: resource name of the asset group.
       asset_group_id: Google Ads asset group id.
       asset_type: Asset type.
       customer_id: customer id.
@@ -278,6 +246,6 @@ class AssetService:
         customer_id,
         asset_group_id,
     )
-    asset_group_asset.asset = asset_resource
+    asset_group_asset.asset = resource_name
 
     return asset_group_asset_operation
