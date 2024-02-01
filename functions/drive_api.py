@@ -22,9 +22,8 @@ import requests
 _DRIVE_URL = "drive.google.com"
 
 
-class DriveService():
-  """Provides Drive APIs to download images from Drive.
-  """
+class DriveService:
+  """Provides Drive APIs to download images from Drive."""
 
   def __init__(self, credential):
     """Creates a instance of drive service to handle requests.
@@ -33,7 +32,8 @@ class DriveService():
       credential: Drive APIs credentials.
     """
     self._drive_service = googleapiclient.discovery.build(
-        "drive", "v3", credentials=credential)
+        "drive", "v3", credentials=credential
+    )
 
   def _download_asset(self, url):
     """Downloads an asset based on url, from drive or the web.
@@ -63,10 +63,16 @@ class DriveService():
       file_id = None
       page_token = None
       while True:
-        response = self._drive_service.files().list(
-            q=f"name = '{file_name}'", spaces="drive",
-            fields="nextPageToken, "
-            "files(id)", pageToken=page_token).execute()
+        response = (
+            self._drive_service.files()
+            .list(
+                q=f"name = '{file_name}'",
+                spaces="drive",
+                fields="nextPageToken, files(id)",
+                pageToken=page_token,
+            )
+            .execute()
+        )
         for file in response.get("files", []):
           file_id = file.get("id")
           break
@@ -74,6 +80,6 @@ class DriveService():
         if page_token is None:
           break
     except googleapiclient.http.HttpError as error:
-      print(F"An error occurred: {error}")
+      print(f"An error occurred: {error}")
       file = None
     return file_id

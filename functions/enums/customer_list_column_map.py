@@ -16,5 +16,5 @@ import enum
 
 
 class customerListColumnMap(enum.IntEnum):
-    CUSTOMER_NAME = 0,
-    CUSTOMER_ID = 1
+  CUSTOMER_NAME = 0
+  CUSTOMER_ID = 1

@@ -13,10 +13,9 @@
 # limitations under the License.
 """Provides functionality to interact with Google Ads platform."""
 
-import io
 import re
-import uuid
 from enums.asset_status import assetStatus
+from enums.sheets import sheets
 from google.ads.googleads.errors import GoogleAdsException
 
 
@@ -44,8 +43,7 @@ class AdService:
     Returns:
       Campaign resource.
     """
-    campaign_service = self._google_ads_client.get_service(
-        "CampaignService")
+    campaign_service = self._google_ads_client.get_service("CampaignService")
 
     # Create campaign operation.
     return campaign_service.campaign_path(customer_id, campaign_id)
@@ -83,46 +81,7 @@ class AdService:
 
     return None
 
-  def bulk_mutate(self, mutate_type, mutate_operations, customer_id):
-    """Process Bulk Mutate operation via Google Ads API.
-
-    Args:
-      mutate_type: String with mutate request type.
-      mutate_operations: Array of mutate operations.
-      customer_id: customer id.
-
-    Returns:
-      Response API object.
-    """
-    response = None
-    error_message = None
-
-    googleads_service = self._google_ads_client.get_service(
-        "GoogleAdsService")
-    request = self._google_ads_client.get_type("MutateGoogleAdsRequest")
-    request.customer_id = customer_id
-    request.mutate_operations = mutate_operations
-    if mutate_type in ("ASSETS", "SITELINKS"):
-      request.partial_failure = True
-
-      try:
-        response = googleads_service.mutate(request=request)
-      except GoogleAdsException as ex:
-        error_message = (
-            f'Request with ID "{ex.request_id}" failed and includes the'
-            " following errors:"
-        )
-        for error in ex.failure.errors:
-          if error.message != "Resource was not found.":
-            error_message = (
-                error_message +
-                f'\n\tError message: "{error.message}".'
-            )
-        print(error_message)
-
-    return response, error_message
-
-  def bulk_mutate_asset_group(self, mutate_operations, customer_id):
+  def bulk_mutate(self, mutate_operations, customer_id, partial_failure=False):
     """Process Bulk Mutate operation via Google Ads API.
 
     Args:
@@ -130,17 +89,16 @@ class AdService:
       customer_id: customer id.
 
     Returns:
-      Response API object.
+      Response API object and error message.
     """
     response = None
     error_message = None
 
-    googleads_service = self._google_ads_client.get_service(
-        "GoogleAdsService")
-
+    googleads_service = self._google_ads_client.get_service("GoogleAdsService")
     request = self._google_ads_client.get_type("MutateGoogleAdsRequest")
     request.customer_id = customer_id
     request.mutate_operations = mutate_operations
+    request.partial_failure = partial_failure
 
     try:
       response = googleads_service.mutate(request=request)
@@ -151,12 +109,8 @@ class AdService:
       )
       for error in ex.failure.errors:
         if error.message != "Resource was not found.":
-          i = len(error.location.field_path_elements) - 1
           error_message = (
-              error_message
-              + "\n\tError message:"
-              f" [{error.location.field_path_elements[i].field_name}]"
-              f' "{error.message}".'
+              error_message + f'\n\tError message: "{error.message}".'
           )
       print(error_message)
 
@@ -182,8 +136,9 @@ class AdService:
     code = getattr(partial_failure, "code", None)
     return code != 0
 
-  def process_asset_results(self, response, operations,
-                            row_mapping, mutate_type):
+  def process_asset_results(
+      self, response, operations, row_mapping, mutate_type
+  ):
     """Prints partial failure errors and success messages from a response.
 
     Args:
@@ -205,28 +160,27 @@ class AdService:
 
       for error_detail in error_details:
         # Retrieve an instance of the GoogleAdsFailure class from the client
-        failure_message = self._google_ads_client.get_type(
-            "GoogleAdsFailure")
+        failure_message = self._google_ads_client.get_type("GoogleAdsFailure")
         # Parse the string into a google_ads_failure message instance.
         # To access class-only methods on the message we retrieve its type.
         google_ads_failure = type(failure_message)
-        failure_object = google_ads_failure.deserialize(
-            error_detail.value)
+        failure_object = google_ads_failure.deserialize(error_detail.value)
 
         for error in failure_object.errors:
           # Construct a list that details which element in
           # the above ad_group_operations list failed (by index number)
           # as well as the error message and error code.
           error_obj[error.location.field_path_elements[0].index] = [
-              ("A partial failure creating a(n)"
-               f" {error.location.field_path_elements[1].field_name[:-10]} at"
-               " index"
-               f" {error.location.field_path_elements[0].index} occurred"
+              (
+                  "A partial failure creating a(n)"
+                  f" {error.location.field_path_elements[1].field_name[:-10]} at"
+                  " index"
+                  f" {error.location.field_path_elements[0].index} occurred"
               ),
               f"Error message: {error.message}\n",
               f"Error code: {str(error.error_code).strip()}\n",
-              f"Error trigger: {error.trigger.string_value}"
-              ]
+              f"Error trigger: {error.trigger.string_value}",
+          ]
     else:
       print(
           "All operations completed successfully. No partial failure to show."
@@ -254,74 +208,78 @@ class AdService:
           # the error message.
           print(error_obj[i][0])
           error_asset_resource = operations[
-              i].asset_group_asset_operation.create.asset
-          if mutate_type == "SITELINKS":
+              i
+          ].asset_group_asset_operation.create.asset
+          if mutate_type == sheets.SITE_LINKS.value:
             error_asset_resource = operations[
-                i].campaign_asset_operation.create.asset
+                i
+            ].campaign_asset_operation.create.asset
 
           if not error_asset_resource:
             error_asset_resource = operations[
-                i + 1].asset_group_asset_operation.create.asset
-            if mutate_type == "SITELINKS":
+                i + 1
+            ].asset_group_asset_operation.create.asset
+            if mutate_type == sheets.SITE_LINKS.value:
               error_asset_resource = operations[
-                  i + 1].campaign_asset_operation.create.asset
+                  i + 1
+              ].campaign_asset_operation.create.asset
 
           for op in operations:
-            if (op.asset_operation.create.resource_name and
-                op.asset_operation.create.resource_name ==
-                error_asset_resource):
-              sheet_row_list = row_mapping[
-                  op.asset_operation.create.resource_name]
+            if (
+                op.asset_operation.create.resource_name
+                and op.asset_operation.create.resource_name
+                == error_asset_resource
+            ):
+              sheet_row = row_mapping[op.asset_operation.create.resource_name]
               if op.asset_operation.create.text_asset:
-                print(
-                    "\tText: " + op.asset_operation.create.text_asset.text)
+                print("\tText: " + op.asset_operation.create.text_asset.text)
               if op.asset_operation.create.image_asset.full_size.url:
-                print("\tImage Name: " +
-                      op.asset_operation.create.name)
+                print("\tImage Name: " + op.asset_operation.create.name)
                 print(
                     "\tImage URL: "
                     + op.asset_operation.create.image_asset.full_size.url
-                    + "\n")
+                    + "\n"
+                )
 
-          for sheet_row in sheet_row_list:
-            if sheet_row not in results:
-              results[sheet_row] = {}
+          if sheet_row not in results:
+            results[sheet_row] = {}
 
-            results[sheet_row]["status"] = assetStatus.ERROR.value[0]
+          results[sheet_row]["status"] = assetStatus.ERROR.value
 
-            if "message" in results[sheet_row]:
-              asset_message = results[sheet_row]["message"]
-            else:
-              asset_message = ""
+          if "message" in results[sheet_row]:
+            asset_message = results[sheet_row]["message"]
+          else:
+            asset_message = ""
 
-            results[sheet_row]["message"] = (
-                error_obj[i][1] + error_obj[i][2] + error_obj[i][3])
+          results[sheet_row]["message"] = (
+              error_obj[i][1] + error_obj[i][2] + error_obj[i][3]
+          )
 
-            print(results[sheet_row]["message"])
+          results[sheet_row]["message"] = (
+              asset_message + results[sheet_row]["message"]
+          )
 
-            results[sheet_row]["message"] = (asset_message +
-                                             results[sheet_row]["message"])
-
-            results[sheet_row]["asset_group_asset"] = ""
+          results[sheet_row]["asset_group_asset"] = ""
 
         else:
           print(f"Created a(n) {name} with {str(value).strip()}.")
 
           operations_create = operations[
-              i].asset_group_asset_operation.create.asset
+              i
+          ].asset_group_asset_operation.create.asset
           if mutate_type == "SITELINKS":
             operations_create = operations[
-                i].campaign_asset_operation.create.asset
+                i
+            ].campaign_asset_operation.create.asset
 
           if operations_create and operations_create in row_mapping:
-            sheet_row_list = row_mapping[operations_create]
+            sheet_row = row_mapping[operations_create]
 
-            for sheet_row in sheet_row_list:
-              if sheet_row not in results:
-                results[sheet_row] = {}
-                results[sheet_row]["status"] = assetStatus.UPLOADED.value[0]
-                results[sheet_row]["message"] = ""
-                results[sheet_row]["asset_group_asset"] = value.resource_name
+            if sheet_row not in results:
+              results[sheet_row] = {}
+              results[sheet_row]["status"] = assetStatus.UPLOADED.value
+              results[sheet_row]["message"] = ""
+              results[sheet_row]["asset_group_asset"] = value.resource_name
 
         i += 1
     return results
@@ -330,8 +288,8 @@ class AdService:
     """Creates multiple text assets and returns the list of resource names.
 
     Args:
-      operations: a list of api operations, each of which will be used to
-        create a text asset.
+      operations: a list of api operations, each of which will be used to create
+        a text asset.
       customer_id: Google Ads customer id.
 
     Returns:
@@ -343,11 +301,9 @@ class AdService:
     error_message = None
     response = None
 
-    googleads_service = self._google_ads_client.get_service(
-        "GoogleAdsService")
+    googleads_service = self._google_ads_client.get_service("GoogleAdsService")
 
-    request = self._google_ads_client.get_type(
-        "MutateGoogleAdsRequest")
+    request = self._google_ads_client.get_type("MutateGoogleAdsRequest")
     request.customer_id = customer_id
     request.mutate_operations = operations
     request.partial_failure = True
@@ -363,17 +319,14 @@ class AdService:
       for error in ex.failure.errors:
         if error.message != "Resource was not found.":
           error_message = (
-              error_message +
-              f'\n\tError message: "{error.message}".'
+              error_message + f'\n\tError message: "{error.message}".'
           )
       raise Exception(error_message)
 
     if response:
       for result in response.mutate_operation_responses:
         if result._pb.HasField("asset_result"):
-          asset_resource_names.append(
-              result.asset_result.resource_name
-          )
+          asset_resource_names.append(result.asset_result.resource_name)
       self.print_response_details(response)
 
     return asset_resource_names
@@ -467,7 +420,8 @@ class AdService:
                   asset_group_asset.field_type ASC"""
 
     return self._google_ads_client.get_service("GoogleAdsService").search(
-        customer_id=customer_id, query=query)
+        customer_id=customer_id, query=query
+    )
 
   def retrieve_sitelinks(self, customer_id):
     """Retrieve all active pMax asset groups from Google Ads.
@@ -501,7 +455,8 @@ class AdService:
                   AND customer.status = 'ENABLED'"""
 
     return self._google_ads_client.get_service("GoogleAdsService").search(
-        customer_id=customer_id, query=query)
+        customer_id=customer_id, query=query
+    )
 
   def retrieve_all_asset_groups(self, customer_id):
     """Retrieve all active pMax asset groups from Google Ads.
@@ -529,7 +484,8 @@ class AdService:
                   asset_group.id ASC"""
 
     return self._google_ads_client.get_service("GoogleAdsService").search(
-        customer_id=customer_id, query=query)
+        customer_id=customer_id, query=query
+    )
 
   def retrieve_all_campaigns(self, customer_id):
     """Retrieve all active pMax campaigns from Google Ads.
@@ -554,11 +510,12 @@ class AdService:
           campaign.id ASC"""
 
     return self._google_ads_client.get_service("GoogleAdsService").search(
-        customer_id=customer_id, query=query)
+        customer_id=customer_id, query=query
+    )
 
   def retrieve_all_customers(self, login_customer_id):
     """Retrieve all active customers from Google Ads.
-    
+
     Args:
       login_customer_id: Google ads customer id.
 
@@ -576,4 +533,5 @@ class AdService:
                   customer.id ASC"""
 
     return self._google_ads_client.get_service("GoogleAdsService").search(
-        customer_id=login_customer_id, query=query)
+        customer_id=login_customer_id, query=query
+    )

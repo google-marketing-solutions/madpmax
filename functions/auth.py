@@ -24,7 +24,9 @@ _SCOPES = [
 _TOKEN_URI = "https://oauth2.googleapis.com/token"
 
 
-def get_credentials_from_file(access_token, refresh_token, client_id, client_secret):
+def get_credentials_from_file(
+    access_token, refresh_token, client_id, client_secret
+):
   """Gets the Oauth2 credentials.
 
   Args:
@@ -45,18 +47,21 @@ def get_credentials_from_file(access_token, refresh_token, client_id, client_sec
       token_uri=_TOKEN_URI,
       client_id=client_id,
       client_secret=client_secret,
-      scopes=_SCOPES
+      scopes=_SCOPES,
   )
- # Creds expired generate new creds using refresh token.
+  # Creds expired generate new creds using refresh token.
   if not creds or not creds.valid:
     if creds and creds.expired and creds.refresh_token:
       creds = google.oauth2.credentials.Credentialsrefresh(
-        refresh_token, client_id, client_secret)
-     # Save the credentials for the next run
+          refresh_token, client_id, client_secret
+      )
+      # Save the credentials for the next run
       with open("config.yaml", "w") as token:
         token.write(creds.to_json())
     else:
-      raise Exception("Error while generating OAuth credentials, no credentials returned.")
+      raise Exception(
+          "Error while generating OAuth credentials, no credentials returned."
+      )
   return creds
 
 

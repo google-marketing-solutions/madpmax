@@ -44,15 +44,19 @@ class PubSub:
         self.google_ads_service, self.sheet_service, google_ads_client
     )
     self.asset_service = asset_creation.AssetService(
-        google_ads_client, self.google_ads_service
+        google_ads_client, self.google_ads_service, self.sheet_service
     )
     self.asset_group_service = asset_group_creation.AssetGroupService(
-        self.google_ads_service, self.sheet_service, self.asset_service,
-        google_ads_client
+        self.google_ads_service,
+        self.sheet_service,
+        self.asset_service,
+        google_ads_client,
     )
     self.data_processing_service = data_processing.DataProcessingService(
-        self.sheet_service, self.google_ads_service, self.asset_service,
-        self.asset_group_service
+        self.sheet_service,
+        self.google_ads_service,
+        self.asset_service,
+        self.asset_group_service,
     )
     self.sitelink_service = sitelink_creation.SitelinkService(
         self.google_ads_service, self.sheet_service, google_ads_client
@@ -81,7 +85,6 @@ class PubSub:
 
     For the assets provided. Removes the provided placeholder assets, and
     writes the results back to the spreadsheet.
-
     """
     # Get Values from input sheet
     asset_sheet_name = "Assets"
@@ -91,6 +94,9 @@ class PubSub:
     asset_data = self.sheet_service.get_sheet_values(asset_sheet_name + "!A6:L")
     new_asset_group_data = self.sheet_service.get_sheet_values(
         "NewAssetGroups!A6:T"
+    )
+    asset_group_data = self.sheet_service.get_sheet_values(
+        "AssetGroupList!A6:F"
     )
 
     # Load new Campaigns Spreadsheet and create campaigns
@@ -102,11 +108,13 @@ class PubSub:
 
     if new_asset_group_data:
       self.asset_group_service.process_asset_group_data_and_create(
-          new_asset_group_data, campaign_data)
+          new_asset_group_data, campaign_data
+      )
 
-    asset_group_data = self.sheet_service.get_sheet_values(
-        "AssetGroupList!A6:F"
-    )
+    if asset_data:
+      self.asset_service.process_asset_data_and_create(
+          asset_data, asset_group_data
+      )
 
     # Load new Sitelinks Spreadsheet and create Sitelinks
     self.sitelink_service.process_sitelink_data(sitelink_data, campaign_data)

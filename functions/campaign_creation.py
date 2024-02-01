@@ -202,34 +202,34 @@ class CampaignService:
     if len(customer_mapping) > 0:
       for campaign in campaign_data:
         # Check if required columns are included in row.
-        if len(campaign) > newCampaignsColumnMap.CUSTOMER_START_DATE:
+        if len(campaign) > newCampaignsColumnMap.CUSTOMER_START_DATE.value:
           mutate_campaign_operation = None
-          campaign_name = campaign[newCampaignsColumnMap.CAMPAIGN_NAME]
-          campaign_status = campaign[newCampaignsColumnMap.CAMPAIGN_STATUS]
+          campaign_name = campaign[newCampaignsColumnMap.CAMPAIGN_NAME.value]
+          campaign_status = campaign[newCampaignsColumnMap.CAMPAIGN_STATUS.value]
           campaign_upload_status = campaign[
-              newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS
+              newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS.value
           ]
-          bidding_strategy = campaign[newCampaignsColumnMap.BIDDING_STRATEGY]
+          bidding_strategy = campaign[newCampaignsColumnMap.BIDDING_STRATEGY.value]
           campaign_target_roas = campaign[
-              newCampaignsColumnMap.CAMPAIGN_TARGET_ROAS
+              newCampaignsColumnMap.CAMPAIGN_TARGET_ROAS.value
           ]
           campaign_target_cpa = campaign[
-              newCampaignsColumnMap.CAMPAIGN_TARGET_CPA
+              newCampaignsColumnMap.CAMPAIGN_TARGET_CPA.value
           ]
-          campaign_budget = campaign[newCampaignsColumnMap.CAMPAIGN_BUDGET]
-          campaign_customer_name = campaign[newCampaignsColumnMap.CUSTOMER_NAME]
+          campaign_budget = campaign[newCampaignsColumnMap.CAMPAIGN_BUDGET.value]
+          campaign_customer_name = campaign[newCampaignsColumnMap.CUSTOMER_NAME.value]
           campaign_customer_id = customer_mapping[campaign_customer_name]
           campaign_start_date = campaign[
-              newCampaignsColumnMap.CUSTOMER_START_DATE
+              newCampaignsColumnMap.CUSTOMER_START_DATE.value
           ]
-          campaign_end_date = campaign[newCampaignsColumnMap.CUSTOMER_END_DATE]
+          campaign_end_date = campaign[newCampaignsColumnMap.CUSTOMER_END_DATE.value]
           budget_delivery_method = campaign[
-              newCampaignsColumnMap.BUDGET_DELIVERY_METHOD
+              newCampaignsColumnMap.BUDGET_DELIVERY_METHOD.value
           ]
           row_number = self.sheet_service.get_row_number_by_value(
-              [campaign[newCampaignsColumnMap.CUSTOMER_NAME], campaign_name],
+              [campaign[newCampaignsColumnMap.CUSTOMER_NAME.value], campaign_name],
               campaign_data,
-              newCampaignsColumnMap.CUSTOMER_NAME,
+              newCampaignsColumnMap.CUSTOMER_NAME.value,
           )
 
           campaign_sheetlist = [
@@ -258,15 +258,14 @@ class CampaignService:
               self.sheet_service.variable_update_sheet_status(
                   row_number,
                   sheet_id,
-                  newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
+                  newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS.value,
                   "ERROR",
                   error_message,
-                  newCampaignsColumnMap.ERROR_MESSAGE,
+                  newCampaignsColumnMap.ERROR_MESSAGE.value,
               )
             else:
               campaigns_response, campaigns_error_message = (
                   self.google_ads_service.bulk_mutate(
-                      "Campaigns",
                       mutate_campaign_operation,
                       campaign_customer_id,
                   )
@@ -276,7 +275,7 @@ class CampaignService:
                 self.sheet_service.variable_update_sheet_status(
                     row_number,
                     sheet_id,
-                    newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
+                    newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS.value,
                     "UPLOADED",
                 )
 
@@ -293,8 +292,8 @@ class CampaignService:
                 self.sheet_service.variable_update_sheet_status(
                     row_number,
                     sheet_id,
-                    newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS,
+                    newCampaignsColumnMap.CAMPAIGN_UPLOAD_STATUS.value,
                     "ERROR",
                     campaigns_error_message,
-                    newCampaignsColumnMap.ERROR_MESSAGE,
+                    newCampaignsColumnMap.ERROR_MESSAGE.value,
                 )

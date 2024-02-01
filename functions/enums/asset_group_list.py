@@ -15,10 +15,10 @@
 import enum
 
 
-class assetGroupListColumnMap(enum.IntEnum):
-    CUSTOMER_NAME = 0,
-    CUSTOMER_ID = 1,
-    CAMPAIGN_NAME = 2,
-    CAMPAIGN_ID = 3,
-    ASSET_GROUP_NAME = 4,
-    ASSET_GROUP_ID = 5
+class assetGroupList(enum.IntEnum):
+  CUSTOMER_NAME = 0
+  CUSTOMER_ID = 1
+  CAMPAIGN_NAME = 2
+  CAMPAIGN_ID = 3
+  ASSET_GROUP_NAME = 4
+  ASSET_GROUP_ID = 5

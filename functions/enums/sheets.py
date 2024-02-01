@@ -15,16 +15,11 @@
 import enum
 
 
-class assetsColumnMap(enum.IntEnum):
-  STATUS = 0
-  DELETE_ASSET = 1
-  CUSTOMER_NAME = 2
-  CAMPAIGN_NAME = 3
-  ASSET_GROUP_NAME = 4
-  TYPE = 5
-  ASSET_TEXT = 6
-  ASSET_CALL_TO_ACTION = 7
-  ASSET_URL = 8
-  ASSET_THUMBNAIL = 9
-  ERROR_MESSAGE = 10
-  ASSET_GROUP_ASSET = 11
+class sheets(enum.Enum):
+  CUSTOMER = "CustomerList"
+  CAMPAIGN = "CampaignList"
+  NEW_CAMPAIGNS = "NewCampaigns"
+  ASSET_GROUP = "AssetGroupList"
+  NEW_ASSET_GROUP = "NewAssetGroups"
+  SITE_LINKS = "Sitelinks"
+  ASSETS = "Assets"

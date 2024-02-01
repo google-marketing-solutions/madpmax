@@ -14,7 +14,7 @@
 """Provides functionality to create campaigns."""
 
 from enums.asset_column_map import assetsColumnMap
-from enums.asset_group_list_column_map import assetGroupListColumnMap
+from enums.asset_group_list import assetGroupList
 from enums.campaign_list_column_map import campaignListColumnMap
 from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
 
@@ -26,8 +26,13 @@ class DataProcessingService:
   the correct order.
   """
 
-  def __init__(self, sheet_service, google_ads_service, asset_service,
-               asset_group_service):
+  def __init__(
+      self,
+      sheet_service,
+      google_ads_service,
+      asset_service,
+      asset_group_service,
+  ):
     """Constructs the CampaignService instance.
 
     Args:
@@ -35,16 +40,21 @@ class DataProcessingService:
       google_ads_service: instance of the google_ads_service for dependancy
         injection.
       asset_service: instance of the asset_service for dependency injection.
-      asset_group_service: instance of the asset_group_service for
-      dependency injection.
+      asset_group_service: instance of the asset_group_service for dependency
+        injection.
     """
     self.sheet_service = sheet_service
     self.google_ads_service = google_ads_service
     self.asset_service = asset_service
     self.asset_group_service = asset_group_service
 
-  def process_data(self, asset_values, asset_group_values,
-                   new_asset_group_values, campaign_values):
+  def process_data(
+      self,
+      asset_values,
+      asset_group_values,
+      new_asset_group_values,
+      campaign_values,
+  ):
     """Process data from spreadsheets to create mutation objects.
 
     Args:
@@ -57,11 +67,11 @@ class DataProcessingService:
 
     Returns:
       customer_id: Google Ads customer id.
-      asset_operations: Api operations list for Google Ads API, with all 
+      asset_operations: Api operations list for Google Ads API, with all
           assets.
       sheet_results: Object containing off results output for sheet.
       asset_group_sheetlist: Output oject with Asset group sheet output.
-      asset_group_headline_operations: Api operations list for Google Ads 
+      asset_group_headline_operations: Api operations list for Google Ads
           API, with all asset group headlines.
       asset_group_description_operations: Api operations list for Google
           Ads API, with all asset group descriptions.
@@ -92,23 +102,23 @@ class DataProcessingService:
       asset_group_details = None
 
       # Skip to next row in case Status is Success.
-      if (row[assetsColumnMap.ASSET_STATUS] != "UPLOADED" and
-          len(row) > assetsColumnMap.ASSET_TEXT):
+      if (
+          row[assetsColumnMap.STATUS.value] != "UPLOADED"
+          and len(row) > assetsColumnMap.ASSET_TEXT.value
+      ):
 
         asset_group_alias = self.compile_asset_group_alias(row)
 
-        if (asset_group_alias):
+        if asset_group_alias:
           # Use the Asset Group Alias to get Asset Group info from
           # the Google sheet.
           asset_group_details = self.sheet_service.get_sheet_row(
-              asset_group_alias, asset_group_values, "ASSET_GROUP")
+              asset_group_alias, asset_group_values, "ASSET_GROUP"
+          )
 
           if asset_group_details:
-            asset_group_id = asset_group_details[
-                assetGroupListColumnMap.ASSET_GROUP_ID
-            ]
-            customer_id = asset_group_details[
-                assetGroupListColumnMap.CUSTOMER_ID]
+            asset_group_id = asset_group_details[assetGroupList.ASSET_GROUP_ID.value]
+            customer_id = asset_group_details[assetGroupList.CUSTOMER_ID.value]
 
             # Construct the the API operations dictionary to store all the api
             # operations for bulk processing.
@@ -123,16 +133,18 @@ class DataProcessingService:
             new_asset_group = True
             # GENERATE ASSET GROUP OPERATION.
             new_asset_group_details = self.sheet_service.get_sheet_row(
-                asset_group_alias, new_asset_group_values, "NEW_ASSET_GROUP")
+                asset_group_alias, new_asset_group_values, "NEW_ASSET_GROUP"
+            )
 
             campaign_alias = self.compile_campaign_alias(row)
 
             campaign_details = self.sheet_service.get_sheet_row(
-                campaign_alias, campaign_values, "CAMPAIGN")
+                campaign_alias, campaign_values, "CAMPAIGN"
+            )
 
             if campaign_details and new_asset_group_details:
-              customer_id = campaign_details[campaignListColumnMap.CUSTOMER_ID]
-              campaign_id = campaign_details[campaignListColumnMap.CAMPAIGN_ID]
+              customer_id = campaign_details[campaignListColumnMap.CUSTOMER_ID.value]
+              campaign_id = campaign_details[campaignListColumnMap.CAMPAIGN_ID.value]
 
               # Construct the the API operations dictionary to store all the
               # api operations for bulk processing.
@@ -143,10 +155,12 @@ class DataProcessingService:
 
               if asset_group_alias not in asset_group_operations[customer_id]:
                 asset_group_operations[customer_id][asset_group_alias] = []
-                asset_group_headline_operations[
-                    customer_id][asset_group_alias] = []
-                asset_group_description_operations[
-                    customer_id][asset_group_alias] = []
+                asset_group_headline_operations[customer_id][
+                    asset_group_alias
+                ] = []
+                asset_group_description_operations[customer_id][
+                    asset_group_alias
+                ] = []
 
                 asset_group_mutate_operation, asset_group_id = (
                     self.asset_group_service.create_asset_group(
@@ -161,13 +175,16 @@ class DataProcessingService:
                   # Create AssetGroupList Sheet array.
                   asset_group_sheetlist[asset_group_alias] = [
                       new_asset_group_details[
-                          newAssetGroupsColumnMap.CUSTOMER_NAME],
+                          newAssetGroupsColumnMap.CUSTOMER_NAME.value
+                      ],
                       customer_id,
                       new_asset_group_details[
-                          newAssetGroupsColumnMap.CAMPAIGN_NAME],
+                          newAssetGroupsColumnMap.CAMPAIGN_NAME.value
+                      ],
                       campaign_id,
                       new_asset_group_details[
-                          newAssetGroupsColumnMap.ASSET_GROUP_NAME],
+                          newAssetGroupsColumnMap.ASSET_GROUP_NAME.value
+                      ],
                       asset_group_id,
                   ]
 
@@ -182,12 +199,12 @@ class DataProcessingService:
           sheet_results[sheet_row_index]["asset_group_asset"] = None
 
           # Asset name / asset type
-          asset_type = row[assetsColumnMap.ASSET_TYPE]
+          asset_type = row[assetsColumnMap.TYPE.value]
+          asset_value = self.get_asset_value_by_type(row, assetType)
 
-          operations = (
-              self.asset_service.create_asset_mutation(
-                  row, customer_id, asset_group_id, new_asset_group)
-              )
+          asset_operation = self.asset_service.create_asset(
+              asset_type, asset_value, customer_id, asset_group_id
+          )
 
           asset_resource = operations[0].asset_operation.create.resource_name
           mutate_operations.extend(operations)
@@ -195,17 +212,21 @@ class DataProcessingService:
           # Check if asset operation for the Asset Group already exists.
           # If not create a new list.
           if not new_asset_group:
-            asset_operations[
-                customer_id][asset_group_alias] += mutate_operations
+            asset_operations[customer_id][
+                asset_group_alias
+            ] += mutate_operations
           elif new_asset_group:
             if asset_type == "HEADLINE":
-              asset_group_headline_operations[
-                  customer_id][asset_group_alias].append(operations[0])
+              asset_group_headline_operations[customer_id][
+                  asset_group_alias
+              ].append(operations[0])
             if asset_type == "DESCRIPTION":
-              asset_group_description_operations[
-                  customer_id][asset_group_alias].append(operations[0])
-            asset_group_operations[
-                customer_id][asset_group_alias] += mutate_operations
+              asset_group_description_operations[customer_id][
+                  asset_group_alias
+              ].append(operations[0])
+            asset_group_operations[customer_id][
+                asset_group_alias
+            ] += mutate_operations
 
           # Add reource name index and sheet row number to map, for
           # processing error and status messages to sheet.
@@ -220,47 +241,29 @@ class DataProcessingService:
         asset_group_headline_operations,
         asset_group_description_operations,
         row_to_operations_mapping,
-        asset_group_operations
+        asset_group_operations,
     )
-
-  def compile_asset_group_alias(self, sheet_row):
-    """Helper method to compile asset group alias from row content.
-
-    Args:
-      sheet_row: List of strings representing one row input from the
-          spreadsheet.
-
-    Returns:
-      String value of the asset group alias or None.
-    """
-    result = None
-
-    if(sheet_row[assetsColumnMap.CUSTOMER_NAME].strip() and
-       sheet_row[assetsColumnMap.CAMPAIGN_NAME].strip() and
-       sheet_row[assetsColumnMap.ASSET_GROUP_NAME].strip()):
-      result = (sheet_row[assetsColumnMap.CUSTOMER_NAME] + ";" +
-                sheet_row[assetsColumnMap.CAMPAIGN_NAME] + ";" +
-                sheet_row[assetsColumnMap.ASSET_GROUP_NAME])
-
-    return result
 
   def compile_campaign_alias(self, sheet_row):
     """Helper method to compile campaign alias from row content.
 
     Args:
       sheet_row: List of strings representing one row input from the
-          spreadsheet.
+        spreadsheet.
 
     Returns:
       String value of the campaign alias or None.
     """
     result = None
 
-    if(sheet_row[assetsColumnMap.CUSTOMER_NAME].strip() and
-       sheet_row[assetsColumnMap.CAMPAIGN_NAME].strip()):
-      result = (sheet_row[assetsColumnMap.CUSTOMER_NAME] + ";" +
-                sheet_row[assetsColumnMap.CAMPAIGN_NAME])
+    if (
+        sheet_row[assetsColumnMap.CUSTOMER_NAME.value].strip()
+        and sheet_row[assetsColumnMap.CAMPAIGN_NAME.value].strip()
+    ):
+      result = (
+          sheet_row[assetsColumnMap.CUSTOMER_NAME.value]
+          + ";"
+          + sheet_row[assetsColumnMap.CAMPAIGN_NAME.value]
+      )
 
     return result
-
-

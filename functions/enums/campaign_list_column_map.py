@@ -16,7 +16,7 @@ import enum
 
 
 class campaignListColumnMap(enum.IntEnum):
-    CUSTOMER_NAME = 0,
-    CUSTOMER_ID = 1,
-    CAMPAIGN_NAME = 2,
-    CAMPAIGN_ID = 3
+  CUSTOMER_NAME = 0
+  CUSTOMER_ID = 1
+  CAMPAIGN_NAME = 2
+  CAMPAIGN_ID = 3

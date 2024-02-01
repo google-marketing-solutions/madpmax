@@ -86,8 +86,7 @@ if __name__ == "__main__":
   # GoogleAdsClient will read the google-ads.yaml configuration file in the
   # home directory if none is specified.
   pmax_operations = main().pubsub_utils
-  pmax_operations.refresh_spreadsheet()
+  pmax_operations.create_api_operations()
 
   with open("config.yaml", "r") as ymlfile:
     cfg = yaml.safe_load(ymlfile)
-  pmax_operations.create_api_operations()
