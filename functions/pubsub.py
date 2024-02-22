@@ -13,108 +13,183 @@
 # limitations under the License.
 """Main function, Used to run the mad pMax Creative Management tools."""
 
+from functools import cached_property
+from absl import logging
 import ads_api
 import asset_creation
 import asset_group_creation
 import auth
 import campaign_creation
 import data_processing
+from google.ads.googleads import client
+import object_structures
+import reference_enums
 import sheet_api
 import sitelink_creation
 
 
 class PubSub:
-  """Main function to call classes and methods to upload to api."""
+  """Main function to call update and refresh for spreadsheet functionality."""
 
-  def __init__(self, config, google_ads_client):
-    credentials = auth.get_credentials_from_file(
-        config["access_token"],
-        config["refresh_token"],
-        config["client_id"],
-        config["client_secret"],
+  def __init__(
+      self, config: object_structures.ConfigFile, google_ads_client: client.GoogleAdsClient
+  ) -> None:
+    """Constructs the PubSub instance.
+
+    Args:
+        config: JSON formatted configuration data for accessing API.
+        google_ads_client: Instance of Google Ads API client.
+
+    Returns:
+        None. Initiates instances during the call.
+    """
+    self.config = config
+    self.google_ads_client = google_ads_client
+
+  @cached_property
+  def credentials(self):
+    return auth.get_credentials_from_file(
+        self.config.access_token,
+        self.config.refresh_token,
+        self.config.client_id,
+        self.config.client_secret,
     )
 
-    self.login_customer_id = config["login_customer_id"]
+  @cached_property
+  def login_customer_id(self):
+    return self.config.login_customer_id
 
-    self.google_ads_service = ads_api.AdService(google_ads_client)
-    self.sheet_service = sheet_api.SheetsService(
-        credentials, google_ads_client, self.google_ads_service
+  @cached_property
+  def google_ads_service(self):
+    return ads_api.AdService(self.google_ads_client)
+
+  @cached_property
+  def sheet_service(self):
+    return sheet_api.SheetsService(
+        self.credentials, self.google_ads_client, self.google_ads_service
     )
-    self.campaign_service = campaign_creation.CampaignService(
-        self.google_ads_service, self.sheet_service, google_ads_client
+
+  @cached_property
+  def campaign_service(self):
+    return campaign_creation.CampaignService(
+        self.google_ads_service, self.sheet_service, self.google_ads_client
     )
-    self.asset_service = asset_creation.AssetService(
-        google_ads_client, self.google_ads_service, self.sheet_service
+
+  @cached_property
+  def asset_service(self):
+    return asset_creation.AssetService(
+        self.google_ads_client, self.google_ads_service, self.sheet_service
     )
-    self.asset_group_service = asset_group_creation.AssetGroupService(
+
+  @cached_property
+  def asset_group_service(self):
+    return asset_group_creation.AssetGroupService(
         self.google_ads_service,
         self.sheet_service,
         self.asset_service,
-        google_ads_client,
+        self.google_ads_client,
     )
-    self.data_processing_service = data_processing.DataProcessingService(
+
+  @cached_property
+  def data_processing_service(self):
+    return data_processing.DataProcessingService(
         self.sheet_service,
         self.google_ads_service,
         self.asset_service,
         self.asset_group_service,
     )
-    self.sitelink_service = sitelink_creation.SitelinkService(
-        self.google_ads_service, self.sheet_service, google_ads_client
+
+  @cached_property
+  def sitelink_service(self):
+    return sitelink_creation.SitelinkService(
+        self.google_ads_service, self.sheet_service, self.google_ads_client
     )
 
-  def refresh_spreadsheet(self):
+  def refresh_spreadsheet(self) -> None:
+    """Requests the overall data from the Ads API and updates the spreadsheet."""
     self.sheet_service.refresh_spreadsheet()
 
-  def refresh_customer_id_list(self):
+  def refresh_customer_id_list(self) -> None:
+    """Requests customer list data from the Ads API and updates the spreadsheet."""
     self.sheet_service.refresh_customer_id_list()
 
-  def refresh_campaign_list(self):
+  def refresh_campaign_list(self) -> None:
+    """Requests campaign data from the Ads API and updates the spreadsheet."""
     self.sheet_service.refresh_campaign_list()
 
-  def refresh_asset_group_list(self):
+  def refresh_asset_group_list(self) -> None:
+    """Requests asset group data from the Ads API and updates the spreadsheet."""
     self.sheet_service.refresh_asset_group_list()
 
-  def refresh_assets_list(self):
+  def refresh_assets_list(self) -> None:
+    """Requests assets data from the Ads API and updates the spreadsheet."""
     self.sheet_service.refresh_assets_list()
 
-  def refresh_sitelinks_list(self):
+  def refresh_sitelinks_list(self) -> None:
+    """Requests sitelinks data from the Ads API and updates the spreadsheet."""
     self.sheet_service.refresh_sitelinks_list()
 
-  def create_api_operations(self):
+  def create_api_operations(self) -> None:
     """Reads the campaigns and asset groups from the input sheet, creates assets.
 
     For the assets provided. Removes the provided placeholder assets, and
     writes the results back to the spreadsheet.
     """
-    # Get Values from input sheet
-    asset_sheet_name = "Assets"
-    # Get Values from input sheet
-    new_campaign_data = self.sheet_service.get_sheet_values("NewCampaigns!A6:L")
-    sitelink_data = self.sheet_service.get_sheet_values("Sitelinks!A6:J")
-    asset_data = self.sheet_service.get_sheet_values(asset_sheet_name + "!A6:L")
+    logging.info("Processing NewCampaigns data")
+    new_campaign_data = self.sheet_service.get_sheet_values(
+        reference_enums.SheetNames.new_campaigns
+        + "!"
+        + reference_enums.SheetRenges.new_campaigns
+    )
+    logging.info("Processing Sitelink data")
+    sitelink_data = self.sheet_service.get_sheet_values(
+        reference_enums.SheetNames.sitelinks
+        + "!"
+        + reference_enums.SheetRenges.sitelinks
+    )
+    logging.info("Processing Assets data")
+    asset_data = self.sheet_service.get_sheet_values(
+        reference_enums.SheetNames.assets
+        + "!"
+        + reference_enums.SheetRenges.assets
+    )
+    logging.info("Processing New Asset Groups data")
     new_asset_group_data = self.sheet_service.get_sheet_values(
-        "NewAssetGroups!A6:T"
+        reference_enums.SheetNames.new_asset_groups
+        + "!"
+        + reference_enums.SheetRenges.new_asset_groups
     )
+    logging.info("Processing Asset Groups data")
     asset_group_data = self.sheet_service.get_sheet_values(
-        "AssetGroupList!A6:F"
+        reference_enums.SheetNames.asset_groups
+        + "!"
+        + reference_enums.SheetRenges.asset_groups
+    )
+    logging.info("Processing Campaign data")
+    campaign_data = self.sheet_service.get_sheet_values(
+        reference_enums.SheetNames.campaigns
+        + "!"
+        + reference_enums.SheetRenges.campaigns
     )
 
-    # Load new Campaigns Spreadsheet and create campaigns
-    self.campaign_service.process_campaign_data_and_create_campaigns(
-        new_campaign_data, self.login_customer_id
-    )
+    if new_campaign_data:
+      logging.info("Creating new Campaign")
+      self.campaign_service.process_campaign_data_and_create_campaigns(
+          new_campaign_data, self.login_customer_id
+      )
 
-    campaign_data = self.sheet_service.get_sheet_values("CampaignList!A6:D")
-
-    if new_asset_group_data:
+    if new_asset_group_data and campaign_data:
+      logging.info("Creating new Asset Groups")
       self.asset_group_service.process_asset_group_data_and_create(
           new_asset_group_data, campaign_data
       )
 
-    if asset_data:
+    if asset_data and asset_group_data:
+      logging.info("Creating Assets")
       self.asset_service.process_asset_data_and_create(
           asset_data, asset_group_data
       )
 
-    # Load new Sitelinks Spreadsheet and create Sitelinks
-    self.sitelink_service.process_sitelink_data(sitelink_data, campaign_data)
+    if sitelink_data and campaign_data:
+      logging.info("Creating new Sitelinks")
+      self.sitelink_service.process_sitelink_data(sitelink_data, campaign_data)

@@ -14,30 +14,37 @@
 """Main trigger, Used to run the mad pMax Creative Management tools."""
 
 import base64
+from typing import Final
 from cloudevents.http import CloudEvent
 import functions_framework
-from google.ads import googleads
+from google.ads.googleads import client
+from object_structures import ConfigFile
 import pubsub
+from absl import logging
 import yaml
 
+_CONFIG_FILE_NAME: Final[str] = "config.yaml"
+_API_VERSIONAPI_VERSION: Final[str] = "v14"
 
-class main:
-  # Input column map, descripting the column names for the input data from the
-  # RawData sheet.
 
-  def __init__(self):
-    with open("config.yaml", "r") as config_file:
-      config = yaml.safe_load(config_file)
+def retrieve_config(config_name: str) -> ConfigFile:
+  """Retreive configuration for using Google API.
 
-    self.google_ads_client = googleads.client.GoogleAdsClient.load_from_storage(
-        "config.yaml", version="v14"
-    )
+  Args:
+      config_name: Name of a config file containing API access data.
 
-    self.pubsub_utils = pubsub.PubSub(config, self.google_ads_client)
+  Returns:
+      ConfigFile object representing JSON structure of config file.
+  """
+  try:
+    with open(config_name, "r") as config_file:
+      return ConfigFile(**yaml.safe_load(config_file))
+  except (ValueError, TypeError) as ex:
+    raise TypeError("Wrong structure or type of config file.", ex)
 
 
 @functions_framework.cloud_event
-def pmax_trigger(cloud_event: CloudEvent):
+def pmax_trigger(cloud_event: CloudEvent) -> None:
   """Listener function for pubsub trigger.
 
   Based on trigger message activate corresponding mad Max
@@ -46,47 +53,38 @@ def pmax_trigger(cloud_event: CloudEvent):
   Args:
     cloud_event: Cloud event class for pubsub event.
   """
+  google_ads_client = client.GoogleAdsClient.load_from_storage(
+      _CONFIG_FILE_NAME, version=_API_VERSIONAPI_VERSION
+  )
+  config = retrieve_config(_CONFIG_FILE_NAME)
+  pubsub_utils = pubsub.PubSub(config, google_ads_client)
   if cloud_event:
-    # Print out the data from Pub/Sub, to prove that it worked
-    print(
+    logging.info(
         "------- START "
         + base64.b64decode(cloud_event.data["message"]["data"]).decode()
         + " EXECUTION -------"
     )
-
-    cp = main().pubsub_utils
     message_data = base64.b64decode(
         cloud_event.data["message"]["data"]
     ).decode()
-
     match message_data:
       case "REFRESH":
-        cp.refresh_spreadsheet()
+        pubsub_utils.refresh_spreadsheet()
       case "UPLOAD":
-        cp.create_api_operations()
+        pubsub_utils.create_api_operations()
       case "REFRESH_CUSTOMER_LIST":
-        cp.refresh_customer_id_list()
+        pubsub_utils.refresh_customer_id_list()
       case "REFRESH_CAMPAIGN_LIST":
-        cp.refresh_campaign_list()
+        pubsub_utils.refresh_campaign_list()
       case "REFRESH_ASSET_GROUP_LIST":
-        cp.refresh_asset_group_list()
+        pubsub_utils.refresh_asset_group_list()
       case "REFRESH_ASSETS_LIST":
-        cp.refresh_assets_list()
+        pubsub_utils.refresh_assets_list()
       case "REFRESH_SITELINK_LIST":
-        cp.refresh_sitelinks_list()
+        pubsub_utils.refresh_sitelinks_list()
 
-    print(
+    logging.info(
         "------- END "
         + base64.b64decode(cloud_event.data["message"]["data"]).decode()
         + " EXECUTION -------"
     )
-
-
-if __name__ == "__main__":
-  # GoogleAdsClient will read the google-ads.yaml configuration file in the
-  # home directory if none is specified.
-  pmax_operations = main().pubsub_utils
-  pmax_operations.create_api_operations()
-
-  with open("config.yaml", "r") as ymlfile:
-    cfg = yaml.safe_load(ymlfile)

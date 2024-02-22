@@ -3,3 +3,4 @@ google-ads.yaml
 __pycache__/
 path/*
 functions/config*
+local_run.py
