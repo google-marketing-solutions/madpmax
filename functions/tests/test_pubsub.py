@@ -49,7 +49,10 @@ class TestPubSubCall(unittest.TestCase):
   def test_refresh_spreadsheet_calls_sheet_service_refresh_spreadsheet(
       self, mock_refresh_spreadsheet
   ):
-    """Test if refresh_spreadsheet method in PubSub service calls correct function."""
+    """Test refresh_spreadsheet method in PubSub.
+
+    Confirms if service calls correct function.
+    """
     self.pubsub.refresh_spreadsheet()
     mock_refresh_spreadsheet.assert_called()
 
@@ -57,7 +60,10 @@ class TestPubSubCall(unittest.TestCase):
   def test_refresh_customer_id_list_calls_sheet_service_refresh_customer_id_list(
       self, mock_refresh_customer_id_list
   ):
-    """Test if refresh_customer_id_list method in PubSub service calls correct function."""
+    """Test refresh_customer_id_list method in PubSub.
+
+    Confirms if service calls correct function.
+    """
     self.pubsub.refresh_customer_id_list()
     mock_refresh_customer_id_list.assert_called()
 
@@ -65,7 +71,10 @@ class TestPubSubCall(unittest.TestCase):
   def test_refresh_campaign_list_calls_sheet_service_refresh_campaign_list(
       self, mock_refresh_campaign_list
   ):
-    """Test if refresh_campaign_list method in PubSub service calls correct function."""
+    """Test refresh_campaign_list method in PubSub.
+
+    Confirms if service calls correct function.
+    """
     self.pubsub.refresh_campaign_list()
     mock_refresh_campaign_list.assert_called()
 
@@ -73,7 +82,10 @@ class TestPubSubCall(unittest.TestCase):
   def test_refresh_asset_group_list_calls_sheet_service_refresh_asset_group_list(
       self, mock_refresh_asset_group_list
   ):
-    """Test if refresh_asset_group_list method in PubSub service calls correct function."""
+    """Test refresh_asset_group_list method in PubSub.
+
+    Confirms if service calls correct function.
+    """
     self.pubsub.refresh_asset_group_list()
     mock_refresh_asset_group_list.assert_called()
 
@@ -81,7 +93,10 @@ class TestPubSubCall(unittest.TestCase):
   def test_refresh_assets_list_calls_sheet_service_refresh_assets_list(
       self, mock_refresh_assets_list
   ):
-    """Test if refresh_assets_list method in PubSub service calls correct function."""
+    """Test refresh_assets_list method in PubSub.
+
+    Confirm if service calls correct function.
+    """
     self.pubsub.refresh_assets_list()
     mock_refresh_assets_list.assert_called()
 
@@ -89,7 +104,10 @@ class TestPubSubCall(unittest.TestCase):
   def test_refresh_sitelinks_list_calls_sheet_service_refresh_sitelinks_list(
       self, mock_refresh_sitelinks_list
   ):
-    """Test if refresh_sitelinks_list method in PubSub service calls correct function."""
+    """Test refresh_sitelinks_list method in PubSub.
+
+    Confirms if service calls correctfunction.
+    """
     self.pubsub.refresh_sitelinks_list()
     mock_refresh_sitelinks_list.assert_called()
 
@@ -99,18 +117,21 @@ class TestPubSubCall(unittest.TestCase):
       "asset_group_creation.AssetGroupService.process_asset_group_data_and_create"
   )
   @patch(
-      "campaign_creation.CampaignService.process_campaign_data_and_create_campaigns"
+      "campaign_creation.CampaignService.process_campaign_input_sheet"
   )
   @patch("sheet_api.SheetsService.get_sheet_values")
   def test_create_api_operations_calls_value_retrieval_services_correctly(
       self,
       mock_get_sheet_values,
-      mock_process_campaign_data_and_create_campaigns,
+      mock_process_campaign_input_sheet,
       mock_process_asset_group_data_and_create,
       mock_process_asset_data_and_create,
       mock_process_sitelink_data,
   ):
-    """Test if create_api_operations method in PubSub service retrives correct amount of data."""
+    """Test create_api_operations method in PubSub.
+
+    Confirms if service retrives correct amount of data.
+    """
     mock_get_sheet_values.side_effect = _mock_get_sheet_values_callback
     self.pubsub.create_api_operations()
 
@@ -134,23 +155,26 @@ class TestPubSubCall(unittest.TestCase):
       "asset_group_creation.AssetGroupService.process_asset_group_data_and_create"
   )
   @patch(
-      "campaign_creation.CampaignService.process_campaign_data_and_create_campaigns"
+      "campaign_creation.CampaignService.process_campaign_input_sheet"
   )
   @patch("sheet_api.SheetsService.get_sheet_values")
   def test_create_api_operations_calls_services_correctly(
       self,
       mock_get_sheet_values,
-      mock_process_campaign_data_and_create_campaigns,
+      mock_process_campaign_input_sheet,
       mock_process_asset_group_data_and_create,
       mock_process_asset_data_and_create,
       mock_process_sitelink_data,
   ):
-    """Test if create_api_operations method in PubSub service calls correct functions with all data available."""
+    """Test if create_api_operations method in PubSub.
+
+    Confirms if service calls correct functions with all data available.
+    """
     mock_get_sheet_values.side_effect = _mock_get_sheet_values_callback
     self.pubsub.create_api_operations()
 
-    mock_process_campaign_data_and_create_campaigns.assert_called_with(
-        [["New Campaigns Test Data"]], "1234"
+    mock_process_campaign_input_sheet.assert_called_with(
+        [["New Campaigns Test Data"]]
     )
     mock_process_asset_group_data_and_create.assert_called_with(
         [["New Asset Groups Test Data"]], [["Campaigns Test Data"]]
@@ -168,22 +192,25 @@ class TestPubSubCall(unittest.TestCase):
       "asset_group_creation.AssetGroupService.process_asset_group_data_and_create"
   )
   @patch(
-      "campaign_creation.CampaignService.process_campaign_data_and_create_campaigns"
+      "campaign_creation.CampaignService.process_campaign_input_sheet"
   )
   @patch("sheet_api.SheetsService.get_sheet_values")
   def test_create_api_operations_dont_call_asset_group_service(
       self,
       mock_get_sheet_values,
-      mock_process_campaign_data_and_create_campaigns,
+      mock_process_campaign_input_sheet,
       mock_process_asset_group_data_and_create,
       mock_process_asset_data_and_create,
       mock_process_sitelink_data,
   ):
-    """Test if create_api_operations method in PubSub service ignores assets creation when no data available."""
+    """Test create_api_operations method in PubSub.
+
+    Confirms if service ignores assets creation when no data available.
+    """
     mock_get_sheet_values.return_value = None
     self.pubsub.create_api_operations()
 
-    mock_process_campaign_data_and_create_campaigns.assert_not_called()
+    mock_process_campaign_input_sheet.assert_not_called()
     mock_process_asset_group_data_and_create.assert_not_called()
     mock_process_sitelink_data.assert_not_called()
     mock_process_asset_data_and_create.assert_not_called()

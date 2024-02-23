@@ -22,7 +22,6 @@ import auth
 import campaign_creation
 import data_processing
 from google.ads.googleads import client
-import object_structures
 import reference_enums
 import sheet_api
 import sitelink_creation
@@ -32,7 +31,9 @@ class PubSub:
   """Main function to call update and refresh for spreadsheet functionality."""
 
   def __init__(
-      self, config: object_structures.ConfigFile, google_ads_client: client.GoogleAdsClient
+      self,
+      config: reference_enums.ConfigFile,
+      google_ads_client: client.GoogleAdsClien
   ) -> None:
     """Constructs the PubSub instance.
 
@@ -139,44 +140,42 @@ class PubSub:
     new_campaign_data = self.sheet_service.get_sheet_values(
         reference_enums.SheetNames.new_campaigns
         + "!"
-        + reference_enums.SheetRenges.new_campaigns
+        + reference_enums.SheetRanges.new_campaigns
     )
     logging.info("Processing Sitelink data")
     sitelink_data = self.sheet_service.get_sheet_values(
         reference_enums.SheetNames.sitelinks
         + "!"
-        + reference_enums.SheetRenges.sitelinks
+        + reference_enums.SheetRanges.sitelinks
     )
     logging.info("Processing Assets data")
     asset_data = self.sheet_service.get_sheet_values(
         reference_enums.SheetNames.assets
         + "!"
-        + reference_enums.SheetRenges.assets
+        + reference_enums.SheetRanges.assets
     )
     logging.info("Processing New Asset Groups data")
     new_asset_group_data = self.sheet_service.get_sheet_values(
         reference_enums.SheetNames.new_asset_groups
         + "!"
-        + reference_enums.SheetRenges.new_asset_groups
+        + reference_enums.SheetRanges.new_asset_groups
     )
     logging.info("Processing Asset Groups data")
     asset_group_data = self.sheet_service.get_sheet_values(
         reference_enums.SheetNames.asset_groups
         + "!"
-        + reference_enums.SheetRenges.asset_groups
+        + reference_enums.SheetRanges.asset_groups
     )
     logging.info("Processing Campaign data")
     campaign_data = self.sheet_service.get_sheet_values(
         reference_enums.SheetNames.campaigns
         + "!"
-        + reference_enums.SheetRenges.campaigns
+        + reference_enums.SheetRanges.campaigns
     )
 
     if new_campaign_data:
-      logging.info("Creating new Campaign")
-      self.campaign_service.process_campaign_data_and_create_campaigns(
-          new_campaign_data, self.login_customer_id
-      )
+      logging.info("Creating new Campaigns")
+      self.campaign_service.process_campaign_input_sheet(new_campaign_data)
 
     if new_asset_group_data and campaign_data:
       logging.info("Creating new Asset Groups")
