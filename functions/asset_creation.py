@@ -19,6 +19,7 @@ from enums.asset_group_list import assetGroupList
 from enums.asset_status import assetStatus
 from enums.asset_types import assetTypes
 from enums.sheets import sheets
+from typing import List
 import requests
 import validators
 
@@ -384,7 +385,7 @@ class AssetService:
 
     return asset_value
 
-  def compile_asset_group_alias(self, sheet_row):
+  def compile_asset_group_alias(self, sheet_row: List[str | int]) -> str | None:
     """Helper method to compile asset group alias from row content.
 
     Args:
@@ -397,7 +398,8 @@ class AssetService:
     result = None
 
     if (
-        sheet_row[assetsColumnMap.CUSTOMER_NAME.value].strip()
+        len(sheet_row) >= assetsColumnMap.ASSET_GROUP_NAME.value + 1
+        and sheet_row[assetsColumnMap.CUSTOMER_NAME.value].strip()
         and sheet_row[assetsColumnMap.CAMPAIGN_NAME.value].strip()
         and sheet_row[assetsColumnMap.ASSET_GROUP_NAME.value].strip()
     ):
