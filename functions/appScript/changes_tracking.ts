@@ -49,6 +49,7 @@ function onEdit(e) {
         numberOfRowsChanged,
         ss.getSheetByName(sheetName),
       );
+      assetGroupDataValidation(ss, column, row, numRows);
       checkMinimumAssets(ss);
       break;
     case SHEET_NAMES.NEW_CAMPAIGNS:
@@ -62,6 +63,12 @@ function onEdit(e) {
         numberOfRowsChanged,
         ss.getSheetByName(sheetName)
       );
+      break;
+    case SHEET_NAMES.SITELINKS:
+      assetGroupDataValidation(ss, column, row, numRows);
+      break;
+    case SHEET_NAMES.ASSETS:
+      assetDataValidation(ss, column, row, numRows);
       break;
     default:
       break;
