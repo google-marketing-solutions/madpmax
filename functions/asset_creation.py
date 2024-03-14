@@ -14,12 +14,12 @@
 """Provides functionality to create assets in Google Ads."""
 
 import uuid
-from enums.asset_column_map import assetsColumnMap
 from enums.asset_group_list import assetGroupList
 from enums.asset_status import assetStatus
-from enums.asset_types import assetTypes
 from enums.sheets import sheets
-from typing import List
+from enums.asset_column_map import assetsColumnMap
+from typing import List, Any
+import reference_enums
 import requests
 import validators
 
@@ -334,8 +334,10 @@ class AssetService:
 
     return asset_group_asset_operation
 
-  def get_asset_value_by_type(self, asset_data, assetType):
-    """Generates asset data and returns assetvalue based on the asset type.
+  def get_asset_value_by_type(
+      self, asset_data: List[Any], assetType: str
+  ) -> str:
+    """Checks asset data and returns assetvalue based on the asset type.
 
     Args:
       asset_data: Array of asset data.
@@ -346,40 +348,40 @@ class AssetService:
     """
     asset_value = ""
     match assetType:
-      case assetTypes.HEADLINE:
+      case reference_enums.AssetTypes.headline:
         asset_value = (
-            asset_data[assetsColumnMap.ASSET_TEXT.value]
-            if assetsColumnMap.ASSET_TEXT.value < len(asset_data)
+            asset_data[reference_enums.AssetsColumnMap.asset_text]
+            if reference_enums.AssetsColumnMap.asset_text < len(asset_data)
             else ""
         )
-      case assetTypes.DESCRIPTION:
+      case reference_enums.AssetTypes.description:
         asset_value = (
-            asset_data[assetsColumnMap.ASSET_TEXT.value]
-            if assetsColumnMap.ASSET_TEXT.value < len(asset_data)
+            asset_data[reference_enums.AssetsColumnMap.asset_text]
+            if reference_enums.AssetsColumnMap.asset_text < len(asset_data)
             else ""
         )
-      case assetTypes.LONG_HEADLINE:
+      case reference_enums.AssetTypes.long_headline:
         asset_value = (
-            asset_data[assetsColumnMap.ASSET_TEXT.value]
-            if assetsColumnMap.ASSET_TEXT.value < len(asset_data)
+            asset_data[reference_enums.AssetsColumnMap.asset_text]
+            if reference_enums.AssetsColumnMap.asset_text < len(asset_data)
             else ""
         )
-      case assetTypes.BUSINESS_NAME:
+      case reference_enums.AssetTypes.business_name:
         asset_value = (
-            asset_data[assetsColumnMap.ASSET_TEXT.value]
-            if assetsColumnMap.ASSET_TEXT.value < len(asset_data)
+            asset_data[reference_enums.AssetsColumnMap.asset_text]
+            if reference_enums.AssetsColumnMap.asset_text < len(asset_data)
             else ""
         )
-      case assetTypes.CALL_TO_ACTION:
+      case reference_enums.AssetTypes.call_to_action:
         asset_value = (
-            asset_data[assetsColumnMap.ASSET_CALL_TO_ACTION.value]
-            if assetsColumnMap.ASSET_CALL_TO_ACTION.value < len(asset_data)
+            asset_data[reference_enums.AssetsColumnMap.asset_call_to_action]
+            if reference_enums.AssetsColumnMap.asset_call_to_action < len(asset_data)
             else ""
         )
       case _:
         asset_value = (
-            asset_data[assetsColumnMap.ASSET_URL.value]
-            if assetsColumnMap.ASSET_URL.value < len(asset_data)
+            asset_data[reference_enums.AssetsColumnMap.asset_url]
+            if reference_enums.AssetsColumnMap.asset_url < len(asset_data)
             else ""
         )
 
@@ -398,17 +400,17 @@ class AssetService:
     result = None
 
     if (
-        len(sheet_row) >= assetsColumnMap.ASSET_GROUP_NAME.value + 1
-        and sheet_row[assetsColumnMap.CUSTOMER_NAME.value].strip()
-        and sheet_row[assetsColumnMap.CAMPAIGN_NAME.value].strip()
-        and sheet_row[assetsColumnMap.ASSET_GROUP_NAME.value].strip()
+        len(sheet_row) >= reference_enums.AssetsColumnMap.asset_group_name + 1
+        and sheet_row[reference_enums.AssetsColumnMap.customer_name].strip()
+        and sheet_row[reference_enums.AssetsColumnMap.campaign_name].strip()
+        and sheet_row[reference_enums.AssetsColumnMap.asset_group_name].strip()
     ):
       result = (
-          sheet_row[assetsColumnMap.CUSTOMER_NAME.value]
+          sheet_row[reference_enums.AssetsColumnMap.customer_name]
           + ";"
-          + sheet_row[assetsColumnMap.CAMPAIGN_NAME.value]
+          + sheet_row[reference_enums.AssetsColumnMap.campaign_name]
           + ";"
-          + sheet_row[assetsColumnMap.ASSET_GROUP_NAME.value]
+          + sheet_row[reference_enums.AssetsColumnMap.asset_group_name]
       )
 
     return result
