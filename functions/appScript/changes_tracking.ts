@@ -30,11 +30,38 @@ function onEdit(e) {
   const row = e.range.getRow();
   const numRows = e.range.getNumRows();
   const sheetName = e.range.getSheet().getSheetName();
+  const editedValue = e.value;
+  const oldValue = e.oldValue;
+  const lastRowChanged = e.range.getLastRow();
+  const numberOfColumnsChanged = e.range.getNumColumns();
+  const numberOfRowsChanged = e.range.getNumColumns();
 
   // More scenarios will be added with following CLs.
   switch (sheetName) {
     case SHEET_NAMES.NEW_ASSET_GROUPS:
+      addNewAssetGroupsUserEditsIntoProperty(
+        editedValue,
+        oldValue,
+        row,
+        lastRowChanged,
+        column,
+        numberOfColumnsChanged,
+        numberOfRowsChanged,
+        ss.getSheetByName(sheetName),
+      );
       checkMinimumAssets(ss);
+      break;
+    case SHEET_NAMES.NEW_CAMPAIGNS:
+      addNewCampaignUserEditsIntoProperty(
+        editedValue,
+        oldValue,
+        row,
+        lastRowChanged,
+        column,
+        numberOfColumnsChanged,
+        numberOfRowsChanged,
+        ss.getSheetByName(sheetName)
+      );
       break;
     default:
       break;
@@ -49,7 +76,9 @@ function onEdit(e) {
  * @param {Spreadsheet} spreadSheet The spreadsheet object.
  */
 function checkMinimumAssets(spreadSheet) {
-  newAssetGroupsSheet = spreadSheet.getSheetByName(SHEET_NAMES.NEW_ASSET_GROUPS);
+  newAssetGroupsSheet = spreadSheet.getSheetByName(
+    SHEET_NAMES.NEW_ASSET_GROUPS,
+  );
   newValues = newAssetGroupsSheet.getDataRange().getValues();
 
   let result = {};
@@ -66,7 +95,9 @@ function checkMinimumAssets(spreadSheet) {
 
       result[id] = { message: '', status: true };
 
-      if (newValues[id][NEW_ASSET_GROUPS.STATUS] === ROW_STATUS.UPLOADED) { continue; }
+      if (newValues[id][NEW_ASSET_GROUPS.STATUS] === ROW_STATUS.UPLOADED) {
+        continue;
+      }
       if (
         newValues[id][NEW_ASSET_GROUPS.ACCOUNT_NAME] === '' ||
         newValues[id][NEW_ASSET_GROUPS.CAMPAIGN_NAME] === '' ||
@@ -74,38 +105,47 @@ function checkMinimumAssets(spreadSheet) {
       ) {
         continue;
       }
-      if (id < 5) {  continue; }
+      if (id < 5) {
+        continue;
+      }
 
       headlineCount = assetCounter(
-        headlineCount, newValues[id][NEW_ASSET_GROUPS.HEADLINE1],
+        headlineCount,
+        newValues[id][NEW_ASSET_GROUPS.HEADLINE1],
       );
       headlineCount = assetCounter(
-        headlineCount,  newValues[id][NEW_ASSET_GROUPS.HEADLINE2],
+        headlineCount,
+        newValues[id][NEW_ASSET_GROUPS.HEADLINE2],
       );
       headlineCount = assetCounter(
-        headlineCount, newValues[id][NEW_ASSET_GROUPS.HEADLINE3],
+        headlineCount,
+        newValues[id][NEW_ASSET_GROUPS.HEADLINE3],
       );
       descriptionCount = assetCounter(
-        descriptionCount, newValues[id][NEW_ASSET_GROUPS.DESCRIPTION1],
+        descriptionCount,
+        newValues[id][NEW_ASSET_GROUPS.DESCRIPTION1],
       );
       descriptionCount = assetCounter(
-        descriptionCount, newValues[id][NEW_ASSET_GROUPS.DESCRIPTION2],
+        descriptionCount,
+        newValues[id][NEW_ASSET_GROUPS.DESCRIPTION2],
       );
       longHeadlineCount = assetCounter(
-        longHeadlineCount, newValues[id][NEW_ASSET_GROUPS.LONG_HEADLINE],
+        longHeadlineCount,
+        newValues[id][NEW_ASSET_GROUPS.LONG_HEADLINE],
       );
       businessCount = assetCounter(
-        businessCount, newValues[id][NEW_ASSET_GROUPS.BUSINESS_NAME],
+        businessCount,
+        newValues[id][NEW_ASSET_GROUPS.BUSINESS_NAME],
       );
       imageCount = assetCounter(
-        imageCount, newValues[id][NEW_ASSET_GROUPS.MARKETING_IMAGE],
+        imageCount,
+        newValues[id][NEW_ASSET_GROUPS.MARKETING_IMAGE],
       );
       squareImageCount = assetCounter(
-        squareImageCount, newValues[id][NEW_ASSET_GROUPS.SQUARE_IMAGE],
+        squareImageCount,
+        newValues[id][NEW_ASSET_GROUPS.SQUARE_IMAGE],
       );
-      logoCount = assetCounter(
-        logoCount, newValues[id][NEW_ASSET_GROUPS.LOGO]
-      );
+      logoCount = assetCounter(logoCount, newValues[id][NEW_ASSET_GROUPS.LOGO]);
 
       result[id] = assetStatus(
         newValues[id][NEW_ASSET_GROUPS.HEADLINE1],
@@ -265,9 +305,7 @@ function assetStatus(
  * @returns {boolean} True is the string contains a url otherwise false.
  */
 function isValidURL(str) {
-  return (
-    /^(http(s):\/\/.)[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$/g.test(
-      str,
-    )
-  )
+  return /^(http(s):\/\/.)[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)$/g.test(
+    str,
+  );
 }

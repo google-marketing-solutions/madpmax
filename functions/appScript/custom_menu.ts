@@ -21,6 +21,7 @@
  * @param {Event} e The onOpen event.
  */
 function onOpen(e) {
+  updateUploadedValuesIntoProperty();
   const ui = SpreadsheetApp.getUi();
 
   ui.createMenu('pMax Execute')
@@ -51,6 +52,7 @@ function pubsubRefreshAllRequest() {
     value: 'run_all',
   };
   pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH');
+  updateUploadedValuesIntoProperty();
 }
 
 /**
@@ -64,6 +66,7 @@ function pubsubRefreshCustomersRequest() {
     value: 'run_all',
   };
   pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_CUSTOMERS');
+  updateUploadedValuesIntoProperty();
 }
 
 /**
@@ -77,6 +80,7 @@ function pubsubRefreshCampaignsRequest() {
     value: 'run_all',
   };
   pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_CAMPAIGNS');
+  updateUploadedValuesIntoProperty();
 }
 
 /**
@@ -90,6 +94,7 @@ function pubsubRefreshAssetGroupsRequest() {
     value: 'run_all',
   };
   pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_ASSET_GROUPS');
+  updateUploadedValuesIntoProperty();
 }
 
 /**
@@ -103,6 +108,7 @@ function pubsubRefreshAssetsRequest() {
     value: 'run_all',
   };
   pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_ASSETS');
+  updateUploadedValuesIntoProperty();
 }
 
 /**
@@ -116,6 +122,7 @@ function pubsubRefreshSitelinksRequest() {
     value: 'run_all',
   };
   pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_SITELINKS');
+  updateUploadedValuesIntoProperty();
 }
 
 /**

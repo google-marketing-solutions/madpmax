@@ -70,6 +70,74 @@ const NEW_ASSET_GROUPS = {
 };
 
 /**
+ * Column mapping for the NewCampaigns sheet.
+ * @enum {number}
+ */
+const NEW_CAMPAIGNS = {
+  STATUS: 0,
+  ACCOUNT_NAME: 1,
+  CAMPAIGN_NAME: 2
+};
+
+/**
+ * Column mapping for the Assets sheet.
+ * @enum {number}
+ */
+const ASSETS = {
+  STATUS: 0,
+  DELETE_OPTION: 1,
+  ACCOUNT_NAME: 2,
+  CAMPAIGN_NAME: 3,
+  ASSET_GROUP_NAME: 4,
+  TYPE: 5
+};
+
+/**
+ * Column mapping for the Sitelinks sheet.
+ * @enum {number}
+ */
+const SITELINKS = {
+  STATUS: 0,
+  DELETE_OPTION: 1,
+  ACCOUNT_NAME: 2,
+  CAMPAIGN_NAME: 3,
+  LINK_TEXT: 4
+};
+
+/**
+ * Column mapping for the AssetGroupList sheet.
+ * @enum {number}
+ */
+const ASSET_GROUP_LIST = {
+  CUSTOMER_NAME: 0,
+  CUSTOMER_ID: 1,
+  CAMPAIGN_NAME: 2,
+  CAMPAIGN_ID: 3,
+  ASSET_GROUP_NAME: 4,
+  ASSET_GROUP_ID: 5
+};
+
+/**
+ * Column mapping for the CampaignList sheet.
+ * @enum {number}
+ */
+const CAMPAIGN_LIST = {
+  CUSTOMER_NAME: 0,
+  CUSTOMER_ID: 1,
+  CAMPAIGN_NAME: 2,
+  CAMPAIGN_ID: 3
+};
+
+/**
+ * Column mapping for the CustomerList sheet.
+ * @enum {number}
+ */
+const CUSTOMER_LIST = {
+  CUSTOMER_NAME: 0,
+  CUSTOMER_ID: 1
+};
+
+/**
  * Row Status codes as in the master spreadsheet.
  * @enum {string}
  */
