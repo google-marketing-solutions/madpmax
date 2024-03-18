@@ -43,11 +43,19 @@ function setProperty(propertyObject) {
 }
 
 /**
+ * Deleted the property object from the document properties.
+ */
+function clearProperty() {
+  PropertiesService.getDocumentProperties().deleteProperty(
+    USER_EDITED_PROPERTY_NAME
+  );
+}
+
+/**
  * Adds the new campaign user edits into the property object
  * @param {string} value New cell value
  * @param {string} oldValue Previous cell value
  * @param {number} row Index of the row of the edited cell
- * @param {number} lastRowChanged Last row index that was changed.
  * @param {number} column Index of the column of the edited cell
  * @param {number} numberOfColumnsChanged Count of number of columns edited.
  * @param {number} numberOfRowsChanged Count of number of rows edited.
@@ -57,45 +65,36 @@ function addNewCampaignUserEditsIntoProperty(
   value,
   oldValue,
   row,
-  lastRowChanged,
   column,
   numberOfColumnsChanged,
   numberOfRowsChanged,
   sheet,
 ) {
-  if (column <= NEW_ASSET_GROUPS.ASSET_GROUP_NAME) {
+  if (column <= NEW_CAMPAIGNS.CAMPAIGN_NAME + 1) {
     let userEditedPropertyValuesObject = getProperty();
 
+    const customer = getCellValueFromRowData(
+      sheet,
+      row,
+      NEW_CAMPAIGNS.CUSTOMER_NAME,
+    );
+    const campaign = getCellValueFromRowData(
+      sheet,
+      row,
+      NEW_CAMPAIGNS.CAMPAIGN_NAME,
+    );
+
     if (numberOfColumnsChanged > 1 || numberOfRowsChanged > 1) {
-      userEditedPropertyValuesObject = {
-        ...userEditedPropertyValuesObject,
-        ...editCampaignValuesThroughPullingRowData(
-          row,
-          lastRowChanged,
-          sheet,
-          NEW_CAMPAIGNS.CAMPAIGN_NAME,
-          NEW_CAMPAIGNS.ACCOUNT_NAME,
-        ),
-      };
-    } else if (column === NEW_CAMPAIGNS.ACCOUNT_NAME) {
-      const campaignNameValue = getCellValueFromRowData(
-        sheet,
-        row,
-        NEW_CAMPAIGNS.CAMPAIGN_NAME,
-      );
-      if (campaignNameValue !== '') {
-        delete userEditedPropertyValuesObject[oldValue][campaignNameValue];
+      updateUploadedValuesIntoProperty();
+    } else if (column === NEW_CAMPAIGNS.CUSTOMER_NAME + 1) {
+      if (campaign !== '') {
+        delete userEditedPropertyValuesObject[oldValue][campaign];
         userEditedPropertyValuesObject[value] = {
           ...userEditedPropertyValuesObject[value],
-          [campaignNameValue]: [],
+          [campaign]: [],
         };
       }
-    } else if (column === NEW_CAMPAIGNS.CAMPAIGN_NAME) {
-      const customer = getCellValueFromRowData(
-        sheet,
-        row,
-        NEW_CAMPAIGNS.ACCOUNT_NAME,
-      );
+    } else if (column === NEW_CAMPAIGNS.CAMPAIGN_NAME + 1) {
       if (
         oldValue &&
         userEditedPropertyValuesObject[customer][oldValue] !== undefined
@@ -117,7 +116,6 @@ function addNewCampaignUserEditsIntoProperty(
  * @param {string} value New cell value
  * @param {string} oldValue Previous cell value
  * @param {number} row Index of the row of the edited cell
- * @param {number} lastRowChanged Last row index that was changed.
  * @param {number} column Index of the column of the edited cell
  * @param {number} numberOfColumnsChanged Count of number of columns edited.
  * @param {number} numberOfRowsChanged Count of number of rows edited.
@@ -127,17 +125,16 @@ function addNewAssetGroupsUserEditsIntoProperty(
   value,
   oldValue,
   row,
-  lastRowChanged,
   column,
   numberOfColumnsChanged,
   numberOfRowsChanged,
   sheet,
 ) {
-  if (column <= NEW_ASSET_GROUPS.ASSET_GROUP_NAME) {
+  if (column <= NEW_ASSET_GROUPS.ASSET_GROUP_NAME + 1) {
     const customer = getCellValueFromRowData(
       sheet,
       row,
-      NEW_ASSET_GROUPS.ACCOUNT_NAME,
+      NEW_ASSET_GROUPS.CUSTOMER_NAME,
     );
     const campaign = getCellValueFromRowData(
       sheet,
@@ -148,17 +145,8 @@ function addNewAssetGroupsUserEditsIntoProperty(
     let userEditedPropertyValuesObject = getProperty();
 
     if (numberOfColumnsChanged > 1 || numberOfRowsChanged > 1) {
-      userEditedPropertyValuesObject = {
-        ...userEditedPropertyValuesObject,
-        ...editAssetGroupValuesThroughPullingRowData(
-          row,
-          lastRowChanged,
-          sheet,
-          NEW_ASSET_GROUPS.ASSET_GROUP_NAME,
-          NewAssetGroups.ACCOUNT_NAME,
-        ),
-      };
-    } else if (column === NEW_ASSET_GROUPS.ASSET_GROUP_NAME) {
+      updateUploadedValuesIntoProperty();
+    } else if (column === NEW_ASSET_GROUPS.ASSET_GROUP_NAME + 1) {
       if (
         oldValue &&
         userEditedPropertyValuesObject[customer]?.[campaign] !== undefined
@@ -177,7 +165,7 @@ function addNewAssetGroupsUserEditsIntoProperty(
         value,
       ];
     } else if (
-      column === NEW_ASSET_GROUPS.CAMPAIGN_NAME &&
+      column === NEW_ASSET_GROUPS.CAMPAIGN_NAME + 1 &&
       oldValue &&
       getCellValueFromRowData(
         sheet,
@@ -207,7 +195,7 @@ function addNewAssetGroupsUserEditsIntoProperty(
         );
       }
     } else if (
-      column === NEW_ASSET_GROUPS.ACCOUNT_NAME &&
+      column === NEW_ASSET_GROUPS.CUSTOMER_NAME + 1 &&
       oldValue &&
       getCellValueFromRowData(
         sheet,
@@ -256,75 +244,6 @@ function getCellValueFromRowData(sheet, row, position) {
 }
 
 /**
- * Edits the campaign values through pulling row data
- * @param {number} row Index of row from sheet
- * @param {number} lastRowChanged Index of last row changed
- * @param {Spreadsheet.Sheet} sheet Sheet object contain sheet data.
- * @param {number} positionForName Index for name
- * @param {number} positionForCustomer Index for customer
- * @return {{customer: {campaign: string[]}}} Object containing account mapping
- */
-function editCampaignValuesThroughPullingRowData(
-  row,
-  lastRowChanged,
-  sheet,
-  positionForName,
-  positionForCustomer,
-) {
-  const resultValues = {};
-
-  for (let index = row; index <= lastRowChanged; index++) {
-    const customer = getCellValueFromRowData(sheet, index, positionForCustomer);
-    const name = getCellValueFromRowData(sheet, index, positionForName);
-
-    if (!resultValues[customer]) {
-      resultValues[customer] = {};
-    }
-
-    resultValues[customer][name] = [];
-  }
-
-  return resultValues;
-}
-
-/**
- * Edits the asset group values through pulling row data
- * @param {number} row Index of row from sheet
- * @param {number} lastRowChanged Index of last row changed
- * @param {Spreadsheet.Sheet} sheet Sheet object contain sheet data.
- * @param {number} positionForName index for name
- * @param {number} positionForCustomer index for customer
- * @param {number} positionForCampaign index for campaign
- * @return {{customer: {campaign: string[]}}} Object containing account mapping
- */
-function editAssetGroupValuesThroughPullingRowData(
-  row,
-  lastRowChanged,
-  sheet,
-  positionForName,
-  positionForCustomer,
-  positionForCampaign,
-) {
-  const resultValues = {};
-
-  for (let index = row; index <= lastRowChanged; index++) {
-    const customer = getCellValueFromRowData(sheet, index, positionForCustomer);
-    const campaign = getCellValueFromRowData(sheet, index, positionForCampaign);
-    const name = getCellValueFromRowData(sheet, index, positionForName);
-
-    resultValues[customer] = resultValues[customer] || {};
-
-    if (!resultValues[customer][campaign]) {
-      resultValues[customer][campaign] = [name];
-    } else {
-      resultValues[customer][campaign].push(name);
-    }
-  }
-
-  return resultValues;
-}
-
-/**
  * Updates the uploaded values into the property
  */
 function updateUploadedValuesIntoProperty() {
@@ -334,13 +253,26 @@ function updateUploadedValuesIntoProperty() {
   const campaignSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(
     SHEET_NAMES.CAMPAIGNS,
   );
+  const newAssetGroupSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(
+    SHEET_NAMES.NEW_ASSET_GROUPS,
+  );
+  const newCampaignSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(
+    SHEET_NAMES.NEW_CAMPAIGNS,
+  );
   const assetGroupValues = assetGroupSheet
     .getRange('6:' + assetGroupSheet.getMaxRows())
     .getValues(); // row 6 is where actual data starts
   const campaignValues = campaignSheet
     .getRange('6:' + campaignSheet.getMaxRows())
     .getValues();
+  const newAssetGroupValues = newAssetGroupSheet
+    .getRange('6:' + newAssetGroupSheet.getMaxRows())
+    .getValues(); // row 6 is where actual data starts
+  const newCampaignValues = newCampaignSheet
+    .getRange('6:' + newCampaignSheet.getMaxRows())
+    .getValues();
 
+  clearProperty();
   let campaignAssetGroupStructure = getProperty();
   if (!campaignAssetGroupStructure) {
     campaignAssetGroupStructure = {};
@@ -354,17 +286,35 @@ function updateUploadedValuesIntoProperty() {
       campaignAssetGroupStructure[customer][campaign] || [];
   });
 
-  assetGroupValues.forEach((row) => {
-    const customer = row[ASSET_GROUP_LIST.CUSTOMER_NAME];
-    const campaign = row[ASSET_GROUP_LIST.CAMPAIGN_NAME];
-    const assetGroup = row[ASSET_GROUP_LIST.ASSET_GROUP_NAME];
-
+  newCampaignValues.forEach((row) => {
+    const customer = row[NEW_CAMPAIGNS.CUSTOMER_NAME];
+    const campaign = row[NEW_CAMPAIGNS.CAMPAIGN_NAME];
     campaignAssetGroupStructure[customer] =
       campaignAssetGroupStructure[customer] || {};
     campaignAssetGroupStructure[customer][campaign] =
       campaignAssetGroupStructure[customer][campaign] || [];
+  });
 
-    campaignAssetGroupStructure[customer][campaign].push(assetGroup);
+  assetGroupValues.forEach((row) => {
+    const customer = row[ASSET_GROUP_LIST.CUSTOMER_NAME];
+    const campaign = row[ASSET_GROUP_LIST.CAMPAIGN_NAME];
+    const assetGroup = row[ASSET_GROUP_LIST.ASSET_GROUP_NAME];
+    try {
+      campaignAssetGroupStructure[customer][campaign].push(assetGroup);
+    } catch (error) {
+      Logger.log(error);
+    }
+  });
+
+  newAssetGroupValues.forEach((row) => {
+    const customer = row[NEW_ASSET_GROUPS.CUSTOMER_NAME];
+    const campaign = row[NEW_ASSET_GROUPS.CAMPAIGN_NAME];
+    const assetGroup = row[NEW_ASSET_GROUPS.ASSET_GROUP_NAME];
+    try {
+      campaignAssetGroupStructure[customer][campaign].push(assetGroup);
+    } catch (error) {
+      Logger.log(error);
+    }
   });
 
   setProperty(campaignAssetGroupStructure);

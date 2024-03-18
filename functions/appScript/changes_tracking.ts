@@ -32,7 +32,6 @@ function onEdit(e) {
   const sheetName = e.range.getSheet().getSheetName();
   const editedValue = e.value;
   const oldValue = e.oldValue;
-  const lastRowChanged = e.range.getLastRow();
   const numberOfColumnsChanged = e.range.getNumColumns();
   const numberOfRowsChanged = e.range.getNumColumns();
 
@@ -43,7 +42,6 @@ function onEdit(e) {
         editedValue,
         oldValue,
         row,
-        lastRowChanged,
         column,
         numberOfColumnsChanged,
         numberOfRowsChanged,
@@ -57,7 +55,6 @@ function onEdit(e) {
         editedValue,
         oldValue,
         row,
-        lastRowChanged,
         column,
         numberOfColumnsChanged,
         numberOfRowsChanged,
