@@ -154,6 +154,27 @@ class CustomerList:
 
 
 @dataclasses.dataclass(frozen=True)
+class CampaignList:
+  """Column map for campaignList sheet.
+
+  Spreadsheet API returns a list of lists when retrieving data from a sheet.
+  Column ids are needed to read and write the correct data  fields from the
+  sheet. This class provides a mapping from column names to column ids. In case
+  the sheet get's edited the tool can be updated from this single place.
+
+  Atrributes:
+    customer_name: Column ID for customer name in the CustomerList sheet.
+    customer_id: Column ID for customer id in the CustomerList sheet.
+    campaign_name: Column ID for customer name in the CustomerList sheet.
+    campaign_id: Column ID for customer id in the CustomerList sheet.
+  """
+  customer_name: int = 0
+  customer_id: int = 1
+  campaign_name: int = 2
+  campaign_id: int = 3
+
+
+@dataclasses.dataclass(frozen=True)
 class RowStatus:
   """Map for the status of a sheet row.
 
