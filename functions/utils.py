@@ -153,3 +153,34 @@ def retrieve_customer_id(
       return row[reference_enums.CustomerList.customer_id]
 
   return None
+
+
+def retrieve_campaign_id(
+    customer_name: str,
+    campaign_name: str,
+    sheet_service: SheetsService
+) -> tuple[str, str] | None:
+  """Retrieves Campaign ID for input campaign name.
+
+  Args:
+    customer_name: String value containing Google Ads Customer name.
+    campaign_name: String value containing Google Ads Campaign name.
+    sheet_service: instance of sheet_service for dependancy injection.
+
+  Returns:
+    Tuple or None. Tuple containing the Google Ads customer id and campaign id.
+    (customer_id, campaign_id)
+  """
+  campaign_data: list[list[str]] = sheet_service.get_sheet_values(
+      reference_enums.SheetNames.campaigns +
+      reference_enums.SheetRanges.campaigns
+  )
+
+  for row in campaign_data:
+    if campaign_name in row and customer_name in row:
+      return (
+          row[reference_enums.CampaignList.customer_id],
+          row[reference_enums.CampaignList.campaign_id]
+      )
+
+  return None

@@ -126,3 +126,28 @@ class TestUtils(unittest.TestCase):
         "dummy_response",
         reference_enums.NewCampaigns.error_message,
     )
+
+  @mock.patch("sheet_api.SheetsService")
+  def test_retrieve_campaign_id(self, mock_sheets_service):
+    """Test Retrieve campaign ID when match in sheet."""
+    customer_name = "customer_name_1"
+    customer_id = "customer_id_1"
+    campaign_name = "campaign_name_1"
+    campaign_id = "campaign_id_1"
+    mock_sheets_service.get_sheet_values.return_value = [
+        [customer_name, customer_id, campaign_name, campaign_id]
+    ]
+
+    self.assertEqual(
+        utils.retrieve_campaign_id(
+            customer_name, campaign_name, mock_sheets_service),
+        (customer_id, campaign_id))
+
+  @mock.patch("sheet_api.SheetsService")
+  def test_retrieve_campaign_id_not_in_sheet(self, mock_sheets_service):
+    """Test Retrieve campaign ID when no match in sheet."""
+    mock_sheets_service.get_sheet_values.return_value = [
+        ["Other_campaign", "Other_campaign_Id"]]
+
+    self.assertIsNone(utils.retrieve_campaign_id(
+        "customer_name_1", "campaign_name_1", mock_sheets_service))
