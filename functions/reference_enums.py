@@ -201,3 +201,73 @@ class ApiStatus:
   """
   paused: str = "PAUSED"
   enabled: str = "ENABLED"
+
+@dataclasses.dataclass(frozen=True)
+class AssetsColumnMap:
+  """Map for the columns of Assets sheet.
+
+  Spreadsheet API returns a list of lists when retrieving data from a sheet.
+  Column ids are needed to read and write the correct data  fields from the
+  sheet. This class provides a mapping from column names to column ids. In case
+  the sheet get's edited the tool can be updated from this single place.
+
+  Atrributes:
+    status: Column reference with the upload status.
+    delete_asset: Column reference for the delete option.
+    customer_name: Column reference with the customer name.
+    campaign_name: Column reference with the campaign name.
+    asset_group_name: Column reference with the asset group name.
+    type: Column reference with the type.
+    asset_text: Column reference with the asset text.
+    asset_call_to_action: Column reference with the call to action for the asset.
+    asset_url: Column reference with the asset url.
+    asset_thumbnail: Column reference with the asset thumbnail.
+    error_message: Column reference with the error message.
+    asset_group_asset: Column reference with the asset group asset.
+  """
+  status: int = 0
+  delete_asset: int = 1
+  customer_name: int = 2
+  campaign_name: int = 3
+  asset_group_name: int = 4
+  type: int = 5
+  asset_text: int = 6
+  asset_call_to_action: int = 7
+  asset_url: int = 8
+  asset_thumbnail: int = 9
+  error_message: int = 10
+  asset_group_asset: int = 11
+
+@dataclasses.dataclass(frozen=True)
+class AssetTypes:
+  """A mapping of the asset type input spreadsheet.
+
+  Mad pMax asset creation requires specific asset types. This enum ensures a correct mapping to
+  asset types, maintained from one single place.
+
+  Atrributes:
+    marketing_image: Asset type for marketing image.
+    square_image: Asset type for square image.
+    portrait_marketing_image: Asset type for portrait marketing image.
+    square_logo: Asset type for square logo.
+    landscape_logo: Asset type for landscape logo.
+    youtube_video: Asset type for youtube video.
+    headline: Asset type for headline.
+    description: Asset type for description.
+    long_headline: Asset type for long headline.
+    business_name: Asset type for business name.
+    call_to_action: Asset type for call to action.
+    sitelink: Asset type for sitelink.
+  """
+  marketing_image: str = "MARKETING_IMAGE"
+  square_image: str = "SQUARE_MARKETING_IMAGE"
+  portrait_marketing_image: str = "PORTRAIT_MARKETING_IMAGE"
+  square_logo: str = "LOGO"
+  landscape_logo: str = "LANDSCAPE_LOGO"
+  youtube_video: str = "YOUTUBE_VIDEO"
+  headline: str = "HEADLINE"
+  description: str = "DESCRIPTION"
+  long_headline: str = "LONG_HEADLINE"
+  business_name: str = "BUSINESS_NAME"
+  call_to_action: str = "CALL_TO_ACTION_SELECTION"
+  sitelink: str = "SITELINK"
