@@ -18,7 +18,7 @@ from enums.asset_group_list import assetGroupList
 from enums.asset_status import assetStatus
 from enums.sheets import sheets
 from enums.asset_column_map import assetsColumnMap
-from typing import List, Any
+from typing import Any, List, Mapping, TypeAlias
 import reference_enums
 import requests
 import validators
@@ -29,6 +29,8 @@ class AssetService:
 
   Contains all methods to create assets in Google Ads pMax campaings.
   """
+  _AssetGroupOperation: TypeAlias = Mapping[str, str]
+  _CallToActionOperation: TypeAlias = Mapping[str, str | bool | Mapping[str, int]]
 
   def __init__(self, google_ads_client, google_ads_service, sheet_service):
     """Constructs the AssetService instance.
@@ -273,7 +275,9 @@ class AssetService:
 
     return asset_operation
 
-  def create_call_to_action_asset(self, action_selection, customer_id):
+  def create_call_to_action_asset(
+      self, action_selection: str, customer_id: int
+  ) -> _CallToActionOperation | None:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -299,8 +303,12 @@ class AssetService:
     return asset_operation
 
   def add_asset_to_asset_group(
-      self, resource_name, asset_group_id, asset_type, customer_id
-  ):
+      self,
+      resource_name: str,
+      asset_group_id: str,
+      asset_type: str,
+      customer_id: int,
+  ) -> _AssetGroupOperation:
     """Adds the asset resource to an asset group.
 
     Args:
@@ -310,7 +318,7 @@ class AssetService:
       customer_id: customer id.
 
     Returns:
-      asset_group_asset_operation
+      Asset group operation object.
     """
     asset_group_service = self._google_ads_client.get_service(
         "AssetGroupService"
@@ -323,9 +331,7 @@ class AssetService:
         asset_group_asset_operation.asset_group_asset_operation.create
     )
 
-    field_type = self._google_ads_client.enums.AssetFieldTypeEnum[asset_type]
-
-    asset_group_asset.field_type = field_type
+    asset_group_asset.field_type = self._google_ads_client.enums.AssetFieldTypeEnum[asset_type]
     asset_group_asset.asset_group = asset_group_service.asset_group_path(
         customer_id,
         asset_group_id,
