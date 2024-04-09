@@ -33,7 +33,7 @@ class PubSub:
   def __init__(
       self,
       config: reference_enums.ConfigFile,
-      google_ads_client: client.GoogleAdsClien
+      google_ads_client: client.GoogleAdsClient
   ) -> None:
     """Constructs the PubSub instance.
 

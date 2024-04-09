@@ -31,6 +31,7 @@ class AssetService:
   """
   _AssetGroupOperation: TypeAlias = Mapping[str, str]
   _CallToActionOperation: TypeAlias = Mapping[str, str | bool | Mapping[str, int]]
+  _AssetOperation: TypeAlias = Mapping[str, str]
 
   def __init__(self, google_ads_client, google_ads_service, sheet_service):
     """Constructs the AssetService instance.
@@ -193,7 +194,7 @@ class AssetService:
 
     return mutate_operation
 
-  def create_text_asset(self, text, customer_id):
+  def create_text_asset(self, text: str, customer_id: str) -> _AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -216,7 +217,7 @@ class AssetService:
 
     return asset_operation
 
-  def create_image_asset(self, image_url, name, customer_id):
+  def create_image_asset(self, image_url: str, name: str, customer_id: str) -> _AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -243,10 +244,9 @@ class AssetService:
     asset.resource_name = resource_name
     asset.image_asset.full_size.url = image_url
     asset.image_asset.data = image_content
-
     return asset_operation
 
-  def create_video_asset(self, video_url, customer_id):
+  def create_video_asset(self, video_url: str, customer_id: str) ->_AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -267,9 +267,8 @@ class AssetService:
     asset_operation = self._google_ads_client.get_type("MutateOperation")
     asset = asset_operation.asset_operation.create
     asset.resource_name = resource_name
-    unique_id = uuid.uuid4()
     asset.youtube_video_asset.youtube_video_title = (
-        f"Marketing Video #{unique_id}"
+        f"Marketing Video #{uuid.uuid4()}"
     )
     asset.youtube_video_asset.youtube_video_id = youtube_id
 
