@@ -9,7 +9,7 @@ from typing import Any, AnyStr, BinaryIO, ContextManager, Iterator, Optional, Tu
 import unittest
 from unittest.mock import patch
 import cloud_event as cloud_event
-import object_structures
+import reference_enums
 
 
 class _TempFile(object):
@@ -203,7 +203,7 @@ class TestMain(unittest.TestCase):
     out_file = out_dir.create_file('output_correct_file.yaml', json_string)
 
     result = cloud_event.retrieve_config(out_file)
-    expected = object_structures.ConfigFile(
+    expected = reference_enums.ConfigFile(
         True,
         'zZzZzZz',
         '123456789',

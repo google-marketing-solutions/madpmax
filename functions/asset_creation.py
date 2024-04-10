@@ -44,19 +44,6 @@ class AssetService:
     self._google_ads_service = google_ads_service
     self.sheet_service = sheet_service
 
-    self.image_asset_types = {
-        "MARKETING_IMAGE",
-        "SQUARE_MARKETING_IMAGE",
-        "PORTRAIT_MARKETING_IMAGE",
-        "LOGO",
-        "LANDSCAPE_LOGO",
-    }
-    self.text_asset_types = {
-        "HEADLINE",
-        "DESCRIPTION",
-        "LONG_HEADLINE",
-        "BUSINESS_NAME",
-    }
     self.asset_temp_id = -10000
 
   def process_asset_data_and_create(self, asset_data, asset_group_data):
@@ -143,7 +130,7 @@ class AssetService:
       if error_message:
         raise Exception(f"Couldn't update Assets \n {error_message}")
 
-  def create_asset(self, asset_type, asset_value, customer_id):
+  def create_asset(self, asset_type: str, asset_value: str, customer_id: str) -> _AssetOperation | _CallToActionOperation:
     """Set up mutate object for creating asset.
 
     Args:
@@ -155,21 +142,21 @@ class AssetService:
       asset operation array
     """
     mutate_operation = None
-
-    match asset_type:
-      case "YOUTUBE_VIDEO":
-        if not asset_value:
+    if not asset_value:
           raise ValueError(
               f"Asset URL is required to create a {asset_type} Asset"
           )
+
+    match asset_type:
+      case reference_enums.AssetTypes.youtube_video:
         if not validators.url(asset_value):
           raise ValueError(f"Asset URL '{asset_value}' is not a valid URL")
         mutate_operation = self.create_video_asset(asset_value, customer_id)
-      case asset_type if asset_type in self.image_asset_types:
-        if not asset_value:
-          raise ValueError(
-              f"Asset URL is required to create a {asset_type} Asset"
-          )
+      case asset_type if asset_type in [reference_enums.AssetTypes.marketing_image,
+                                        reference_enums.AssetTypes.square_image,
+                                        reference_enums.AssetTypes.portrait_marketing_image,
+                                        reference_enums.AssetTypes.square_logo,
+                                        reference_enums.AssetTypes.landscape_logo]:
         if not validators.url(asset_value):
           raise ValueError(f"Asset URL '{asset_value}' is not a valid URL")
         mutate_operation = self.create_image_asset(
@@ -177,17 +164,12 @@ class AssetService:
             f"#{uuid.uuid4()}",
             customer_id,
         )
-      case asset_type if asset_type in self.text_asset_types:
-        if not asset_value:
-          raise ValueError(
-              f"Asset Text is required to create a {asset_type} Asset"
-          )
+      case asset_type if asset_type in [reference_enums.AssetTypes.headline,
+                                        reference_enums.AssetTypes.description,
+                                        reference_enums.AssetTypes.long_headline,
+                                        reference_enums.AssetTypes.business_name]:
         mutate_operation = self.create_text_asset(asset_value, customer_id)
-      case "CALL_TO_ACTION_SELECTION":
-        if not asset_value:
-          raise ValueError(
-              f"Call To Action required to create a {asset_type} Asset"
-          )
+      case reference_enums.AssetTypes.call_to_action:
         mutate_operation = self.create_call_to_action_asset(
             asset_value, customer_id
         )

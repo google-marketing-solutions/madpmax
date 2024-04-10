@@ -16,6 +16,7 @@
 import unittest
 from unittest import mock
 from asset_creation import AssetService
+import reference_enums
 
 
 class TestAssetService(unittest.TestCase):
@@ -81,6 +82,38 @@ class TestAssetService(unittest.TestCase):
     result = self.asset_service.create_video_asset("https://example.co.uk", "customer10")
 
     self.assertIn("Marketing Video #", result.asset_operation.create.youtube_video_asset.youtube_video_title)
+
+  @mock.patch('asset_creation.AssetService.create_video_asset')
+  @mock.patch('validators.url')
+  def test_create_video_asset_for_video_type(self, mock_validators_url, mock_create_video_asset):
+    mock_create_video_asset.return_value = "Video object let's say"
+    mock_validators_url.return_value = True
+    result = self.asset_service.create_asset(reference_enums.AssetTypes.youtube_video, "Test Asset", "customer10")
+
+    self.assertEqual(result, "Video object let's say")
+
+  @mock.patch('asset_creation.AssetService.create_call_to_action_asset')
+  @mock.patch('validators.url')
+  def test_create_call_to_action_asset_for_video_type(self, mock_validators_url, mock_create_call_to_action_asset):
+    mock_create_call_to_action_asset.return_value = "Calling to act now!"
+    mock_validators_url.return_value = True
+    result = self.asset_service.create_asset(reference_enums.AssetTypes.call_to_action, "Test Asset", "customer10")
+
+    self.assertEqual(result, "Calling to act now!")
+
+  @mock.patch('validators.url')
+  def test_rise_error_when_url_is_not_valid_for_video(self, mock_validators_url):
+    mock_validators_url.return_value = False
+    with self.assertRaisesRegex(
+        ValueError, "Asset URL 'Test Asset' is not a valid URL"):
+      self.asset_service.create_asset(reference_enums.AssetTypes.youtube_video, "Test Asset", "customer10")
+
+  def test_rise_error_when_no_asset_value_for_create_asset(self):
+    with self.assertRaisesRegex(
+        ValueError, f"Asset URL is required to create a {reference_enums.AssetTypes.youtube_video} Asset"):
+      self.asset_service.create_asset(reference_enums.AssetTypes.youtube_video, None, "customer10")
+
+
 
 if __name__ == "__main__":
   unittest.main()
