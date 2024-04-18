@@ -13,14 +13,13 @@
 # limitations under the License.
 """Provides functionality to create assets in Google Ads."""
 
+from typing import Any, Dict, List, Mapping, TypeAlias
 import uuid
-from enums.asset_group_list import assetGroupList
-from enums.asset_status import assetStatus
-from enums.sheets import sheets
-from enums.asset_column_map import assetsColumnMap
-from typing import Any, List, Mapping, TypeAlias
+from ads_api import AdService
+from google.ads.googleads import client
 import reference_enums
 import requests
+from sheet_api import SheetsService
 import validators
 
 
@@ -29,11 +28,19 @@ class AssetService:
 
   Contains all methods to create assets in Google Ads pMax campaings.
   """
+
   _AssetGroupOperation: TypeAlias = Mapping[str, str]
-  _CallToActionOperation: TypeAlias = Mapping[str, str | bool | Mapping[str, int]]
+  _CallToActionOperation: TypeAlias = Mapping[
+      str, str | bool | Mapping[str, int]
+  ]
   _AssetOperation: TypeAlias = Mapping[str, str]
 
-  def __init__(self, google_ads_client, google_ads_service, sheet_service):
+  def __init__(
+      self,
+      google_ads_client: client.GoogleAdsClient,
+      google_ads_service: AdService,
+      sheet_service: SheetsService,
+  ) -> None:
     """Constructs the AssetService instance.
 
     Args:
@@ -46,7 +53,9 @@ class AssetService:
 
     self.asset_temp_id = -10000
 
-  def process_asset_data_and_create(self, asset_data, asset_group_data):
+  def process_asset_data_and_create(
+      self, asset_data: List[str | int], asset_group_data: List[str | int]
+  ) -> None:
     """Process data from the sheet to create assets.
 
     Args:
@@ -63,25 +72,32 @@ class AssetService:
     message_mapping = {}
     status_to_row_mapping = {}
     for feedback_index, asset in enumerate(asset_data):
-      if asset[assetsColumnMap.STATUS.value] != assetStatus.UPLOADED.value:
-        asset_type = asset[assetsColumnMap.TYPE.value]
-        asset_value = self.get_asset_value_by_type(asset, asset_type)
-        asset_group_alias = self.compile_asset_group_alias(asset)
+      if (
+          asset[reference_enums.AssetsColumnMap.status]
+          != reference_enums.RowStatus.uploaded
+      ):
+        asset_type = asset[reference_enums.AssetsColumnMap.type]
         asset_group_details = self.sheet_service.get_sheet_row(
-            asset_group_alias, asset_group_data, sheets.ASSET_GROUP.value
+            self.compile_asset_group_alias(asset),
+            asset_group_data,
+            reference_enums.SheetNames.asset_groups,
         )
-        customer_id = asset_group_details[assetGroupList.CUSTOMER_ID.value]
+        customer_id = asset_group_details[
+            reference_enums.AssetGroupMap.customer_id
+        ]
         asset_operation = None
 
         try:
           asset_operation = self.create_asset(
-              asset_type, asset_value, customer_id
+              asset_type,
+              self.get_asset_value_by_type(asset, asset_type),
+              customer_id,
           )
         except ValueError as ex:
           status_to_row_mapping[feedback_index] = {}
           status_to_row_mapping[feedback_index][
               "status"
-          ] = assetStatus.ERROR.value
+          ] = reference_enums.RowStatus.error
           status_to_row_mapping[feedback_index]["message"] = str(ex)
           status_to_row_mapping[feedback_index]["asset_group_asset"] = ""
 
@@ -95,7 +111,9 @@ class AssetService:
           operations[customer_id].append(
               self.add_asset_to_asset_group(
                   resource_name,
-                  asset_group_details[assetGroupList.ASSET_GROUP_ID.value],
+                  asset_group_details[
+                      reference_enums.AssetGroupMap.asset_group_id
+                  ],
                   asset_type,
                   customer_id,
               )
@@ -104,6 +122,16 @@ class AssetService:
           # map the index of the row to the resource that is process for allocating errors from the API call later
           message_mapping[resource_name] = feedback_index
 
+    self.upload_assets_to_sheet(
+        operations, status_to_row_mapping, message_mapping
+    )
+
+  def upload_assets_to_sheet(
+      self,
+      operations: Dict[str, Mapping[str, str]],
+      status_to_row_mapping: Dict[str, str],
+      message_mapping: Dict[str, str],
+  ) -> None:
     for customer_id in operations:
       response, error_message = self._google_ads_service.bulk_mutate(
           operations[customer_id], customer_id, True
@@ -115,22 +143,24 @@ class AssetService:
                 response,
                 operations[customer_id],
                 message_mapping,
-                sheets.ASSETS.value,
+                reference_enums.SheetNames.assets,
             )
         )
 
         self.sheet_service.bulk_update_sheet_status(
-            sheets.ASSETS.value,
-            assetsColumnMap.STATUS.value,
-            assetsColumnMap.ERROR_MESSAGE.value,
-            assetsColumnMap.ASSET_GROUP_ASSET.value,
+            reference_enums.SheetNames.assets,
+            reference_enums.AssetsColumnMap.status,
+            reference_enums.AssetsColumnMap.error_message,
+            reference_enums.AssetsColumnMap.asset_group_asset,
             status_to_row_mapping,
         )
 
       if error_message:
-        raise Exception(f"Couldn't update Assets \n {error_message}")
+        raise ValueError(f"Couldn't update Assets \n {error_message}")
 
-  def create_asset(self, asset_type: str, asset_value: str, customer_id: str) -> _AssetOperation | _CallToActionOperation:
+  def create_asset(
+      self, asset_type: str, asset_value: str, customer_id: str
+  ) -> _AssetOperation | _CallToActionOperation:
     """Set up mutate object for creating asset.
 
     Args:
@@ -143,20 +173,20 @@ class AssetService:
     """
     mutate_operation = None
     if not asset_value:
-          raise ValueError(
-              f"Asset URL is required to create a {asset_type} Asset"
-          )
+      raise ValueError(f"Asset URL is required to create a {asset_type} Asset")
 
     match asset_type:
       case reference_enums.AssetTypes.youtube_video:
         if not validators.url(asset_value):
           raise ValueError(f"Asset URL '{asset_value}' is not a valid URL")
         mutate_operation = self.create_video_asset(asset_value, customer_id)
-      case asset_type if asset_type in [reference_enums.AssetTypes.marketing_image,
-                                        reference_enums.AssetTypes.square_image,
-                                        reference_enums.AssetTypes.portrait_marketing_image,
-                                        reference_enums.AssetTypes.square_logo,
-                                        reference_enums.AssetTypes.landscape_logo]:
+      case asset_type if asset_type in [
+          reference_enums.AssetTypes.marketing_image,
+          reference_enums.AssetTypes.square_image,
+          reference_enums.AssetTypes.portrait_marketing_image,
+          reference_enums.AssetTypes.square_logo,
+          reference_enums.AssetTypes.landscape_logo,
+      ]:
         if not validators.url(asset_value):
           raise ValueError(f"Asset URL '{asset_value}' is not a valid URL")
         mutate_operation = self.create_image_asset(
@@ -164,10 +194,12 @@ class AssetService:
             f"#{uuid.uuid4()}",
             customer_id,
         )
-      case asset_type if asset_type in [reference_enums.AssetTypes.headline,
-                                        reference_enums.AssetTypes.description,
-                                        reference_enums.AssetTypes.long_headline,
-                                        reference_enums.AssetTypes.business_name]:
+      case asset_type if asset_type in [
+          reference_enums.AssetTypes.headline,
+          reference_enums.AssetTypes.description,
+          reference_enums.AssetTypes.long_headline,
+          reference_enums.AssetTypes.business_name,
+      ]:
         mutate_operation = self.create_text_asset(asset_value, customer_id)
       case reference_enums.AssetTypes.call_to_action:
         mutate_operation = self.create_call_to_action_asset(
@@ -199,7 +231,9 @@ class AssetService:
 
     return asset_operation
 
-  def create_image_asset(self, image_url: str, name: str, customer_id: str) -> _AssetOperation:
+  def create_image_asset(
+      self, image_url: str, name: str, customer_id: str
+  ) -> _AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -228,7 +262,9 @@ class AssetService:
     asset.image_asset.data = image_content
     return asset_operation
 
-  def create_video_asset(self, video_url: str, customer_id: str) ->_AssetOperation:
+  def create_video_asset(
+      self, video_url: str, customer_id: str
+  ) -> _AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -312,7 +348,9 @@ class AssetService:
         asset_group_asset_operation.asset_group_asset_operation.create
     )
 
-    asset_group_asset.field_type = self._google_ads_client.enums.AssetFieldTypeEnum[asset_type]
+    asset_group_asset.field_type = (
+        self._google_ads_client.enums.AssetFieldTypeEnum[asset_type]
+    )
     asset_group_asset.asset_group = asset_group_service.asset_group_path(
         customer_id,
         asset_group_id,
@@ -362,7 +400,8 @@ class AssetService:
       case reference_enums.AssetTypes.call_to_action:
         asset_value = (
             asset_data[reference_enums.AssetsColumnMap.asset_call_to_action]
-            if reference_enums.AssetsColumnMap.asset_call_to_action < len(asset_data)
+            if reference_enums.AssetsColumnMap.asset_call_to_action
+            < len(asset_data)
             else ""
         )
       case _:

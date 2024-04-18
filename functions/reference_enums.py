@@ -271,3 +271,27 @@ class AssetTypes:
   business_name: str = "BUSINESS_NAME"
   call_to_action: str = "CALL_TO_ACTION_SELECTION"
   sitelink: str = "SITELINK"
+
+@dataclasses.dataclass(frozen=True)
+class AssetGroupMap:
+  """Map for the columns of Assets sheet.
+
+  Spreadsheet API returns a list of lists when retrieving data from a sheet.
+  Column ids are needed to read and write the correct data  fields from the
+  sheet. This class provides a mapping from column names to column ids. In case
+  the sheet get's edited the tool can be updated from this single place.
+
+  Atrributes:
+    customer_name: Column reference with the customer name.
+    customer_id: Column reference with the customer id.
+    campaign_name: Column reference with the campaign name.
+    camapign_id: Column reference with the camapign id.
+    asset_group_name: Column reference with the asset group name.
+    asset_group_id: Column reference with the asset group id.
+  """
+  customer_name: int = 0
+  customer_id: int = 1
+  campaign_name: int = 2
+  camapign_id: int = 3
+  asset_group_name: int = 4
+  asset_group_id: int = 5
