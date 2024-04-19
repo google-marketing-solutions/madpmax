@@ -13,12 +13,12 @@
 # limitations under the License.
 """Provides functionality to create asset groups."""
 
-from enums.asset_column_map import assetsColumnMap
 from enums.asset_status import assetStatus
-from enums.asset_types import assetTypes
 from enums.campaign_list_column_map import campaignListColumnMap
 from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
 from enums.sheets import sheets
+from typing import List
+import reference_enums
 import validators
 
 
@@ -377,7 +377,7 @@ class AssetGroupService:
 
     return mutate_operation
 
-  def compile_campaign_alias(self, sheet_row):
+  def compile_campaign_alias(self, sheet_row: List[str | int]) -> str | None:
     """Helper method to compile campaign alias from row content.
 
     Args:
@@ -390,13 +390,13 @@ class AssetGroupService:
     result = None
 
     if (
-        sheet_row[assetsColumnMap.CUSTOMER_NAME.value].strip()
-        and sheet_row[assetsColumnMap.CAMPAIGN_NAME.value].strip()
+        sheet_row[reference_enums.AssetsColumnMap.customer_name].strip()
+        and sheet_row[reference_enums.AssetsColumnMap.campaign_name].strip()
     ):
       result = (
-          sheet_row[assetsColumnMap.CUSTOMER_NAME.value]
+          sheet_row[reference_enums.AssetsColumnMap.customer_name]
           + ";"
-          + sheet_row[assetsColumnMap.CAMPAIGN_NAME.value]
+          + sheet_row[reference_enums.AssetsColumnMap.campaign_name]
       )
 
     return result
