@@ -202,8 +202,9 @@ class ApiStatus:
   paused: str = "PAUSED"
   enabled: str = "ENABLED"
 
+
 @dataclasses.dataclass(frozen=True)
-class AssetsColumnMap:
+class Assets:
   """Map for the columns of Assets sheet.
 
   Spreadsheet API returns a list of lists when retrieving data from a sheet.
@@ -219,7 +220,8 @@ class AssetsColumnMap:
     asset_group_name: Column reference with the asset group name.
     type: Column reference with the type.
     asset_text: Column reference with the asset text.
-    asset_call_to_action: Column reference with the call to action for the asset.
+    asset_call_to_action: Column reference with the call to action for the
+        asset.
     asset_url: Column reference with the asset url.
     asset_thumbnail: Column reference with the asset thumbnail.
     error_message: Column reference with the error message.
@@ -238,12 +240,13 @@ class AssetsColumnMap:
   error_message: int = 10
   asset_group_asset: int = 11
 
+
 @dataclasses.dataclass(frozen=True)
 class AssetTypes:
   """A mapping of the asset type input spreadsheet.
 
-  Mad pMax asset creation requires specific asset types. This enum ensures a correct mapping to
-  asset types, maintained from one single place.
+  Mad pMax asset creation requires specific asset types. This enum ensures a 
+  correct mapping to asset types, maintained from one single place.
 
   Atrributes:
     marketing_image: Asset type for marketing image.
@@ -272,9 +275,10 @@ class AssetTypes:
   call_to_action: str = "CALL_TO_ACTION_SELECTION"
   sitelink: str = "SITELINK"
 
+
 @dataclasses.dataclass(frozen=True)
-class AssetGroupMap:
-  """Map for the columns of Assets sheet.
+class AssetGroupList:
+  """Map for the columns of AssetGroupList sheet.
 
   Spreadsheet API returns a list of lists when retrieving data from a sheet.
   Column ids are needed to read and write the correct data  fields from the
@@ -295,3 +299,36 @@ class AssetGroupMap:
   camapign_id: int = 3
   asset_group_name: int = 4
   asset_group_id: int = 5
+
+
+@dataclasses.dataclass(frozen=True)
+class Sitelinks:
+  """Column map for Sitelinks sheet.
+
+  Spreadsheet API returns a list of lists when retrieving data from a sheet.
+  Column ids are needed to read and write the correct data  fields from the
+  sheet. This class provides a mapping from column names to column ids. In case
+  the sheet get's edited the tool can be updated from this single place.
+
+  Atrributes:
+    upload_status: Column reference with the upload status.
+    delete_sitelink: Column reference with the delete status.
+    customer_name: Column reference with the customer name.
+    campaign_name: Column reference with the campaign name.
+    link_text: Column reference with the link text.
+    final_urls: Column reference with the final urls.
+    description1: Column reference with the description 1.
+    description2: Column reference with the description 2.
+    error_message: Column reference with the error message.
+    sitelink_resource: Column reference with the GA resource name.
+  """
+  upload_status: int = 0
+  delete_sitelink: int = 1
+  customer_name: int = 2
+  campaign_name: int = 3
+  link_text: int = 4
+  final_urls: int = 5
+  description1: int = 6
+  description2: int = 7
+  error_message: int = 8
+  sitelink_resource: int = 9

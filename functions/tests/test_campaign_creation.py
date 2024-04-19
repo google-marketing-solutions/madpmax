@@ -3,7 +3,7 @@ from typing import Final
 import unittest
 from unittest import mock
 from campaign_creation import CampaignService
-import reference_enums
+import data_references
 
 _CUSTOMER_ID: Final[str] = "customer_id_1"
 _VALID_SHEET_DATA: Final[list[list[str]]] = [[
@@ -122,17 +122,17 @@ class TestCampaignCreation(unittest.TestCase):
     """
     mutate_operation = self.campaign_service.create_pmax_campaign_operation(
         _CUSTOMER_ID,
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_name],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_status],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_target_roas],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_target_cpa],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.bidding_strategy],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_start_date],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_end_date],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_name],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_status],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_target_roas],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_target_cpa],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.bidding_strategy],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_start_date],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_end_date],
     )
     self.assertEqual(
         mutate_operation.campaign_operation.create.bidding_strategy_type,
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.bidding_strategy],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.bidding_strategy],
     )
 
   def test_create_pmax_campaign_target_cpa(self):
@@ -142,18 +142,18 @@ class TestCampaignCreation(unittest.TestCase):
     """
     mutate_operation = self.campaign_service.create_pmax_campaign_operation(
         _CUSTOMER_ID,
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_name],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_status],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_target_roas],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_target_cpa],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.bidding_strategy],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_start_date],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_end_date],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_name],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_status],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_target_roas],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_target_cpa],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.bidding_strategy],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_start_date],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_end_date],
     )
     self.assertEqual(
         mutate_operation.campaign_operation.create.maximize_conversions.target_cpa_micros,
         int(_VALID_SHEET_DATA[0][
-            reference_enums.NewCampaigns.campaign_target_cpa]) * 1000000,
+            data_references.NewCampaigns.campaign_target_cpa]) * 1000000,
     )
 
   def test_create_pmax_campaign_start_date(self):
@@ -163,17 +163,17 @@ class TestCampaignCreation(unittest.TestCase):
     """
     start_date = datetime.datetime.strptime(
         _VALID_SHEET_DATA[0]
-        [reference_enums.NewCampaigns.campaign_start_date],
+        [data_references.NewCampaigns.campaign_start_date],
         "%Y-%m-%d").strftime("%Y%m%d")
     mutate_operation = self.campaign_service.create_pmax_campaign_operation(
         _CUSTOMER_ID,
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_name],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_status],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_target_roas],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_target_cpa],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.bidding_strategy],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_start_date],
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_end_date],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_name],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_status],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_target_roas],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_target_cpa],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.bidding_strategy],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_start_date],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_end_date],
     )
     self.assertEqual(
         mutate_operation.campaign_operation.create.start_date,
@@ -192,15 +192,15 @@ class TestCampaignCreation(unittest.TestCase):
     ):
       self.campaign_service.create_pmax_campaign_operation(
           _CUSTOMER_ID,
-          _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_name],
-          _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_status],
+          _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_name],
+          _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_status],
           _VALID_SHEET_DATA[0][
-              reference_enums.NewCampaigns.campaign_target_roas],
+              data_references.NewCampaigns.campaign_target_roas],
           target_cpa,
-          _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.bidding_strategy],
+          _VALID_SHEET_DATA[0][data_references.NewCampaigns.bidding_strategy],
           _VALID_SHEET_DATA[0][
-              reference_enums.NewCampaigns.campaign_start_date],
-          _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_end_date]
+              data_references.NewCampaigns.campaign_start_date],
+          _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_end_date]
       )
 
   def test_throw_error_when_no_target_roas_for_maximize_conversion_value(self):
@@ -216,15 +216,15 @@ class TestCampaignCreation(unittest.TestCase):
     ):
       self.campaign_service.create_pmax_campaign_operation(
           _CUSTOMER_ID,
-          _VALID_SHEET_DATA[1][reference_enums.NewCampaigns.campaign_name],
-          _VALID_SHEET_DATA[1][reference_enums.NewCampaigns.campaign_status],
+          _VALID_SHEET_DATA[1][data_references.NewCampaigns.campaign_name],
+          _VALID_SHEET_DATA[1][data_references.NewCampaigns.campaign_status],
           target_roas,
           _VALID_SHEET_DATA[1][
-              reference_enums.NewCampaigns.campaign_target_cpa],
-          _VALID_SHEET_DATA[1][reference_enums.NewCampaigns.bidding_strategy],
+              data_references.NewCampaigns.campaign_target_cpa],
+          _VALID_SHEET_DATA[1][data_references.NewCampaigns.bidding_strategy],
           _VALID_SHEET_DATA[1][
-              reference_enums.NewCampaigns.campaign_start_date],
-          _VALID_SHEET_DATA[1][reference_enums.NewCampaigns.campaign_end_date],
+              data_references.NewCampaigns.campaign_start_date],
+          _VALID_SHEET_DATA[1][data_references.NewCampaigns.campaign_end_date],
       )
 
   def test_throw_error_when_no_target_roas_in_string(self):
@@ -241,15 +241,15 @@ class TestCampaignCreation(unittest.TestCase):
     ):
       self.campaign_service.create_pmax_campaign_operation(
           _CUSTOMER_ID,
-          _VALID_SHEET_DATA[1][reference_enums.NewCampaigns.campaign_name],
-          _VALID_SHEET_DATA[1][reference_enums.NewCampaigns.campaign_status],
+          _VALID_SHEET_DATA[1][data_references.NewCampaigns.campaign_name],
+          _VALID_SHEET_DATA[1][data_references.NewCampaigns.campaign_status],
           target_roas,
           _VALID_SHEET_DATA[1][
-              reference_enums.NewCampaigns.campaign_target_cpa],
-          _VALID_SHEET_DATA[1][reference_enums.NewCampaigns.bidding_strategy],
+              data_references.NewCampaigns.campaign_target_cpa],
+          _VALID_SHEET_DATA[1][data_references.NewCampaigns.bidding_strategy],
           _VALID_SHEET_DATA[1][
-              reference_enums.NewCampaigns.campaign_start_date],
-          _VALID_SHEET_DATA[1][reference_enums.NewCampaigns.campaign_end_date],
+              data_references.NewCampaigns.campaign_start_date],
+          _VALID_SHEET_DATA[1][data_references.NewCampaigns.campaign_end_date],
       )
 
   def test_create_campaign_budget_operation_budget_delivery(self):
@@ -259,14 +259,14 @@ class TestCampaignCreation(unittest.TestCase):
     """
     mutate_operation = self.campaign_service.create_campaign_budget_operation(
         _CUSTOMER_ID,
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_budget],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_budget],
         _VALID_SHEET_DATA[0][
-            reference_enums.NewCampaigns.budget_delivery_method]
+            data_references.NewCampaigns.budget_delivery_method]
     )
     self.assertEqual(
         mutate_operation.campaign_budget_operation.create.delivery_method,
         _VALID_SHEET_DATA[0][
-            reference_enums.NewCampaigns.budget_delivery_method]
+            data_references.NewCampaigns.budget_delivery_method]
     )
 
   def test_create_campaign_budget_operation_budget_amount(self):
@@ -276,14 +276,14 @@ class TestCampaignCreation(unittest.TestCase):
     """
     mutate_operation = self.campaign_service.create_campaign_budget_operation(
         _CUSTOMER_ID,
-        _VALID_SHEET_DATA[0][reference_enums.NewCampaigns.campaign_budget],
+        _VALID_SHEET_DATA[0][data_references.NewCampaigns.campaign_budget],
         _VALID_SHEET_DATA[0][
-            reference_enums.NewCampaigns.budget_delivery_method]
+            data_references.NewCampaigns.budget_delivery_method]
     )
     self.assertEqual(
         mutate_operation.campaign_budget_operation.create.amount_micros,
         int(_VALID_SHEET_DATA[0][
-            reference_enums.NewCampaigns.campaign_budget]) * 1000000,
+            data_references.NewCampaigns.campaign_budget]) * 1000000,
     )
 
   def test_throw_error_when_no_budget(self):
@@ -299,7 +299,7 @@ class TestCampaignCreation(unittest.TestCase):
           _CUSTOMER_ID,
           budget,
           _VALID_SHEET_DATA[0][
-              reference_enums.NewCampaigns.budget_delivery_method
+              data_references.NewCampaigns.budget_delivery_method
           ]
       )
 
@@ -316,7 +316,7 @@ class TestCampaignCreation(unittest.TestCase):
           _CUSTOMER_ID,
           budget,
           _VALID_SHEET_DATA[0][
-              reference_enums.NewCampaigns.budget_delivery_method
+              data_references.NewCampaigns.budget_delivery_method
           ]
       )
 
@@ -334,7 +334,7 @@ class TestCampaignCreation(unittest.TestCase):
       self.campaign_service.create_campaign_budget_operation(
           _CUSTOMER_ID,
           _VALID_SHEET_DATA[0][
-              reference_enums.NewCampaigns.campaign_budget],
+              data_references.NewCampaigns.campaign_budget],
           budget_delivery_method
       )
 

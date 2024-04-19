@@ -18,8 +18,8 @@ from typing import TypeAlias, Mapping
 import uuid
 from absl import logging
 from ads_api import AdService
+import data_references
 from google.ads.googleads import client
-import reference_enums
 from sheet_api import SheetsService
 import utils
 
@@ -88,9 +88,9 @@ class CampaignService:
 
     for row_num, row in enumerate(new_campaign_data):
       result = None
-      if (len(row) > reference_enums.NewCampaigns.campaign_start_date
-          and row[reference_enums.NewCampaigns.campaign_upload_status] !=
-          reference_enums.RowStatus.uploaded):
+      if (len(row) > data_references.NewCampaigns.campaign_start_date
+          and row[data_references.NewCampaigns.campaign_upload_status] !=
+          data_references.RowStatus.uploaded):
         result = self.process_campaign_data_and_create_campaigns(
             row)
         if result:
@@ -121,7 +121,7 @@ class CampaignService:
          'error_log': 'Target ROAS and CPA should be a number.'}
     """
     customer_id = utils.retrieve_customer_id(
-        campaign_data[reference_enums.NewCampaigns.customer_name],
+        campaign_data[data_references.NewCampaigns.customer_name],
         self.sheet_service
     )
 
@@ -131,8 +131,8 @@ class CampaignService:
     try:
       budget_operation = self.create_campaign_budget_operation(
           customer_id,
-          campaign_data[reference_enums.NewCampaigns.campaign_budget],
-          campaign_data[reference_enums.NewCampaigns.budget_delivery_method]
+          campaign_data[data_references.NewCampaigns.campaign_budget],
+          campaign_data[data_references.NewCampaigns.budget_delivery_method]
       )
     except ValueError as e:
       budget_error = str(e)
@@ -143,13 +143,13 @@ class CampaignService:
     try:
       campaign_operation = self.create_pmax_campaign_operation(
           customer_id,
-          campaign_data[reference_enums.NewCampaigns.campaign_name],
-          campaign_data[reference_enums.NewCampaigns.campaign_status],
-          campaign_data[reference_enums.NewCampaigns.campaign_target_roas],
-          campaign_data[reference_enums.NewCampaigns.campaign_target_cpa],
-          campaign_data[reference_enums.NewCampaigns.bidding_strategy],
-          campaign_data[reference_enums.NewCampaigns.campaign_start_date],
-          campaign_data[reference_enums.NewCampaigns.campaign_end_date],
+          campaign_data[data_references.NewCampaigns.campaign_name],
+          campaign_data[data_references.NewCampaigns.campaign_status],
+          campaign_data[data_references.NewCampaigns.campaign_target_roas],
+          campaign_data[data_references.NewCampaigns.campaign_target_cpa],
+          campaign_data[data_references.NewCampaigns.bidding_strategy],
+          campaign_data[data_references.NewCampaigns.campaign_start_date],
+          campaign_data[data_references.NewCampaigns.campaign_end_date],
       )
     except ValueError as e:
       campaign_error = str(e)
@@ -286,11 +286,11 @@ class CampaignService:
       )
 
     match campaign_status:
-      case reference_enums.ApiStatus.paused:
+      case data_references.ApiStatus.paused:
         campaign.status = (
             self._google_ads_client.enums.CampaignStatusEnum.PAUSED
         )
-      case reference_enums.ApiStatus.enabled:
+      case data_references.ApiStatus.enabled:
         campaign.status = (
             self._google_ads_client.enums.CampaignStatusEnum.ENABLED
         )

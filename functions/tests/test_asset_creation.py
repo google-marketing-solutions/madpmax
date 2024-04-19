@@ -1,22 +1,22 @@
 # Copyright 2024 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
+
+# Licensed under the Apache License, Version 2.0 (the "License")
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
+
+# https: // www.apache.org / licenses / LICENSE - 2.0
+
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for Asset Creation"""
+"""Tests for Asset Creation."""
 
 import unittest
 from unittest import mock
 from asset_creation import AssetService
-import reference_enums
+import data_references
 
 
 class TestAssetOperationResourceName:
@@ -133,7 +133,7 @@ class TestAssetService(unittest.TestCase):
     mock_create_video_asset.return_value = "Video object let's say"
     mock_validators_url.return_value = True
     result = self.asset_service.create_asset(
-        reference_enums.AssetTypes.youtube_video, "Test Asset", "customer10"
+        data_references.AssetTypes.youtube_video, "Test Asset", "customer10"
     )
 
     self.assertEqual(result, "Video object let's say")
@@ -146,7 +146,7 @@ class TestAssetService(unittest.TestCase):
     mock_create_call_to_action_asset.return_value = "Calling to act now!"
     mock_validators_url.return_value = True
     result = self.asset_service.create_asset(
-        reference_enums.AssetTypes.call_to_action, "Test Asset", "customer10"
+        data_references.AssetTypes.call_to_action, "Test Asset", "customer10"
     )
 
     self.assertEqual(result, "Calling to act now!")
@@ -160,17 +160,17 @@ class TestAssetService(unittest.TestCase):
         ValueError, "Asset URL 'Test Asset' is not a valid URL"
     ):
       self.asset_service.create_asset(
-          reference_enums.AssetTypes.youtube_video, "Test Asset", "customer10"
+          data_references.AssetTypes.youtube_video, "Test Asset", "customer10"
       )
 
   def test_rise_error_when_no_asset_value_for_create_asset(self):
     with self.assertRaisesRegex(
         ValueError,
         "Asset URL is required to create a"
-        f" {reference_enums.AssetTypes.youtube_video} Asset",
+        f" {data_references.AssetTypes.youtube_video} Asset",
     ):
       self.asset_service.create_asset(
-          reference_enums.AssetTypes.youtube_video, None, "customer10"
+          data_references.AssetTypes.youtube_video, None, "customer10"
       )
 
   @mock.patch("asset_creation.AssetService.create_asset")

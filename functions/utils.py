@@ -21,7 +21,7 @@ operations.
 
 from typing import Mapping, TypeAlias
 from ads_api import AdService
-import reference_enums
+import data_references
 from sheet_api import SheetsService
 
 _BudgetOperation: TypeAlias = Mapping[str, str | int]
@@ -64,16 +64,16 @@ def process_operations_and_errors(
     sheet.
   """
   sheet_id = sheet_service.get_sheet_id(
-      reference_enums.SheetNames.new_campaigns)
+      data_references.SheetNames.new_campaigns)
 
   if error_log:
     sheet_service.variable_update_sheet_status(
         row_number,
         sheet_id,
-        reference_enums.NewCampaigns.campaign_upload_status,
-        reference_enums.RowStatus.error,
+        data_references.NewCampaigns.campaign_upload_status,
+        data_references.RowStatus.error,
         error_log,
-        reference_enums.NewCampaigns.error_message,
+        data_references.NewCampaigns.error_message,
     )
   elif operations:
     campaigns_response, campaigns_error_message = (
@@ -114,8 +114,8 @@ def process_api_response_and_errors(
     sheet_service.variable_update_sheet_status(
         row_number,
         sheet_id,
-        reference_enums.NewCampaigns.campaign_upload_status,
-        reference_enums.RowStatus.uploaded,
+        data_references.NewCampaigns.campaign_upload_status,
+        data_references.RowStatus.uploaded,
     )
 
     sheet_service.refresh_campaign_list()
@@ -123,10 +123,10 @@ def process_api_response_and_errors(
     sheet_service.variable_update_sheet_status(
         row_number,
         sheet_id,
-        reference_enums.NewCampaigns.campaign_upload_status,
-        reference_enums.RowStatus.error,
+        data_references.NewCampaigns.campaign_upload_status,
+        data_references.RowStatus.error,
         campaigns_error_message,
-        reference_enums.NewCampaigns.error_message,
+        data_references.NewCampaigns.error_message,
     )
 
 
@@ -144,13 +144,13 @@ def retrieve_customer_id(
     Str or None. String value containing the Google Ads customer id.
   """
   customer_data: list[list[str]] = sheet_service.get_sheet_values(
-      reference_enums.SheetNames.customers +
-      reference_enums.SheetRanges.customers
+      data_references.SheetNames.customers +
+      data_references.SheetRanges.customers
   )
 
   for row in customer_data:
     if customer_name in row:
-      return row[reference_enums.CustomerList.customer_id]
+      return row[data_references.CustomerList.customer_id]
 
   return None
 
@@ -172,15 +172,15 @@ def retrieve_campaign_id(
     (customer_id, campaign_id)
   """
   campaign_data: list[list[str]] = sheet_service.get_sheet_values(
-      reference_enums.SheetNames.campaigns +
-      reference_enums.SheetRanges.campaigns
+      data_references.SheetNames.campaigns +
+      data_references.SheetRanges.campaigns
   )
 
   for row in campaign_data:
     if campaign_name in row and customer_name in row:
       return (
-          row[reference_enums.CampaignList.customer_id],
-          row[reference_enums.CampaignList.campaign_id]
+          row[data_references.CampaignList.customer_id],
+          row[data_references.CampaignList.campaign_id]
       )
 
   return None

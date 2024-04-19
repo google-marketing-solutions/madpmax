@@ -16,8 +16,8 @@
 from typing import Any, Dict, List, Mapping, TypeAlias
 import uuid
 from ads_api import AdService
+import data_references
 from google.ads.googleads import client
-import reference_enums
 import requests
 from sheet_api import SheetsService
 import validators
@@ -73,17 +73,17 @@ class AssetService:
     status_to_row_mapping = {}
     for feedback_index, asset in enumerate(asset_data):
       if (
-          asset[reference_enums.AssetsColumnMap.status]
-          != reference_enums.RowStatus.uploaded
+          asset[data_references.Assets.status]
+          != data_references.RowStatus.uploaded
       ):
-        asset_type = asset[reference_enums.AssetsColumnMap.type]
+        asset_type = asset[data_references.Assets.type]
         asset_group_details = self.sheet_service.get_sheet_row(
             self.compile_asset_group_alias(asset),
             asset_group_data,
-            reference_enums.SheetNames.asset_groups,
+            data_references.SheetNames.asset_groups,
         )
         customer_id = asset_group_details[
-            reference_enums.AssetGroupMap.customer_id
+            data_references.AssetGroupList.customer_id
         ]
         asset_operation = None
 
@@ -97,7 +97,7 @@ class AssetService:
           status_to_row_mapping[feedback_index] = {}
           status_to_row_mapping[feedback_index][
               "status"
-          ] = reference_enums.RowStatus.error
+          ] = data_references.RowStatus.error
           status_to_row_mapping[feedback_index]["message"] = str(ex)
           status_to_row_mapping[feedback_index]["asset_group_asset"] = ""
 
@@ -112,7 +112,7 @@ class AssetService:
               self.add_asset_to_asset_group(
                   resource_name,
                   asset_group_details[
-                      reference_enums.AssetGroupMap.asset_group_id
+                      data_references.AssetGroupList.asset_group_id
                   ],
                   asset_type,
                   customer_id,
@@ -143,15 +143,15 @@ class AssetService:
                 response,
                 operations[customer_id],
                 message_mapping,
-                reference_enums.SheetNames.assets,
+                data_references.SheetNames.assets,
             )
         )
 
         self.sheet_service.bulk_update_sheet_status(
-            reference_enums.SheetNames.assets,
-            reference_enums.AssetsColumnMap.status,
-            reference_enums.AssetsColumnMap.error_message,
-            reference_enums.AssetsColumnMap.asset_group_asset,
+            data_references.SheetNames.assets,
+            data_references.Assets.status,
+            data_references.Assets.error_message,
+            data_references.Assets.asset_group_asset,
             status_to_row_mapping,
         )
 
@@ -176,16 +176,16 @@ class AssetService:
       raise ValueError(f"Asset URL is required to create a {asset_type} Asset")
 
     match asset_type:
-      case reference_enums.AssetTypes.youtube_video:
+      case data_references.AssetTypes.youtube_video:
         if not validators.url(asset_value):
           raise ValueError(f"Asset URL '{asset_value}' is not a valid URL")
         mutate_operation = self.create_video_asset(asset_value, customer_id)
       case asset_type if asset_type in [
-          reference_enums.AssetTypes.marketing_image,
-          reference_enums.AssetTypes.square_image,
-          reference_enums.AssetTypes.portrait_marketing_image,
-          reference_enums.AssetTypes.square_logo,
-          reference_enums.AssetTypes.landscape_logo,
+          data_references.AssetTypes.marketing_image,
+          data_references.AssetTypes.square_image,
+          data_references.AssetTypes.portrait_marketing_image,
+          data_references.AssetTypes.square_logo,
+          data_references.AssetTypes.landscape_logo,
       ]:
         if not validators.url(asset_value):
           raise ValueError(f"Asset URL '{asset_value}' is not a valid URL")
@@ -195,13 +195,13 @@ class AssetService:
             customer_id,
         )
       case asset_type if asset_type in [
-          reference_enums.AssetTypes.headline,
-          reference_enums.AssetTypes.description,
-          reference_enums.AssetTypes.long_headline,
-          reference_enums.AssetTypes.business_name,
+          data_references.AssetTypes.headline,
+          data_references.AssetTypes.description,
+          data_references.AssetTypes.long_headline,
+          data_references.AssetTypes.business_name,
       ]:
         mutate_operation = self.create_text_asset(asset_value, customer_id)
-      case reference_enums.AssetTypes.call_to_action:
+      case data_references.AssetTypes.call_to_action:
         mutate_operation = self.create_call_to_action_asset(
             asset_value, customer_id
         )
@@ -373,41 +373,41 @@ class AssetService:
     """
     asset_value = ""
     match assetType:
-      case reference_enums.AssetTypes.headline:
+      case data_references.AssetTypes.headline:
         asset_value = (
-            asset_data[reference_enums.AssetsColumnMap.asset_text]
-            if reference_enums.AssetsColumnMap.asset_text < len(asset_data)
+            asset_data[data_references.Assets.asset_text]
+            if data_references.Assets.asset_text < len(asset_data)
             else ""
         )
-      case reference_enums.AssetTypes.description:
+      case data_references.AssetTypes.description:
         asset_value = (
-            asset_data[reference_enums.AssetsColumnMap.asset_text]
-            if reference_enums.AssetsColumnMap.asset_text < len(asset_data)
+            asset_data[data_references.Assets.asset_text]
+            if data_references.Assets.asset_text < len(asset_data)
             else ""
         )
-      case reference_enums.AssetTypes.long_headline:
+      case data_references.AssetTypes.long_headline:
         asset_value = (
-            asset_data[reference_enums.AssetsColumnMap.asset_text]
-            if reference_enums.AssetsColumnMap.asset_text < len(asset_data)
+            asset_data[data_references.Assets.asset_text]
+            if data_references.Assets.asset_text < len(asset_data)
             else ""
         )
-      case reference_enums.AssetTypes.business_name:
+      case data_references.AssetTypes.business_name:
         asset_value = (
-            asset_data[reference_enums.AssetsColumnMap.asset_text]
-            if reference_enums.AssetsColumnMap.asset_text < len(asset_data)
+            asset_data[data_references.Assets.asset_text]
+            if data_references.Assets.asset_text < len(asset_data)
             else ""
         )
-      case reference_enums.AssetTypes.call_to_action:
+      case data_references.AssetTypes.call_to_action:
         asset_value = (
-            asset_data[reference_enums.AssetsColumnMap.asset_call_to_action]
-            if reference_enums.AssetsColumnMap.asset_call_to_action
+            asset_data[data_references.Assets.asset_call_to_action]
+            if data_references.Assets.asset_call_to_action
             < len(asset_data)
             else ""
         )
       case _:
         asset_value = (
-            asset_data[reference_enums.AssetsColumnMap.asset_url]
-            if reference_enums.AssetsColumnMap.asset_url < len(asset_data)
+            asset_data[data_references.Assets.asset_url]
+            if data_references.Assets.asset_url < len(asset_data)
             else ""
         )
 
@@ -426,17 +426,17 @@ class AssetService:
     result = None
 
     if (
-        len(sheet_row) >= reference_enums.AssetsColumnMap.asset_group_name + 1
-        and sheet_row[reference_enums.AssetsColumnMap.customer_name].strip()
-        and sheet_row[reference_enums.AssetsColumnMap.campaign_name].strip()
-        and sheet_row[reference_enums.AssetsColumnMap.asset_group_name].strip()
+        len(sheet_row) >= data_references.Assets.asset_group_name + 1
+        and sheet_row[data_references.Assets.customer_name].strip()
+        and sheet_row[data_references.Assets.campaign_name].strip()
+        and sheet_row[data_references.Assets.asset_group_name].strip()
     ):
       result = (
-          sheet_row[reference_enums.AssetsColumnMap.customer_name]
+          sheet_row[data_references.Assets.customer_name]
           + ";"
-          + sheet_row[reference_enums.AssetsColumnMap.campaign_name]
+          + sheet_row[data_references.Assets.campaign_name]
           + ";"
-          + sheet_row[reference_enums.AssetsColumnMap.asset_group_name]
+          + sheet_row[data_references.Assets.asset_group_name]
       )
 
     return result

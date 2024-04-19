@@ -1,6 +1,6 @@
-import reference_enums
 import unittest
 from unittest import mock
+import data_references
 import utils
 
 
@@ -74,10 +74,10 @@ class TestUtils(unittest.TestCase):
     self.sheet_service.variable_update_sheet_status.assert_called_once_with(
         1,
         "1234abd",
-        reference_enums.NewCampaigns.campaign_upload_status,
-        reference_enums.RowStatus.error,
+        data_references.NewCampaigns.campaign_upload_status,
+        data_references.RowStatus.error,
         "dummy_response",
-        reference_enums.NewCampaigns.error_message,
+        data_references.NewCampaigns.error_message,
     )
 
   def test_process_api_response_and_errors_no_errors(self):
@@ -98,8 +98,8 @@ class TestUtils(unittest.TestCase):
     self.sheet_service.variable_update_sheet_status.assert_called_once_with(
         1,
         "sheetid_1234",
-        reference_enums.NewCampaigns.campaign_upload_status,
-        reference_enums.RowStatus.uploaded
+        data_references.NewCampaigns.campaign_upload_status,
+        data_references.RowStatus.uploaded
     )
     self.sheet_service.refresh_campaign_list.assert_called_once()
 
@@ -121,10 +121,10 @@ class TestUtils(unittest.TestCase):
     self.sheet_service.variable_update_sheet_status.assert_called_once_with(
         1,
         "sheetid_1234",
-        reference_enums.NewCampaigns.campaign_upload_status,
-        reference_enums.RowStatus.error,
+        data_references.NewCampaigns.campaign_upload_status,
+        data_references.RowStatus.error,
         "dummy_response",
-        reference_enums.NewCampaigns.error_message,
+        data_references.NewCampaigns.error_message,
     )
 
   @mock.patch("sheet_api.SheetsService")

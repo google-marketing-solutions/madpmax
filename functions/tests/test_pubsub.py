@@ -37,7 +37,7 @@ def _mock_get_sheet_values_callback(input_value):
 
 class TestPubSubCall(unittest.TestCase):
 
-  @patch("reference_enums.ConfigFile")
+  @patch("data_references.ConfigFile")
   def setUp(self, config_file):
     config_file.login_customer_id = "1234"
     # Set up mock dependencies
