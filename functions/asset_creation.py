@@ -22,14 +22,14 @@ import requests
 from sheet_api import SheetsService
 import validators
 
-
+AssetToAssetGroupOperation: TypeAlias = Mapping[str, str | Mapping[str, str | int]]
 class AssetService:
   """Class for Asset Creation.
 
   Contains all methods to create assets in Google Ads pMax campaings.
   """
 
-  _AssetGroupOperation: TypeAlias = Mapping[str, str]
+
   _CallToActionOperation: TypeAlias = Mapping[
       str, str | bool | Mapping[str, int]
   ]
@@ -325,7 +325,7 @@ class AssetService:
       asset_group_id: str,
       asset_type: str,
       customer_id: int,
-  ) -> _AssetGroupOperation:
+  ) -> AssetToAssetGroupOperation:
     """Adds the asset resource to an asset group.
 
     Args:

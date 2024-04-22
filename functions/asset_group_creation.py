@@ -17,10 +17,12 @@ from enums.asset_status import assetStatus
 from enums.campaign_list_column_map import campaignListColumnMap
 from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
 from enums.sheets import sheets
-from typing import List
+from typing import List, TypeAlias, Mapping
+import asset_creation
 import reference_enums
 import validators
 
+AssetGroupOperation: TypeAlias = Mapping[str, str]
 
 class AssetGroupService:
   """Class for Campaign Creation.
@@ -245,8 +247,8 @@ class AssetGroupService:
     return operations
 
   def consolidate_mandatory_assets_group_operations(
-      self, resource_names, asset_type, asset_group_id, customer_id
-  ):
+      self, resource_names: List[str], asset_type: str, asset_group_id: str, customer_id: str
+  ) -> List[asset_creation.AssetToAssetGroupOperation]:
     """Logic to create mandatory text assets for asset group.
 
     When creating the API operations for a new Asset Group. The API expects
@@ -257,8 +259,8 @@ class AssetGroupService:
     Args:
       resource_names: ARRAY of STRINGS, consisting of Google Ads Resource names.
       asset_type: ENUM The asset type that is created, HEADLINE, DESCRIPTION.
-      asset_group_id: INT Google Ads Asset Group id.
-      customer_id: INT Google Ads customer id.
+      asset_group_id: Google Ads Asset Group id.
+      customer_id: Google Ads customer id.
 
     Returns:
       ARRAY of Objects: Google Ads API Operation objects for asset assignment.
@@ -273,7 +275,7 @@ class AssetGroupService:
 
     return operations
 
-  def create_mandatory_assets_asset_group(self, text_assets, customer_id):
+  def create_mandatory_assets_asset_group(self, text_assets: List[str], customer_id: str) -> List[str]:
     """Logic to create mandatory text assets for asset group.
 
     When creating the API operations for a new Asset Group. The API expects
@@ -285,7 +287,7 @@ class AssetGroupService:
 
     Args:
       text_Assets: ARRAY of STRINGS, text asset values.
-      customer_id: INT Google Ads customer id.
+      customer_id: Google Ads customer id.
 
     Returns:
       ARRAY of STRINGS, consisting of Google Ads Resource names.
@@ -303,16 +305,16 @@ class AssetGroupService:
 
   def create_asset_group(
       self,
-      asset_group_name,
-      asset_group_status,
-      asset_group_final_url,
-      asset_group_mobile_url,
-      asset_group_path1,
-      asset_group_path2,
-      asset_group_id,
-      campaign_id,
-      customer_id,
-  ):
+      asset_group_name: str,
+      asset_group_status: str,
+      asset_group_final_url: str,
+      asset_group_mobile_url: str,
+      asset_group_path1: str,
+      asset_group_path2: str,
+      asset_group_id: str,
+      campaign_id: str,
+      customer_id: str,
+  ) -> AssetGroupOperation:
     """Creates a list of MutateOperations that create a new asset_group.
 
     A temporary ID will be assigned to this asset group so that it can
@@ -356,7 +358,6 @@ class AssetGroupService:
           f"Mobile URL '{asset_group_mobile_url}' is not a valid URL"
       )
 
-    # Create the AssetGroup
     mutate_operation = self._google_ads_client.get_type("MutateOperation")
     asset_group = mutate_operation.asset_group_operation.create
     asset_group.name = asset_group_name
