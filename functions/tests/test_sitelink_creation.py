@@ -45,6 +45,10 @@ _VALID_SHEET_DATA: Final[list[list[str]]] = [
     ]
 ]
 
+_CUSTOMER_ID_KEY: str = "customer_id"
+_OPERATIONS_KEY: str = "operations"
+_ERROR_LOG_KEY: str = "error_log"
+
 
 class TestSitelinkCreation(unittest.TestCase):
   """Test Sitelink Creation."""
@@ -53,10 +57,85 @@ class TestSitelinkCreation(unittest.TestCase):
     super().setUp()
     self.sheet_service = mock.MagicMock()
     self.google_ads_client = mock.Mock()
+    self.google_ads_service = mock.Mock()
     self.sitelink_service = sitelink_creation.SitelinkService(
-        self.sheet_service, self.google_ads_client
+        self.sheet_service, self.google_ads_service, self.google_ads_client
     )
     self.google_ads_client.enums.AssetFieldTypeEnum.SITELINK = "SITELINK"
+
+  @mock.patch.object(sitelink_creation.SitelinkService,
+                     "process_sitelink_data_and_create_sitelink")
+  @mock.patch("utils.process_operations_and_errors")
+  def test_sheet_input_with_valid_data(
+      self,
+      mock_process_operations_and_errors,
+      mock_process_sitelink_data_and_create_sitelink
+    ):
+    """Test process_sitelink_input_sheet method in SitelinkService.
+
+    Verifying wheter the service calls the correct function.
+    """
+    expected_result = {
+        _CUSTOMER_ID_KEY: "123456",
+        _OPERATIONS_KEY: ("dummy_operation", "dummy_operation"),
+        _ERROR_LOG_KEY: ""
+    }
+    mock_process_sitelink_data_and_create_sitelink.return_value = expected_result
+    self.sitelink_service.process_sitelink_input_sheet(
+        _VALID_SHEET_DATA
+    )
+    mock_process_operations_and_errors.assert_called()
+
+  @mock.patch.object(sitelink_creation.SitelinkService,
+                     "create_sitelink")
+  @mock.patch.object(sitelink_creation.SitelinkService,
+                     "link_sitelink_to_campaign")
+  @mock.patch("utils.retrieve_campaign_id")
+  def test_sitelink_data_row_with_valid_data(
+      self,
+      mock_retrieve_campaign_id,
+      mock_create_sitelink,
+      mock_link_sitelink_to_campaign
+    ):
+    """Test process_sitelink_data_and_create_sitelink in SitelinkService.
+
+    Verify whether return object contains expected structure and values.
+    """
+    mock_retrieve_campaign_id.return_value = ("123456", "56789")
+    mock_create_sitelink.return_value = "dummy_operation"
+    mock_link_sitelink_to_campaign.return_value = "dummy_operation"
+    expected_result = {
+        _CUSTOMER_ID_KEY: "123456",
+        _OPERATIONS_KEY: ("dummy_operation", "dummy_operation"),
+        _ERROR_LOG_KEY: ""
+    }
+    result = self.sitelink_service.process_sitelink_data_and_create_sitelink(
+        _VALID_SHEET_DATA[0]
+    )
+    self.assertEqual(result, expected_result)
+
+  @mock.patch("utils.retrieve_campaign_id")
+  def test_sitelink_data_with_faulty_data(self, mock_retrieve_campaign_id):
+    """Test process_sitelink_data_and_create_sitelink in SitelinkService.
+
+    Verify whether return object contains expected structure and values when
+    input data is invalid.
+    """
+    mock_retrieve_campaign_id.return_value = ("123456", "56789")
+    result = self.sitelink_service.process_sitelink_data_and_create_sitelink(
+        [
+            "",
+            "",
+            "Test Customer 2",
+            "Test Campaign 2",
+            "Test Site Link Text",
+            "",
+            "Sitelink Description 1",
+            "Sitelink Description 2",
+        ]
+    )
+
+    self.assertEqual(result[_ERROR_LOG_KEY], "Final URL can not be empty.")
 
   def test_create_sitelink_desciption1(self):
     """Test _create_sitelink method in SitelinkService.
@@ -69,8 +148,7 @@ class TestSitelinkCreation(unittest.TestCase):
         _CUSTOMER_ID, _VALID_SHEET_DATA[0]
     )
     self.assertEqual(
-        sitelink_operation[
-            0].asset_operation.create.sitelink_asset.description1,
+        sitelink_operation.asset_operation.create.sitelink_asset.description1,
         description1,
     )
 
@@ -85,8 +163,7 @@ class TestSitelinkCreation(unittest.TestCase):
         _CUSTOMER_ID, _VALID_SHEET_DATA[0]
     )
     self.assertEqual(
-        sitelink_operation[
-            0].asset_operation.create.sitelink_asset.link_text,
+        sitelink_operation.asset_operation.create.sitelink_asset.link_text,
         link_text,
     )
 

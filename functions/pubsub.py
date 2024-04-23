@@ -103,7 +103,7 @@ class PubSub:
   @cached_property
   def sitelink_service(self):
     return sitelink_creation.SitelinkService(
-        self.sheet_service, self.google_ads_client
+        self.sheet_service, self.google_ads_service, self.google_ads_client
     )
 
   def refresh_spreadsheet(self) -> None:

@@ -14,12 +14,12 @@
 """Provides functionality to create sitelinks."""
 
 from typing import TypeAlias, Mapping
+from absl import logging
+import ads_api
 import data_references
-from enums.campaign_list_column_map import campaignListColumnMap
-from enums.sheets import sheets
-from enums.sitelink_column_map import sitelinksColumnMap
 from google.ads.googleads.client import GoogleAdsClient
 import sheet_api
+import utils
 import validators
 
 
@@ -31,6 +31,10 @@ _LinkSitelinkOperation: TypeAlias = Mapping[
     str, str
 ]
 
+_CUSTOMER_ID: str = "customer_id"
+_OPERATIONS: str = "operations"
+_ERROR_LOG: str = "error_log"
+
 
 class SitelinkService:
   """Class for Sitelink Creation.
@@ -41,19 +45,113 @@ class SitelinkService:
   def __init__(
       self,
       sheet_service: sheet_api.SheetsService,
+      google_ads_service: ads_api.AdService,
       google_ads_client: GoogleAdsClient
   ) -> None:
     """Constructs the SitelinksService instance.
 
     Args:
-      sheet_service: instance of sheet_service for dependancy injection.
+      sheet_service: Instance of sheet_service for dependency injection.
+      google_ads_service: Instance of the google_ads_service for dependency
+        injection.
       google_ads_client: Instance of Google Ads API client.
     """
 
     self._google_ads_client = google_ads_client
+    self._google_ads_service = google_ads_service
     self._sheet_service = sheet_service
     self._sitelinks_temporary_id = -1
-    self._sheet_name = "Sitelinks"
+
+  def process_sitelink_input_sheet(
+      self,
+      sitelink_data: list[list[str]]
+  ) -> None:
+    """Loops through input Lists, and decides on next action.
+
+    Verifies if input list meets the minimum length requirement and if the row
+    has not been uploaded to Google Ads. If conditions are met, the function
+    triggers the Sitelink Creation flow. Results of sitelink creation are
+    processed and output is logged and written to the spreadsheet.
+
+    Args:
+      sitelink_data: Input data for creating new sitelinks in array form.
+    """
+
+    for row_num, row in enumerate(sitelink_data):
+      result = None
+      if (len(row) > data_references.Sitelinks.description2
+          and row[data_references.Sitelinks.upload_status] !=
+          data_references.RowStatus.uploaded):
+        if result := self.process_sitelink_data_and_create_sitelink(
+            row):
+          utils.process_operations_and_errors(
+              result[_CUSTOMER_ID],
+              result[_OPERATIONS],
+              result[_ERROR_LOG],
+              row_num,
+              self._sheet_service,
+              self._google_ads_service,
+              data_references.SheetNames.sitelinks
+          )
+
+  def process_sitelink_data_and_create_sitelink(
+      self,
+      sitelink_data: list[str]
+  ) -> Mapping[str, tuple[_SitelinkOperation, _LinkSitelinkOperation] | str]:
+    """Creates campaigns via google API based.
+
+    Args:
+      sitelink_data: Array for creating new sitelinks.
+
+    Returns:
+      Values for Customer Id, Google Ads API Mutate operations or an Error
+      Message to write to the sheet. For example:
+
+        {'customer_id': '123456',
+         'operations': (_SitelinkOperation, _LinkSitelinkOperation)
+         'error_log': 'Sitelink Data not Complete.'}
+
+    """
+    customer_id, campaign_id = utils.retrieve_campaign_id(
+        sitelink_data[data_references.Sitelinks.customer_name],
+        sitelink_data[data_references.Sitelinks.campaign_name],
+        self._sheet_service
+    )
+
+    logging.info("Creating Sitelink API Operation")
+    sitelink_error = None
+    sitelink_operation = None
+    try:
+      sitelink_operation = self.create_sitelink(
+          customer_id, sitelink_data
+      )
+    except ValueError as e:
+      sitelink_error = str(e)
+
+    logging.info("Creating Campaign Asset API Operation")
+    campaign_asset_error = None
+    campaign_asset_operation = None
+    try:
+      campaign_asset_operation = self.link_sitelink_to_campaign(
+          customer_id,
+          campaign_id
+      )
+    except ValueError as e:
+      campaign_asset_error = str(e)
+
+    error_message = "\n".join(
+        x for x in [sitelink_error, campaign_asset_error] if x)
+
+    result = {
+        _CUSTOMER_ID: customer_id,
+        _OPERATIONS: (sitelink_operation, campaign_asset_operation),
+        _ERROR_LOG: error_message
+    }
+
+    if error_message:
+      result[_OPERATIONS] = None
+
+    return result
 
   def create_sitelink(
       self,
@@ -67,8 +165,7 @@ class SitelinkService:
       sitelink_data: Array of string values to create sitelink.
 
     Returns:
-      Tuple containing the Google Ads mutate api operation and the asset
-      resource name.
+      The Google Ads sitelink asset mutate api operation.
 
     Raises:
       ValueError: In case required input fields are missing from sitelink_data.
@@ -107,117 +204,7 @@ class SitelinkService:
     else:
       raise ValueError("Link Text can not be empty.")
 
-    return (sitelink_operation, resource_name)
-
-  def process_sitelink_data(self, sitelink_data, campaign_data):
-    """Creates campaigns via google API based.
-
-    Args:
-      sitelink_data: Array for creating new sitelinks.
-      campaign_data: Array of existing Campaigns in Google Ads.
-    """
-    sheet_id = self._sheet_service.get_sheet_id(self._sheet_name)
-    sitelink_operations = {}
-    row_to_operations_mapping = {}
-    sheet_row_index = 0
-    # The map used to store all the API results and error messages.
-    sheet_results = {}
-
-    for row in sitelink_data:
-
-      search_key = (
-          row[sitelinksColumnMap.CUSTOMER_NAME.value]
-          + ";"
-          + row[sitelinksColumnMap.CAMPAIGN_NAME.value]
-      )
-
-      campaign_details = self._sheet_service.get_sheet_row(
-          search_key, campaign_data, sheets.CAMPAIGN.value
-      )
-
-      if campaign_details:
-
-        customer_id = campaign_details[campaignListColumnMap.CUSTOMER_ID.value]
-        campaign_id = campaign_details[campaignListColumnMap.CAMPAIGN_ID.value]
-        campaign_name = row[sitelinksColumnMap.CAMPAIGN_NAME.value]
-        customer_name = row[sitelinksColumnMap.CUSTOMER_NAME.value]
-
-        if (
-            row[sitelinksColumnMap.STATUS.value] != "UPLOADED"
-            and len(row) > sitelinksColumnMap.DESCRIPTION2.value
-        ):
-
-          sitelink_alias = (
-              row[sitelinksColumnMap.CUSTOMER_NAME.value]
-              + ";"
-              + row[sitelinksColumnMap.CAMPAIGN_NAME.value]
-              + ";"
-              + row[sitelinksColumnMap.LINK_TEXT.value]
-              + ";"
-              + row[sitelinksColumnMap.FINAL_URLS.value]
-              + ";"
-              + row[sitelinksColumnMap.DESCRIPTION1.value]
-              + ";"
-              + row[sitelinksColumnMap.DESCRIPTION2.value]
-          )
-
-          if customer_id not in sitelink_operations:
-            sitelink_operations[customer_id] = {}
-
-          if sitelink_alias not in sitelink_operations[customer_id]:
-            sitelink_operations[customer_id][sitelink_alias] = []
-
-          # Check if sheet results for the input sheet row already exists. If not
-          # create a new empty map.
-          if sheet_row_index not in sheet_results:
-            sheet_results[sheet_row_index] = {}
-
-          # Preset the default map values for Status and Message.
-          sheet_results[sheet_row_index]["status"] = None
-          sheet_results[sheet_row_index]["message"] = None
-          sheet_results[sheet_row_index]["asset_group_asset"] = None
-
-          row_number = self._sheet_service.get_row_number_by_value(
-              [
-                  row[sitelinksColumnMap.CUSTOMER_NAME.value],
-                  row[sitelinksColumnMap.CAMPAIGN_NAME.value],
-              ],
-              sitelink_data,
-              sitelinksColumnMap.CUSTOMER_NAME.value,
-          )
-
-          sitelink_operation = self.create_sitelink(
-              customer_id, row
-          )
-          sitelink_operations[customer_id][sitelink_alias].append(
-              sitelink_operation
-          )
-
-          link_asset_campaign_operation = self.link_sitelink_to_campaign(
-              customer_id, campaign_id
-          )
-          sitelink_operations[customer_id][sitelink_alias].append(
-              link_asset_campaign_operation
-          )
-
-          # Add reource name index and sheet row number to map, for
-          # processing error and status messages to sheet.
-          if not resource_name in row_to_operations_mapping:
-            row_to_operations_mapping[resource_name] = []
-          row_to_operations_mapping[resource_name].append(sheet_row_index)
-
-      sheet_row_index += 1
-
-    if len(sitelink_operations) > 0:
-
-      self._sheet_service.process_api_operations(
-          "SITELINKS",
-          sitelink_operations,
-          sheet_results,
-          row_to_operations_mapping,
-          None,
-          self._sheet_name,
-      )
+    return sitelink_operation
 
   def link_sitelink_to_campaign(
       self,
