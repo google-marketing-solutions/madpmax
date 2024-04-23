@@ -1,3 +1,18 @@
+# Copyright 2024 Google LLC
+
+# Licensed under the Apache License, Version 2.0 (the "License")
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+# https: // www.apache.org / licenses / LICENSE - 2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests for Utils Module."""
+
 import unittest
 from unittest import mock
 import data_references
@@ -32,11 +47,13 @@ class TestUtils(unittest.TestCase):
     self.assertIsNone(utils.retrieve_customer_id(
         "customer_name_1", mock_sheets_service))
 
-  def test_process_operations(self):
+  @mock.patch("utils.process_api_response_and_errors")
+  def test_process_operations(self, mock_process_api_response_and_errors):
     """Test processing of API operations.
 
     Validates if the relevant function calls are made, based on input.
     """
+    mock_process_api_response_and_errors.return_value = True
     self.sheet_service.get_sheet_id.return_value = "1234abd"
     self.google_ads_service.bulk_mutate.return_value = ("dummy_response", "")
 
@@ -46,7 +63,8 @@ class TestUtils(unittest.TestCase):
         "",
         1,
         self.sheet_service,
-        self.google_ads_service
+        self.google_ads_service,
+        "Sitelinks"
     )
 
     self.google_ads_service.bulk_mutate.assert_called_once_with(
@@ -68,7 +86,8 @@ class TestUtils(unittest.TestCase):
         "",
         1,
         self.sheet_service,
-        self.google_ads_service
+        self.google_ads_service,
+        "NewCampaigns"
     )
 
     self.sheet_service.variable_update_sheet_status.assert_called_once_with(
@@ -85,21 +104,28 @@ class TestUtils(unittest.TestCase):
 
     Validates if the relevant function calls are made, based on input.
     """
+    mock_response = mock.MagicMock()
+    mock_response.mutate_operation_responses[
+        1].campaign_asset_result.resource_name = "Test Resource Name"
+
     self.sheet_service.get_sheet_id.return_value = "1234abd"
 
     utils.process_api_response_and_errors(
-        "dummy_response",
+        mock_response,
         "",
         1,
         "sheetid_1234",
+        "Sitelinks",
         self.sheet_service,
     )
 
     self.sheet_service.variable_update_sheet_status.assert_called_once_with(
         1,
         "sheetid_1234",
-        data_references.NewCampaigns.campaign_upload_status,
-        data_references.RowStatus.uploaded
+        data_references.Sitelinks.upload_status,
+        data_references.RowStatus.uploaded,
+        "Test Resource Name",
+        data_references.Sitelinks.sitelink_resource,
     )
     self.sheet_service.refresh_campaign_list.assert_called_once()
 
@@ -115,16 +141,17 @@ class TestUtils(unittest.TestCase):
         "dummy_response",
         1,
         "sheetid_1234",
+        "Sitelinks",
         self.sheet_service,
     )
 
     self.sheet_service.variable_update_sheet_status.assert_called_once_with(
         1,
         "sheetid_1234",
-        data_references.NewCampaigns.campaign_upload_status,
+        data_references.Sitelinks.upload_status,
         data_references.RowStatus.error,
         "dummy_response",
-        data_references.NewCampaigns.error_message,
+        data_references.Sitelinks.error_message,
     )
 
   @mock.patch("sheet_api.SheetsService")

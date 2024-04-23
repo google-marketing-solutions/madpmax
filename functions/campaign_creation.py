@@ -100,7 +100,8 @@ class CampaignService:
               result[_ERROR_LOG],
               row_num,
               self.sheet_service,
-              self.google_ads_service
+              self.google_ads_service,
+              data_references.SheetNames.new_campaigns
           )
 
   def process_campaign_data_and_create_campaigns(

@@ -29,7 +29,14 @@ _CampaignOperation: TypeAlias = Mapping[
     str,
     str | bool | Mapping[str, int]
 ]
-_CampaignResponse: TypeAlias = Mapping[
+_SitelinkOperation: TypeAlias = Mapping[
+    str,
+    str | list | Mapping[str, str]
+]
+_LinkSitelinkOperation: TypeAlias = Mapping[
+    str, str
+]
+_ApiResponse: TypeAlias = Mapping[
     str,
     bool | Mapping[
         str, str
@@ -39,11 +46,13 @@ _CampaignResponse: TypeAlias = Mapping[
 
 def process_operations_and_errors(
     customer_id: str,
-    operations: tuple[_BudgetOperation, _CampaignOperation] | None,
+    operations: tuple[_BudgetOperation, _CampaignOperation] |
+        tuple[_SitelinkOperation, _LinkSitelinkOperation] | None,
     error_log: str,
     row_number: int,
     sheet_service: SheetsService,
-    google_ads_service: AdService
+    google_ads_service: AdService,
+    sheet_name: str
 ) -> None:
   """Processing Mutate Operations and Error Log from campaign service.
 
@@ -58,13 +67,13 @@ def process_operations_and_errors(
     row_number: Corresponding sheetrow number to the sheet entry.
     sheet_service: instance of sheet_service for dependancy injection.
     google_ads_service: instance of google_ads_service.
+    sheet_name: Name of the sheet in google spreadsheet.
 
   Returns:
     None. Output written to Google Ads API and status written to logs and
     sheet.
   """
-  sheet_id = sheet_service.get_sheet_id(
-      data_references.SheetNames.new_campaigns)
+  sheet_id = sheet_service.get_sheet_id(sheet_name)
 
   if error_log:
     sheet_service.variable_update_sheet_status(
@@ -76,57 +85,75 @@ def process_operations_and_errors(
         data_references.NewCampaigns.error_message,
     )
   elif operations:
-    campaigns_response, campaigns_error_message = (
+    response, error_message = (
         google_ads_service.bulk_mutate(
             operations,
             customer_id,
         )
     )
     process_api_response_and_errors(
-        campaigns_response,
-        campaigns_error_message,
+        response,
+        error_message,
         row_number,
         sheet_id,
+        sheet_name,
         sheet_service
     )
 
 
 def process_api_response_and_errors(
-    campaigns_response: _CampaignResponse,
-    campaigns_error_message: str,
+    response: _ApiResponse,
+    error_message: str,
     row_number: int,
     sheet_id: str,
+    sheet_name: str,
     sheet_service: SheetsService
 ) -> None:
   """Processing the API responce and write to spreadsheet.
 
   Args:
-    campaigns_response: Google Ads API reponse dict.
-    campaigns_error_message: String representation of the error message.
+    response: Google Ads API reponse dict.
+    error_message: String representation of the error message.
     row_number: Corresponding sheetrow number to the sheet entry.
     sheet_id: Google Sheets id for the spreadsheet.
+    sheet_name: Google Sheets name for the spreadsheet.
     sheet_service: instance of sheet_service for dependancy injection.
 
   Returns:
     None. Status written to logs and sheet.
   """
-  if campaigns_response:
+  sitelink_resource = None
+  if sheet_name == data_references.SheetNames.new_campaigns:
+    upload_status_col = data_references.NewCampaigns.campaign_upload_status
+    error_message_col = data_references.NewCampaigns.error_message
+    resource_name_col = None
+  if sheet_name == data_references.SheetNames.sitelinks:
+    upload_status_col = data_references.Sitelinks.upload_status
+    error_message_col = data_references.Sitelinks.error_message
+    resource_name_col = data_references.Sitelinks.sitelink_resource
+    if response:
+      sitelink_resource = response.mutate_operation_responses[
+          1].campaign_asset_result.resource_name
+
+  if response:
     sheet_service.variable_update_sheet_status(
         row_number,
         sheet_id,
-        data_references.NewCampaigns.campaign_upload_status,
+        upload_status_col,
         data_references.RowStatus.uploaded,
+        sitelink_resource,
+        resource_name_col,
     )
 
     sheet_service.refresh_campaign_list()
-  elif campaigns_error_message:
+  elif error_message:
     sheet_service.variable_update_sheet_status(
         row_number,
         sheet_id,
-        data_references.NewCampaigns.campaign_upload_status,
+        upload_status_col,
         data_references.RowStatus.error,
-        campaigns_error_message,
-        data_references.NewCampaigns.error_message,
+        error_message,
+        error_message_col,
     )
 
 
