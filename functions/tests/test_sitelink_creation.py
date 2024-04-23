@@ -21,6 +21,7 @@ import sitelink_creation
 
 
 _CUSTOMER_ID: Final[str] = "customer_id_1"
+_CAMPAIGN_ID: Final[str] = "campaign_id_1"
 _VALID_SHEET_DATA: Final[list[list[str]]] = [
     [
         "",
@@ -55,6 +56,7 @@ class TestSitelinkCreation(unittest.TestCase):
     self.sitelink_service = sitelink_creation.SitelinkService(
         self.sheet_service, self.google_ads_client
     )
+    self.google_ads_client.enums.AssetFieldTypeEnum.SITELINK = "SITELINK"
 
   def test_create_sitelink_desciption1(self):
     """Test _create_sitelink method in SitelinkService.
@@ -122,4 +124,63 @@ class TestSitelinkCreation(unittest.TestCase):
       self.sitelink_service.create_sitelink(
           _CUSTOMER_ID,
           invalid_data
+      )
+
+  def test_link_sitelink_to_campaign_field_type(self):
+    """Test link_sitelink_to_campaign method in SitelinkService.
+
+    Verify if method returns expected API operation structure and sitelink
+    value.
+    """
+    link_sitelink_operation = self.sitelink_service.link_sitelink_to_campaign(
+        _CUSTOMER_ID, _CAMPAIGN_ID
+    )
+    self.assertEqual(
+        link_sitelink_operation.campaign_asset_operation.create.field_type,
+        data_references.AssetTypes.sitelink,
+    )
+
+  def test_link_sitelink_to_campaign_campaign_resource(self):
+    """Test link_sitelink_to_campaign method in SitelinkService.
+
+    Verify if method returns expected API operation structure and campaign
+    resource value.
+    """
+    campaign_resource = f"customers/{_CUSTOMER_ID}/campaigns/{_CAMPAIGN_ID}"
+    self.google_ads_client.get_service(
+        "CampaignService").campaign_path.return_value = campaign_resource
+
+    link_sitelink_operation = self.sitelink_service.link_sitelink_to_campaign(
+        _CUSTOMER_ID, _CAMPAIGN_ID
+    )
+
+    self.assertEqual(
+        link_sitelink_operation.campaign_asset_operation.create.campaign,
+        campaign_resource,
+    )
+
+  def test_link_sitelink_to_campaign_no_customer_id(self):
+    """Test link_sitelink_to_campaign method in SitelinkService.
+
+    Verify if method returns expected Value Error for missing customer id.
+    """
+    with self.assertRaisesRegex(
+        ValueError,
+        "Customer ID is required to link a sitelink to a campaign."
+    ):
+      self.sitelink_service.link_sitelink_to_campaign(
+          None, _CAMPAIGN_ID
+      )
+
+  def test_link_sitelink_to_campaign_no_campaign_id(self):
+    """Test link_sitelink_to_campaign method in SitelinkService.
+
+    Verify if method returns expected Value Error for missing campaign id.
+    """
+    with self.assertRaisesRegex(
+        ValueError,
+        "Campaign ID is required to link a sitelink to a campaign."
+    ):
+      self.sitelink_service.link_sitelink_to_campaign(
+          _CUSTOMER_ID, None
       )

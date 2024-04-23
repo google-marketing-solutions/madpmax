@@ -22,14 +22,13 @@ from google.ads.googleads.client import GoogleAdsClient
 import sheet_api
 import validators
 
-# Using global variable as per the code sample to assign temp ids to asset
-# operations.
-# https://github.com/googleads/google-ads-python/blob/310a10b18f3ce91fc5c885f63ba090641972fbe1/examples/advanced_operations/add_performance_max_campaign.py
-_ASSET_TEMP_ID = -1
 
 _SitelinkOperation: TypeAlias = Mapping[
     str,
     str | list | Mapping[str, str]
+]
+_LinkSitelinkOperation: TypeAlias = Mapping[
+    str, str
 ]
 
 
@@ -187,7 +186,7 @@ class SitelinkService:
               sitelinksColumnMap.CUSTOMER_NAME.value,
           )
 
-          sitelink_operation, resource_name = self.create_sitelink(
+          sitelink_operation = self.create_sitelink(
               customer_id, row
           )
           sitelink_operations[customer_id][sitelink_alias].append(
@@ -195,7 +194,7 @@ class SitelinkService:
           )
 
           link_asset_campaign_operation = self.link_sitelink_to_campaign(
-              customer_id, campaign_id, resource_name
+              customer_id, campaign_id
           )
           sitelink_operations[customer_id][sitelink_alias].append(
               link_asset_campaign_operation
@@ -220,17 +219,39 @@ class SitelinkService:
           self._sheet_name,
       )
 
-  def link_sitelink_to_campaign(self, customer_id, campaign_id, resource_name):
+  def link_sitelink_to_campaign(
+      self,
+      customer_id: str,
+      campaign_id: str
+  ) -> _LinkSitelinkOperation:
     """Creates sitelink assets, which can be added to campaigns.
 
     Args:
       customer_id: The customer ID for which to add the keyword.
       campaign_id: The campaign to which sitelinks will be added.
-      resource_name: sitelink asset resource name.
+
+    Returns:
+      The Google Ads mutate api operation.
+
+    Raises:
+      ValueError: In case campaign or customer id are missing.
     """
+    if not customer_id:
+      raise ValueError(
+          "Customer ID is required to link a sitelink to a campaign.")
+    if not campaign_id:
+      raise ValueError(
+          "Campaign ID is required to link a sitelink to a campaign.")
+
+    asset_service = self._google_ads_client.get_service("AssetService")
+    resource_name = asset_service.asset_path(
+        customer_id, self._sitelinks_temporary_id
+    )
+
     campaign_service = self._google_ads_client.get_service("CampaignService")
-    operation = self._google_ads_client.get_type("MutateOperation")
-    campaign_asset = operation.campaign_asset_operation.create
+    campaign_operation = self._google_ads_client.get_type(
+        "MutateOperation")
+    campaign_asset = campaign_operation.campaign_asset_operation.create
     campaign_asset.asset = resource_name
     campaign_asset.campaign = campaign_service.campaign_path(
         customer_id, campaign_id
@@ -238,4 +259,5 @@ class SitelinkService:
     campaign_asset.field_type = (
         self._google_ads_client.enums.AssetFieldTypeEnum.SITELINK
     )
-    return operation
+
+    return campaign_operation
