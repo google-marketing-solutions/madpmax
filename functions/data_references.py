@@ -17,6 +17,7 @@ Mad pMax works with a spreadsheet as data source, when changes are made to the
 spreadsheet template, or sheetnames, they need to be updated here.
 """
 import dataclasses
+import enum
 
 
 @dataclasses.dataclass()
@@ -332,3 +333,56 @@ class Sitelinks:
   description2: int = 7
   error_message: int = 8
   sitelink_resource: int = 9
+
+class newAssetGroupsColumnMap(enum.IntEnum):
+  """Column map for new Asset Group Column Map sheet.
+
+  Spreadsheet API returns a list of lists when retrieving data from a sheet.
+  Column ids are needed to read and write the correct data fields from the
+  sheet. This class provides a mapping from column names to column ids. In case
+  the sheet get's edited the tool can be updated from this single place.
+
+  Atrributes:
+    status: Column reference with the upload status.
+    asset_check: Column reference for the asset check.
+    customer_name: Column reference with the customer name.
+    campaign_name: Column reference with the campaign name.
+    asset_group_name: Column reference with the asset group name.
+    asset_group_status: Column reference with the asset group status.
+    final_url: Column reference for the final URL for the asset group creation.
+    mobile_url: Column reference for the mobile URL for the asset group creation.
+    path1: Column reference for the first path.
+    path2: Column reference for the second path.
+    headline1: Column reference for the headline 1.
+    headline2: Column reference for the headline 2.
+    headline3: Column reference for the headline 3.
+    description1: Column reference for the description 1.
+    description2: Column reference for the description 2.
+    long_headline: Column reference for the long headline.
+    business_name: Column reference for the business name.
+    marketing_image: Column reference for the marketing image.
+    square_marketing_image: Column reference for the square marketing image.
+    logo: Column reference for the logo.
+    message: Column reference for the message.
+  """
+  STATUS = 0
+  ASSET_CHECK = 1
+  CUSTOMER_NAME = 2
+  CAMPAIGN_NAME = 3
+  ASSET_GROUP_NAME = 4
+  ASSET_GROUP_STATUS = 5
+  FINAL_URL = 6
+  MOBILE_URL = 7
+  PATH1 = 8
+  PATH2 = 9
+  HEADLINE1 = 10
+  HEADLINE2 = 11
+  HEADLINE3 = 12
+  DESCRIPTION1 = 13
+  DESCRIPTION2 = 14
+  LONG_HEADLINE = 15
+  BUSINESS_NAME = 16
+  MARKETING_IMAGE = 17
+  SQUARE_MARKETING_IMAGE = 18
+  LOGO = 19
+  MESSAGE = 20

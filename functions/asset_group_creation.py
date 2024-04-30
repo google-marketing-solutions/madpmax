@@ -19,7 +19,7 @@ from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
 from enums.sheets import sheets
 from typing import List, TypeAlias, Mapping
 import asset_creation
-import reference_enums
+import data_references
 import validators
 
 AssetGroupOperation: TypeAlias = Mapping[str, str]
@@ -205,8 +205,8 @@ class AssetGroupService:
           ])
 
   def create_other_assets_asset_group(
-      self, assets, asset_group_id, customer_id
-  ):
+      self, assets: List[str], asset_group_id: str, customer_id: int
+  ) -> List[asset_creation.AssetOperation, AssetGroupOperation]:
     """Logic to create mandatory other assets for asset group.
 
     When creating the API operations for a new Asset Group. The API expects
@@ -218,17 +218,17 @@ class AssetGroupService:
 
     Args:
       assets: ARRAY of STRINGS, asset values.
-      asset_group_id: INT Google Ads Asset Group id
+      asset_group_id: STR Google Ads Asset Group id.
       customer_id: INT Google Ads customer id.
 
     Returns:
-      ARRAY of Objects: Google Ads API Operation objects.
+      ARRAY of Assets and Asset Group : Google Ads API Operation objects.
     """
     operations = []
 
     for index, asset_value in enumerate(assets):
-      col_num = newAssetGroupsColumnMap.LONG_HEADLINE.value + index
-      asset_type = newAssetGroupsColumnMap(col_num).name
+      col_num = data_references.newAssetGroupsColumnMap.LONG_HEADLINE.value + index
+      asset_type = data_references.newAssetGroupsColumnMap(col_num).name
 
       asset_operation = self.asset_service.create_asset(
           asset_type, asset_value, customer_id
@@ -391,13 +391,13 @@ class AssetGroupService:
     result = None
 
     if (
-        sheet_row[reference_enums.AssetsColumnMap.customer_name].strip()
-        and sheet_row[reference_enums.AssetsColumnMap.campaign_name].strip()
+        sheet_row[data_references.AssetsColumnMap.customer_name].strip()
+        and sheet_row[data_references.AssetsColumnMap.campaign_name].strip()
     ):
       result = (
-          sheet_row[reference_enums.AssetsColumnMap.customer_name]
+          sheet_row[data_references.AssetsColumnMap.customer_name]
           + ";"
-          + sheet_row[reference_enums.AssetsColumnMap.campaign_name]
+          + sheet_row[data_references.AssetsColumnMap.campaign_name]
       )
 
     return result

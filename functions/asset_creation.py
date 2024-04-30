@@ -22,7 +22,11 @@ import requests
 from sheet_api import SheetsService
 import validators
 
+
+AssetOperation: TypeAlias = Mapping[str, str]
 AssetToAssetGroupOperation: TypeAlias = Mapping[str, str | Mapping[str, str | int]]
+
+
 class AssetService:
   """Class for Asset Creation.
 
@@ -33,7 +37,6 @@ class AssetService:
   _CallToActionOperation: TypeAlias = Mapping[
       str, str | bool | Mapping[str, int]
   ]
-  _AssetOperation: TypeAlias = Mapping[str, str]
 
   def __init__(
       self,
@@ -160,7 +163,7 @@ class AssetService:
 
   def create_asset(
       self, asset_type: str, asset_value: str, customer_id: str
-  ) -> _AssetOperation | _CallToActionOperation:
+  ) -> AssetOperation | _CallToActionOperation:
     """Set up mutate object for creating asset.
 
     Args:
@@ -208,7 +211,7 @@ class AssetService:
 
     return mutate_operation
 
-  def create_text_asset(self, text: str, customer_id: str) -> _AssetOperation:
+  def create_text_asset(self, text: str, customer_id: str) -> AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -233,7 +236,7 @@ class AssetService:
 
   def create_image_asset(
       self, image_url: str, name: str, customer_id: str
-  ) -> _AssetOperation:
+  ) -> AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -264,7 +267,7 @@ class AssetService:
 
   def create_video_asset(
       self, video_url: str, customer_id: str
-  ) -> _AssetOperation:
+  ) -> AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
