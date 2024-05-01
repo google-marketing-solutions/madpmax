@@ -18,6 +18,7 @@ from unittest import mock
 from asset_group_creation import AssetGroupService
 import pytest
 
+
 # Run this test from funtions folder with: python -m pytest tests/test_asset_group_creation.py
 @pytest.mark.parametrize(
     "asset_group_name,asset_group_status,asset_group_final_url,asset_group_mobile_url,error",
@@ -83,6 +84,7 @@ def test_create_asset_group_return_error_on_invalid_input(
         "customer_id",
     )
 
+
 # Run this part with: python -m unittest tests/test_asset_group_creation.py
 class TestAssetGroupService(unittest.TestCase):
 
@@ -106,6 +108,29 @@ class TestAssetGroupService(unittest.TestCase):
     self._google_ads_client.get_service(
         "AssetGroupService"
     ).asset_group_path.return_value = self.asset_group_path
+
+    self.test_asset_group_row = [
+        "",
+        "SUCCESS",
+        "Test AN",
+        "Test Campaign 1",
+        "Test Asset Group 1",
+        "PAUSED",
+        "https://www.example.com",
+        "https://www.example.com",
+        "Test Path 1",
+        "Test Path 2",
+        "Text 1",
+        "Text 2",
+        "Text 3",
+        "Text 4",
+        "Text 5",
+        "Text 6",
+        "Text 7",
+        "https://example.com",
+        "https://square.com",
+        "https://logo.com",
+    ]
 
   def test_compile_campaign_alias_return_alias_when_get_data(self):
     input_sheet_row = [
@@ -146,7 +171,7 @@ class TestAssetGroupService(unittest.TestCase):
   @mock.patch("validators.url")
   def test_create_asset_group_creates_correct_name(self, mock_validators_url):
     mock_validators_url.return_value = True
-    
+
     result = self.asset_group_service.create_asset_group(
         "AGN",
         "SUCCESS",
@@ -178,9 +203,11 @@ class TestAssetGroupService(unittest.TestCase):
     self.assertEqual(result.asset_group_operation.create.status, "SUCCESS")
 
   @mock.patch("validators.url")
-  def test_create_asset_group_creates_correct_group_path1(self, mock_validators_url):
+  def test_create_asset_group_creates_correct_group_path1(
+      self, mock_validators_url
+  ):
     mock_validators_url.return_value = True
-    
+
     result = self.asset_group_service.create_asset_group(
         "AGN",
         "SUCCESS",
@@ -197,7 +224,9 @@ class TestAssetGroupService(unittest.TestCase):
     )
 
   @mock.patch("validators.url")
-  def test_create_asset_group_creates_correct_group_path2(self, mock_validators_url):
+  def test_create_asset_group_creates_correct_group_path2(
+      self, mock_validators_url
+  ):
     mock_validators_url.return_value = True
 
     result = self.asset_group_service.create_asset_group(
@@ -216,7 +245,9 @@ class TestAssetGroupService(unittest.TestCase):
     )
 
   @mock.patch("validators.url")
-  def test_create_asset_group_creates_correct_resource_name(self, mock_validators_url):
+  def test_create_asset_group_creates_correct_resource_name(
+      self, mock_validators_url
+  ):
     mock_validators_url.return_value = True
 
     result = self.asset_group_service.create_asset_group(
@@ -235,7 +266,9 @@ class TestAssetGroupService(unittest.TestCase):
     )
 
   @mock.patch("validators.url")
-  def test_create_asset_group_creates_correct_campaign_for_asset_group(self, mock_validators_url):
+  def test_create_asset_group_creates_correct_campaign_for_asset_group(
+      self, mock_validators_url
+  ):
     mock_validators_url.return_value = True
 
     result = self.asset_group_service.create_asset_group(
@@ -251,4 +284,156 @@ class TestAssetGroupService(unittest.TestCase):
     )
     self.assertEqual(
         result.asset_group_operation.create.campaign, self.campaign_path
+    )
+
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.create_other_assets_asset_group"
+  )
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.consolidate_mandatory_assets_group_operations"
+  )
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.create_mandatory_text_assets"
+  )
+  @mock.patch("asset_group_creation.AssetGroupService.create_asset_group")
+  def test_handle_mandatory_assets_for_asset_group_calls_create_asset_group(
+      self,
+      mock_create_asset_group,
+      mock_create_mandatory_text_assets,
+      mock_consolidate_mandatory_assets_group_operations,
+      mock_create_other_assets_asset_group,
+  ):
+    mock_create_mandatory_text_assets.return_value = ["A", "b", "C"]
+    mock_consolidate_mandatory_assets_group_operations.return_value = [
+        {"Test": "test"}
+    ]
+    mock_create_other_assets_asset_group.return_value = [{"Test2": "test2"}]
+    self.asset_group_service.handle_mandatory_assets_for_asset_group(
+        self.test_asset_group_row,
+        "12345",
+        "asset/id/1",
+        "asset/group/name/1",
+        ["Test AN", "12345", "Test Campaign 1", "Campaign id"],
+    )
+    mock_create_asset_group.assert_called_once_with(
+        "asset/group/name/1",
+        "PAUSED",
+        "https://www.example.com",
+        "https://www.example.com",
+        "Test Path 1",
+        "Test Path 2",
+        "asset/id/1",
+        "Campaign id",
+        "12345",
+    )
+
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.create_other_assets_asset_group"
+  )
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.consolidate_mandatory_assets_group_operations"
+  )
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.create_mandatory_text_assets"
+  )
+  @mock.patch("asset_group_creation.AssetGroupService.create_asset_group")
+  def test_handle_mandatory_assets_for_asset_group_calls_create_mandatory_text_assets(
+      self,
+      mock_create_asset_group,
+      mock_create_mandatory_text_assets,
+      mock_consolidate_mandatory_assets_group_operations,
+      mock_create_other_assets_asset_group,
+  ):
+    mock_create_mandatory_text_assets.return_value = ["A", "b", "C"]
+    mock_consolidate_mandatory_assets_group_operations.return_value = [
+        {"Test": "test"}
+    ]
+    mock_create_other_assets_asset_group.return_value = [{"Test2": "test2"}]
+    mock_create_asset_group.return_value = [{"Test3": "test3"}]
+    self.asset_group_service.handle_mandatory_assets_for_asset_group(
+        self.test_asset_group_row,
+        "12345",
+        "asset/id/1",
+        "asset/group/name/1",
+        ["Test AN", "12345", "Test Campaign 1", "Campaign id"],
+    )
+    mock_create_mandatory_text_assets.assert_has_calls([
+        mock.call(["Text 1", "Text 2", "Text 3"], "12345"),
+        mock.call(["Text 4", "Text 5"], "12345"),
+    ])
+
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.create_other_assets_asset_group"
+  )
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.consolidate_mandatory_assets_group_operations"
+  )
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.create_mandatory_text_assets"
+  )
+  @mock.patch("asset_group_creation.AssetGroupService.create_asset_group")
+  def test_handle_mandatory_assets_for_asset_group_calls_consolidate_mandatory_assets_group_operations(
+      self,
+      mock_create_asset_group,
+      mock_create_mandatory_text_assets,
+      mock_consolidate_mandatory_assets_group_operations,
+      mock_create_other_assets_asset_group,
+  ):
+    mock_create_mandatory_text_assets.return_value = ["A", "b", "C"]
+    mock_consolidate_mandatory_assets_group_operations.return_value = [
+        {"Test": "test"}
+    ]
+    mock_create_other_assets_asset_group.return_value = [{"Test2": "test2"}]
+    mock_create_asset_group.return_value = [{"Test3": "test3"}]
+    self.asset_group_service.handle_mandatory_assets_for_asset_group(
+        self.test_asset_group_row,
+        "12345",
+        "asset/id/1",
+        "asset/group/name/1",
+        ["Test AN", "12345", "Test Campaign 1", "Campaign id"],
+    )
+    mock_consolidate_mandatory_assets_group_operations.assert_has_calls([
+        mock.call(["A", "b", "C"], "HEADLINE", "asset/id/1", "12345"),
+        mock.call(["A", "b", "C"], "DESCRIPTION", "asset/id/1", "12345"),
+    ])
+
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.create_other_assets_asset_group"
+  )
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.consolidate_mandatory_assets_group_operations"
+  )
+  @mock.patch(
+      "asset_group_creation.AssetGroupService.create_mandatory_text_assets"
+  )
+  @mock.patch("asset_group_creation.AssetGroupService.create_asset_group")
+  def test_handle_mandatory_assets_for_asset_group_calls_create_asset_group(
+      self,
+      mock_create_asset_group,
+      mock_create_mandatory_text_assets,
+      mock_consolidate_mandatory_assets_group_operations,
+      mock_create_other_assets_asset_group,
+  ):
+    mock_create_mandatory_text_assets.return_value = ["A", "b", "C"]
+    mock_consolidate_mandatory_assets_group_operations.return_value = [
+        {"Test": "test"}
+    ]
+    mock_create_other_assets_asset_group.return_value = [{"Test2": "test2"}]
+    self.asset_group_service.handle_mandatory_assets_for_asset_group(
+        self.test_asset_group_row,
+        "12345",
+        "asset/id/1",
+        "asset/group/name/1",
+        ["Test AN", "12345", "Test Campaign 1", "Campaign id"],
+    )
+    mock_create_other_assets_asset_group.assert_called_once_with(
+        [
+            "Text 6",
+            "Text 7",
+            "https://example.com",
+            "https://square.com",
+            "https://logo.com",
+        ],
+        "asset/id/1",
+        "12345",
     )

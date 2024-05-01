@@ -24,6 +24,7 @@ import validators
 
 AssetGroupOperation: TypeAlias = Mapping[str, str]
 
+
 class AssetGroupService:
   """Class for Campaign Creation.
 
@@ -204,9 +205,119 @@ class AssetGroupService:
               asset_group_id,
           ])
 
+  def generate_mandatory_assets_for_asset_group(
+      self,
+      asset_group_row: List[str | int],
+      customer_id: str,
+      asset_group_id: str,
+      asset_group_name: str,
+      campaign_details: List[str | int],
+  ) -> List[
+      tuple[asset_creation.AssetOperation, AssetGroupOperation]
+      | asset_creation.AssetToAssetGroupOperation
+  ]:
+    """Logic to create mandatory assets for asset group into one dictionary.
+
+    When creating the API operations for a new Asset Group, the API expects
+    the operations in a specific order. First 3 headlines and 2 descriptions,
+    and consequently all other asset operations can be appended.
+    This function consolidates all mandatory assets for asset group
+    in the correct order and returns a list of operations to send to the API.
+
+    Args:
+      asset_group_row: List of asset group values.
+      customer_id: Google Ads customer id.
+      asset_group_id: Google Ads Asset Group id
+      asset_group_name: Name of the asset group.
+      campaign_details: List of campaign data.
+
+    Returns:
+      List of Assets Operations from creating assets and tuple of Assets Operations
+      and Asset Group Operation from appending Assets to Asset Group.
+    """
+    operations = []
+    operations.append(
+        self.create_asset_group(
+            asset_group_name,
+            asset_group_row[
+                data_references.newAssetGroupsColumnMap.ASSET_GROUP_STATUS.value
+            ],
+            asset_group_row[
+                data_references.newAssetGroupsColumnMap.FINAL_URL.value
+            ],
+            asset_group_row[
+                data_references.newAssetGroupsColumnMap.MOBILE_URL.value
+            ],
+            asset_group_row[
+                data_references.newAssetGroupsColumnMap.PATH1.value
+            ],
+            asset_group_row[
+                data_references.newAssetGroupsColumnMap.PATH2.value
+            ],
+            asset_group_id,
+            campaign_details[data_references.CampaignList.campaign_id],
+            customer_id,
+        )
+    )
+
+    # Create 3 mandatory headline assets and extend them to Bulk Operations
+    # Object.
+    headline_data = asset_group_row[
+            data_references.newAssetGroupsColumnMap.HEADLINE1.value : data_references.newAssetGroupsColumnMap.HEADLINE3.value
+            + 1
+        ]
+    headlines = self.create_mandatory_text_assets(
+        headline_data,
+        customer_id,
+    )
+    operations.extend(
+        self.consolidate_mandatory_assets_group_operations(
+            headlines,
+            data_references.AssetTypes.headline,
+            asset_group_id,
+            customer_id,
+        )
+    )
+
+    # Create 2 mandatory description assets and extend them to Bulk
+    # Operations Object.
+    descriptions = asset_group_row[
+            data_references.newAssetGroupsColumnMap.DESCRIPTION1.value : data_references.newAssetGroupsColumnMap.DESCRIPTION2.value
+            + 1
+        ]
+    description_resource_names = self.create_mandatory_text_assets(
+        descriptions,
+        customer_id,
+    )
+    operations.extend(
+        self.consolidate_mandatory_assets_group_operations(
+            description_resource_names,
+            data_references.AssetTypes.description,
+            asset_group_id,
+            customer_id,
+        )
+    )
+
+    # Create all other mandatory assets and extend them to
+    # Bulk Operations Object.
+    # These asset types can be created and assigned to the new asset group
+    # in one and the same bulk operation.
+    operations.extend(
+        self.create_other_assets_asset_group(
+            asset_group_row[
+                data_references.newAssetGroupsColumnMap.LONG_HEADLINE.value : data_references.newAssetGroupsColumnMap.LOGO.value
+                + 1
+            ],
+            asset_group_id,
+            customer_id,
+        )
+    )
+
+    return operations
+
   def create_other_assets_asset_group(
       self, assets: List[str], asset_group_id: str, customer_id: int
-  ) -> List[asset_creation.AssetOperation, AssetGroupOperation]:
+  ) -> List[tuple[asset_creation.AssetOperation, AssetGroupOperation]]:
     """Logic to create mandatory other assets for asset group.
 
     When creating the API operations for a new Asset Group. The API expects
@@ -247,7 +358,11 @@ class AssetGroupService:
     return operations
 
   def consolidate_mandatory_assets_group_operations(
-      self, resource_names: List[str], asset_type: str, asset_group_id: str, customer_id: str
+      self,
+      resource_names: List[str],
+      asset_type: str,
+      asset_group_id: str,
+      customer_id: str,
   ) -> List[asset_creation.AssetToAssetGroupOperation]:
     """Logic to create mandatory text assets for asset group.
 
@@ -275,7 +390,9 @@ class AssetGroupService:
 
     return operations
 
-  def create_mandatory_assets_asset_group(self, text_assets: List[str], customer_id: str) -> List[str]:
+  def create_mandatory_text_assets(
+      self, text_assets: List[str], customer_id: str
+  ) -> List[str]:
     """Logic to create mandatory text assets for asset group.
 
     When creating the API operations for a new Asset Group. The API expects
@@ -391,13 +508,13 @@ class AssetGroupService:
     result = None
 
     if (
-        sheet_row[data_references.AssetsColumnMap.customer_name].strip()
-        and sheet_row[data_references.AssetsColumnMap.campaign_name].strip()
+        sheet_row[data_references.Assets.customer_name].strip()
+        and sheet_row[data_references.Assets.campaign_name].strip()
     ):
       result = (
-          sheet_row[data_references.AssetsColumnMap.customer_name]
+          sheet_row[data_references.Assets.customer_name]
           + ";"
-          + sheet_row[data_references.AssetsColumnMap.campaign_name]
+          + sheet_row[data_references.Assets.campaign_name]
       )
 
     return result
