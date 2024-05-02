@@ -13,8 +13,11 @@
 # limitations under the License.
 """Provides Google Sheets API to read and write sheets."""
 
+from collections.abc import MutableMapping, Sequence
 import re
 
+from absl import logging
+import data_references
 from enums.asset_column_map import assetsColumnMap
 from enums.asset_group_list import assetGroupList
 from enums.asset_status import assetStatus
@@ -25,6 +28,7 @@ from enums.new_campaigns_column_map import newCampaignsColumnMap
 from enums.sheets import sheets
 from enums.sitelink_column_map import sitelinksColumnMap
 from googleapiclient import discovery
+from googleapiclient import errors
 import yaml
 
 _SHEET_HEADER_SIZE = 5
@@ -566,7 +570,9 @@ class SheetsService:
     except Exception as e:
       print(f"Unable to update Sheet rows: {str(e)}")
 
-  def add_new_asset_group_to_list_sheet(self, asset_group_sheetlist):
+  def add_new_asset_group_to_list_sheet(
+      self, asset_group_sheetlist: Sequence[str]
+  ) -> None:
     """Update error message in the sheet.
 
     Args:
@@ -578,7 +584,11 @@ class SheetsService:
           Managed Sheet.
     """
     resource = {"majorDimension": "ROWS", "values": [asset_group_sheetlist]}
-    sheet_range = "AssetGroupList!A:G"
+    sheet_range = (
+        data_references.SheetNames.asset_groups
+        + "!"
+        + data_references.SheetRanges.asset_groups
+    )
 
     try:
       self._sheets_service.values().append(
@@ -587,8 +597,9 @@ class SheetsService:
           body=resource,
           valueInputOption="USER_ENTERED",
       ).execute()
-    except Exception as e:
-      print(f"Unable to update Sheet rows: {str(e)}")
+    except errors.HttpError as e:
+      logging.error("Couldn't update Assets Group to a sheet \n %s", str(e))
+      raise e
 
   def add_new_campaign_to_list_sheet(self, campaign_sheetlist):
     """Update error message in the sheet.
@@ -861,7 +872,9 @@ class SheetsService:
         "=SORT(UNIQUE({CustomerList!$A$5:$A}))", "DropDownConfig!N3"
     )
 
-  def refresh_campaign_list(self):
+  def refresh_campaign_list(
+      self,
+  ) -> MutableMapping[str, MutableMapping[str, Sequence[str]]]:
     """Update spreadsheet with Campaign list."""
     account_map = {}
     results = self.google_ads_service.retrieve_all_customers(
@@ -876,17 +889,18 @@ class SheetsService:
 
       if customer_id:
         results = self.google_ads_service.retrieve_all_campaigns(customer_id)
-        self.update_sheet_lists(results, "CampaignList", "!D:D", account_map)
+        account_map = self.update_sheet_lists(
+            results, "CampaignList", "!D:D", account_map
+        )
 
-  def refresh_asset_group_list(self):
+    return account_map
+
+  def refresh_asset_group_list(self) -> None:
     """Update spreadsheet with Asset Group list."""
-    account_map = {}
     results = self.google_ads_service.retrieve_all_customers(
         self.login_customer_id
     )
-    account_map = self.update_sheet_lists(
-        results, "CustomerList", "!B:B", account_map
-    )
+    account_map = self.refresh_campaign_list()
 
     for row in results:
       customer_id = str(row.customer_client.id)

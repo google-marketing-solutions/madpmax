@@ -191,4 +191,4 @@ class PubSub:
 
     if sitelink_data and campaign_data:
       logging.info("Creating new Sitelinks")
-      self.sitelink_service.process_sitelink_data(sitelink_data, campaign_data)
+      self.sitelink_service.process_sitelink_input_sheet(sitelink_data)

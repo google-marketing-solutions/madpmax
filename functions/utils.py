@@ -19,40 +19,32 @@ functions that help process the sheet data, and request the relevant API
 operations.
 """
 
-from typing import Mapping, TypeAlias
+from collections.abc import Mapping, Sequence
+from typing import TypeAlias
 from ads_api import AdService
 import data_references
 from sheet_api import SheetsService
 
+
 _BudgetOperation: TypeAlias = Mapping[str, str | int]
-_CampaignOperation: TypeAlias = Mapping[
-    str,
-    str | bool | Mapping[str, int]
-]
-_SitelinkOperation: TypeAlias = Mapping[
-    str,
-    str | list | Mapping[str, str]
-]
-_LinkSitelinkOperation: TypeAlias = Mapping[
-    str, str
-]
-_ApiResponse: TypeAlias = Mapping[
-    str,
-    bool | Mapping[
-        str, str
-    ]
-]
+_CampaignOperation: TypeAlias = Mapping[str, str | bool | Mapping[str, int]]
+_SitelinkOperation: TypeAlias = Mapping[str, str | Sequence | Mapping[str, str]]
+_LinkSitelinkOperation: TypeAlias = Mapping[str, str]
+_ApiResponse: TypeAlias = Mapping[str, bool | Mapping[str, str]]
 
 
 def process_operations_and_errors(
     customer_id: str,
-    operations: tuple[_BudgetOperation, _CampaignOperation] |
-        tuple[_SitelinkOperation, _LinkSitelinkOperation] | None,
+    operations: (
+        tuple[_BudgetOperation, _CampaignOperation]
+        | tuple[_SitelinkOperation, _LinkSitelinkOperation]
+        | None
+    ),
     error_log: str,
     row_number: int,
     sheet_service: SheetsService,
     google_ads_service: AdService,
-    sheet_name: str
+    sheet_name: str,
 ) -> None:
   """Processing Mutate Operations and Error Log from campaign service.
 
@@ -62,7 +54,7 @@ def process_operations_and_errors(
   Args:
     customer_id: Google ads customer id.
     operations: Typle containing to dicts, (_BudgetOperation,
-        _CampaignOperation)
+      _CampaignOperation)
     error_log: String representation of the error message.
     row_number: Corresponding sheetrow number to the sheet entry.
     sheet_service: instance of sheet_service for dependancy injection.
@@ -92,12 +84,7 @@ def process_operations_and_errors(
         )
     )
     process_api_response_and_errors(
-        response,
-        error_message,
-        row_number,
-        sheet_id,
-        sheet_name,
-        sheet_service
+        response, error_message, row_number, sheet_id, sheet_name, sheet_service
     )
 
 
@@ -107,7 +94,9 @@ def process_api_response_and_errors(
     row_number: int,
     sheet_id: str,
     sheet_name: str,
-    sheet_service: SheetsService
+    sheet_service: SheetsService,
+    campaign_details: Sequence[str | int] = None,
+    asset_group_name: str = None,
 ) -> None:
   """Processing the API responce and write to spreadsheet.
 
@@ -117,12 +106,22 @@ def process_api_response_and_errors(
     row_number: Corresponding sheetrow number to the sheet entry.
     sheet_id: Google Sheets id for the spreadsheet.
     sheet_name: Google Sheets name for the spreadsheet.
-    sheet_service: instance of sheet_service for dependancy injection.
+    sheet_service: Instance of sheet_service for dependancy injection.
+    campaign_details: Campaign data from spreadsheet in array form if updating
+      Asset Group.
+    asset_group_name: Name of the asset groupif updating Asset Group.
 
   Returns:
     None. Status written to logs and sheet.
   """
   sitelink_resource = None
+  resource_name_col = None
+  upload_status_col = None
+  error_message_col = None
+  if sheet_name == data_references.SheetNames.new_asset_groups:
+    upload_status_col = data_references.newAssetGroupsColumnMap.STATUS.value
+    error_message_col = data_references.newAssetGroupsColumnMap.MESSAGE
+    resource_name_col = None
   if sheet_name == data_references.SheetNames.new_campaigns:
     upload_status_col = data_references.NewCampaigns.campaign_upload_status
     error_message_col = data_references.NewCampaigns.error_message
@@ -133,7 +132,8 @@ def process_api_response_and_errors(
     resource_name_col = data_references.Sitelinks.sitelink_resource
     if response:
       sitelink_resource = response.mutate_operation_responses[
-          1].campaign_asset_result.resource_name
+          1
+      ].campaign_asset_result.resource_name
 
   if response:
     sheet_service.variable_update_sheet_status(
@@ -146,6 +146,11 @@ def process_api_response_and_errors(
     )
 
     sheet_service.refresh_campaign_list()
+    if sheet_name == data_references.SheetNames.new_asset_groups:
+      add_asset_group_sheetlist_to_spreadsheet(
+          response, campaign_details, asset_group_name, sheet_service
+      )
+
   elif error_message:
     sheet_service.variable_update_sheet_status(
         row_number,
@@ -157,9 +162,41 @@ def process_api_response_and_errors(
     )
 
 
+def add_asset_group_sheetlist_to_spreadsheet(
+    response: _ApiResponse,
+    campaign_details: Sequence[str | int],
+    asset_group_name: str,
+    sheet_service: SheetsService,
+) -> None:
+  """Adds Asset Group to spreadsheet.
+
+  Args:
+    response: Response object from creating asset group through the API.
+    campaign_details: Details of the campaign that contains this Asset Group.
+    asset_group_name: Name of the asset group that is being added to the
+      spreadsheet.
+    sheet_service: Instance of sheet_service for dependancy injection.
+
+  Returns:
+    Str or None. String value containing the Google Ads customer id.
+  """
+  asset_group_id = response.mutate_operation_responses[
+      0
+  ].asset_group_result.resource_name.split("/")[-1]
+
+  # Add asset_group_sheetlist to the spreadsheet.
+  sheet_service.add_new_asset_group_to_list_sheet([
+      campaign_details[data_references.CampaignList.customer_name],
+      campaign_details[data_references.CampaignList.customer_id],
+      campaign_details[data_references.CampaignList.campaign_name],
+      campaign_details[data_references.CampaignList.campaign_id],
+      asset_group_name,
+      asset_group_id,
+  ])
+
+
 def retrieve_customer_id(
-    customer_name: str,
-    sheet_service: SheetsService
+    customer_name: str, sheet_service: SheetsService
 ) -> str | None:
   """Retrieves Customer ID for input customer name.
 
@@ -170,9 +207,10 @@ def retrieve_customer_id(
   Returns:
     Str or None. String value containing the Google Ads customer id.
   """
-  customer_data: list[list[str]] = sheet_service.get_sheet_values(
-      data_references.SheetNames.customers +
-      data_references.SheetRanges.customers
+  customer_data: Sequence[Sequence[str]] = sheet_service.get_sheet_values(
+      data_references.SheetNames.customers
+      + "!"
+      + data_references.SheetRanges.customers
   )
 
   for row in customer_data:
@@ -183,31 +221,29 @@ def retrieve_customer_id(
 
 
 def retrieve_campaign_id(
-    customer_name: str,
-    campaign_name: str,
-    sheet_service: SheetsService
+    customer_name: str, campaign_name: str, sheet_service: SheetsService
 ) -> tuple[str, str] | None:
   """Retrieves Campaign ID for input campaign name.
 
   Args:
     customer_name: String value containing Google Ads Customer name.
     campaign_name: String value containing Google Ads Campaign name.
-    sheet_service: instance of sheet_service for dependancy injection.
+    sheet_service: Instance of sheet_service for dependancy injection.
 
   Returns:
     Tuple or None. Tuple containing the Google Ads customer id and campaign id.
     (customer_id, campaign_id)
   """
-  campaign_data: list[list[str]] = sheet_service.get_sheet_values(
-      data_references.SheetNames.campaigns +
-      data_references.SheetRanges.campaigns
+  campaign_data: Sequence[Sequence[str]] = sheet_service.get_sheet_values(
+      data_references.SheetNames.campaigns
+      + data_references.SheetRanges.campaigns
   )
 
   for row in campaign_data:
     if campaign_name in row and customer_name in row:
       return (
           row[data_references.CampaignList.customer_id],
-          row[data_references.CampaignList.campaign_id]
+          row[data_references.CampaignList.campaign_id],
       )
 
   return None

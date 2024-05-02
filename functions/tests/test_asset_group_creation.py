@@ -296,7 +296,7 @@ class TestAssetGroupService(unittest.TestCase):
       "asset_group_creation.AssetGroupService.create_mandatory_text_assets"
   )
   @mock.patch("asset_group_creation.AssetGroupService.create_asset_group")
-  def test_handle_mandatory_assets_for_asset_group_calls_create_asset_group(
+  def test_generate_mandatory_assets_for_asset_group_calls_create_asset_group(
       self,
       mock_create_asset_group,
       mock_create_mandatory_text_assets,
@@ -308,9 +308,8 @@ class TestAssetGroupService(unittest.TestCase):
         {"Test": "test"}
     ]
     mock_create_other_assets_asset_group.return_value = [{"Test2": "test2"}]
-    self.asset_group_service.handle_mandatory_assets_for_asset_group(
+    self.asset_group_service.generate_mandatory_assets_for_asset_group(
         self.test_asset_group_row,
-        "12345",
         "asset/id/1",
         "asset/group/name/1",
         ["Test AN", "12345", "Test Campaign 1", "Campaign id"],
@@ -337,7 +336,7 @@ class TestAssetGroupService(unittest.TestCase):
       "asset_group_creation.AssetGroupService.create_mandatory_text_assets"
   )
   @mock.patch("asset_group_creation.AssetGroupService.create_asset_group")
-  def test_handle_mandatory_assets_for_asset_group_calls_create_mandatory_text_assets(
+  def test_generate_mandatory_assets_for_asset_group_calls_create_mandatory_text_assets(
       self,
       mock_create_asset_group,
       mock_create_mandatory_text_assets,
@@ -350,9 +349,8 @@ class TestAssetGroupService(unittest.TestCase):
     ]
     mock_create_other_assets_asset_group.return_value = [{"Test2": "test2"}]
     mock_create_asset_group.return_value = [{"Test3": "test3"}]
-    self.asset_group_service.handle_mandatory_assets_for_asset_group(
+    self.asset_group_service.generate_mandatory_assets_for_asset_group(
         self.test_asset_group_row,
-        "12345",
         "asset/id/1",
         "asset/group/name/1",
         ["Test AN", "12345", "Test Campaign 1", "Campaign id"],
@@ -372,7 +370,7 @@ class TestAssetGroupService(unittest.TestCase):
       "asset_group_creation.AssetGroupService.create_mandatory_text_assets"
   )
   @mock.patch("asset_group_creation.AssetGroupService.create_asset_group")
-  def test_handle_mandatory_assets_for_asset_group_calls_consolidate_mandatory_assets_group_operations(
+  def test_generate_mandatory_assets_for_asset_group_calls_consolidate_mandatory_assets_group_operations(
       self,
       mock_create_asset_group,
       mock_create_mandatory_text_assets,
@@ -385,9 +383,8 @@ class TestAssetGroupService(unittest.TestCase):
     ]
     mock_create_other_assets_asset_group.return_value = [{"Test2": "test2"}]
     mock_create_asset_group.return_value = [{"Test3": "test3"}]
-    self.asset_group_service.handle_mandatory_assets_for_asset_group(
+    self.asset_group_service.generate_mandatory_assets_for_asset_group(
         self.test_asset_group_row,
-        "12345",
         "asset/id/1",
         "asset/group/name/1",
         ["Test AN", "12345", "Test Campaign 1", "Campaign id"],
@@ -406,10 +403,8 @@ class TestAssetGroupService(unittest.TestCase):
   @mock.patch(
       "asset_group_creation.AssetGroupService.create_mandatory_text_assets"
   )
-  @mock.patch("asset_group_creation.AssetGroupService.create_asset_group")
-  def test_handle_mandatory_assets_for_asset_group_calls_create_asset_group(
+  def test_generate_mandatory_assets_for_asset_group_calls_create_asset_group(
       self,
-      mock_create_asset_group,
       mock_create_mandatory_text_assets,
       mock_consolidate_mandatory_assets_group_operations,
       mock_create_other_assets_asset_group,
@@ -419,9 +414,8 @@ class TestAssetGroupService(unittest.TestCase):
         {"Test": "test"}
     ]
     mock_create_other_assets_asset_group.return_value = [{"Test2": "test2"}]
-    self.asset_group_service.handle_mandatory_assets_for_asset_group(
+    self.asset_group_service.generate_mandatory_assets_for_asset_group(
         self.test_asset_group_row,
-        "12345",
         "asset/id/1",
         "asset/group/name/1",
         ["Test AN", "12345", "Test Campaign 1", "Campaign id"],

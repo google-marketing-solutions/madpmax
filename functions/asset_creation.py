@@ -13,7 +13,8 @@
 # limitations under the License.
 """Provides functionality to create assets in Google Ads."""
 
-from typing import Any, Dict, List, Mapping, TypeAlias
+from collections.abc import Mapping, MutableMapping, Sequence
+from typing import Any, TypeAlias
 import uuid
 from ads_api import AdService
 import data_references
@@ -24,7 +25,9 @@ import validators
 
 
 AssetOperation: TypeAlias = Mapping[str, str]
-AssetToAssetGroupOperation: TypeAlias = Mapping[str, str | Mapping[str, str | int]]
+AssetToAssetGroupOperation: TypeAlias = Mapping[
+    str, str | Mapping[str, str | int]
+]
 
 
 class AssetService:
@@ -32,7 +35,6 @@ class AssetService:
 
   Contains all methods to create assets in Google Ads pMax campaings.
   """
-
 
   _CallToActionOperation: TypeAlias = Mapping[
       str, str | bool | Mapping[str, int]
@@ -57,7 +59,9 @@ class AssetService:
     self.asset_temp_id = -10000
 
   def process_asset_data_and_create(
-      self, asset_data: List[str | int], asset_group_data: List[str | int]
+      self,
+      asset_data: Sequence[str | int],
+      asset_group_data: Sequence[str | int],
   ) -> None:
     """Process data from the sheet to create assets.
 
@@ -131,14 +135,25 @@ class AssetService:
 
   def upload_assets_to_sheet(
       self,
-      operations: Dict[str, Mapping[str, str]],
-      status_to_row_mapping: Dict[str, str],
-      message_mapping: Dict[str, str],
+      operations: Mapping[str, Mapping[str, str]],
+      status_to_row_mapping: MutableMapping[str, str],
+      message_mapping: Mapping[str, str],
   ) -> None:
+    """Uploading asset results to the sheet.
+
+    Args:
+      operations: List of operations from asset creation.
+      status_to_row_mapping: Mapping of the operation statuses and related row
+        for uploading to the sheet.
+      message_mapping: Mapping of the resourse name and related row for
+        uploading to the sheet.
+    """
     for customer_id in operations:
       response, error_message = self._google_ads_service.bulk_mutate(
           operations[customer_id], customer_id, True
       )
+      if error_message:
+        raise ValueError(f"Couldn't update Assets \n {error_message}")
 
       if response:
         status_to_row_mapping.update(
@@ -157,9 +172,6 @@ class AssetService:
             data_references.Assets.asset_group_asset,
             status_to_row_mapping,
         )
-
-      if error_message:
-        raise ValueError(f"Couldn't update Assets \n {error_message}")
 
   def create_asset(
       self, asset_type: str, asset_value: str, customer_id: str
@@ -363,19 +375,18 @@ class AssetService:
     return asset_group_asset_operation
 
   def get_asset_value_by_type(
-      self, asset_data: List[Any], assetType: str
+      self, asset_data: Sequence[Any], asset_type: str
   ) -> str:
     """Checks asset data and returns assetvalue based on the asset type.
 
     Args:
       asset_data: Array of asset data.
-      assetType: Type of the asset.
+      asset_type: Type of the asset.
 
     Returns:
       Value of the asset.
     """
-    asset_value = ""
-    match assetType:
+    match asset_type:
       case data_references.AssetTypes.headline:
         asset_value = (
             asset_data[data_references.Assets.asset_text]
@@ -403,8 +414,7 @@ class AssetService:
       case data_references.AssetTypes.call_to_action:
         asset_value = (
             asset_data[data_references.Assets.asset_call_to_action]
-            if data_references.Assets.asset_call_to_action
-            < len(asset_data)
+            if data_references.Assets.asset_call_to_action < len(asset_data)
             else ""
         )
       case _:
@@ -416,7 +426,9 @@ class AssetService:
 
     return asset_value
 
-  def compile_asset_group_alias(self, sheet_row: List[str | int]) -> str | None:
+  def compile_asset_group_alias(
+      self, sheet_row: Sequence[str | int]
+  ) -> str | None:
     """Helper method to compile asset group alias from row content.
 
     Args:

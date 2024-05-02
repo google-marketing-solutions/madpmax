@@ -18,7 +18,7 @@ from typing import Final
 from cloudevents.http import CloudEvent
 import functions_framework
 from google.ads.googleads import client
-from reference_enums import ConfigFile
+from data_references import ConfigFile
 import pubsub
 from absl import logging
 import yaml

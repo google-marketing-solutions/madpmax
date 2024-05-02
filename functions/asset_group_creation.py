@@ -13,16 +13,18 @@
 # limitations under the License.
 """Provides functionality to create asset groups."""
 
-from enums.asset_status import assetStatus
-from enums.campaign_list_column_map import campaignListColumnMap
-from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
-from enums.sheets import sheets
-from typing import List, TypeAlias, Mapping
+from collections.abc import Mapping, Sequence
+from ads_api import AdService
 import asset_creation
+from asset_creation import AssetService
 import data_references
+from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
+from google.ads.googleads import client
+from sheet_api import SheetsService
+import utils
 import validators
 
-AssetGroupOperation: TypeAlias = Mapping[str, str]
+AssetGroupOperation = Mapping[str, str]
 
 
 class AssetGroupService:
@@ -32,14 +34,19 @@ class AssetGroupService:
   """
 
   def __init__(
-      self, google_ads_service, sheet_service, asset_service, google_ads_client
-  ):
+      self,
+      google_ads_service: AdService,
+      sheet_service: SheetsService,
+      asset_service: AssetService,
+      google_ads_client: client.GoogleAdsClient,
+  ) -> None:
     """Constructs the CampaignService instance.
 
     Args:
-      google_ads_service: instance of the google_ads_service for dependancy
+      google_ads_service: Instance of the google_ads_service for dependancy
         injection.
-      sheet_service: instance of sheet_service for dependancy injection.
+      sheet_service: Instance of sheet_service for dependancy injection.
+      asset_service: Instance of asset_creation for dependancy injection.
       google_ads_client: Instance of Google Ads API client.
     """
     self._google_ads_client = google_ads_client
@@ -53,166 +60,68 @@ class AssetGroupService:
     self.sheet_id = self.sheet_service.get_sheet_id("NewAssetGroups")
 
   def process_asset_group_data_and_create(
-      self, asset_group_data, campaign_data
-  ):
+      self,
+      asset_group_data: Sequence[Sequence[str | int]],
+      campaign_data: Sequence[Sequence[str | int]],
+  ) -> None:
     """Creates campaigns via google API based.
 
     Args:
       asset_group_data: Actual data for creating new asset groups in array form.
       campaign_data: Campaign data from spreadsheet in array form.
     """
-    operations = []
-
     for index, asset_group_row in enumerate(asset_group_data):
       if (
           asset_group_row[newAssetGroupsColumnMap.STATUS.value]
-          != assetStatus.UPLOADED.value
+          != data_references.RowStatus.uploaded
           and len(asset_group_row) > newAssetGroupsColumnMap.LOGO.value
       ):
         campaign_alias = self.compile_campaign_alias(asset_group_row)
         campaign_details = self.sheet_service.get_sheet_row(
-            campaign_alias, campaign_data, sheets.CAMPAIGN.value
+            campaign_alias, campaign_data, data_references.SheetNames.campaigns
         )
-
-        # Set Campaing Variables used to create and assign Asset Groups
-        if campaign_details:
-          customer_id = campaign_details[campaignListColumnMap.CUSTOMER_ID.value]
-          customer_name = campaign_details[campaignListColumnMap.CUSTOMER_NAME.value]
-          campaign_id = campaign_details[campaignListColumnMap.CAMPAIGN_ID.value]
-          campaign_name = campaign_details[campaignListColumnMap.CAMPAIGN_NAME.value]
-
-        # Set Asset Groups Variables used to create and assign Asset Groups
         asset_group_name = asset_group_row[
             newAssetGroupsColumnMap.ASSET_GROUP_NAME.value
         ]
-        asset_group_status = asset_group_row[
-            newAssetGroupsColumnMap.ASSET_GROUP_STATUS.value
-        ]
-        asset_group_final_url = asset_group_row[
-            newAssetGroupsColumnMap.FINAL_URL.value
-        ]
-        asset_group_mobile_url = asset_group_row[
-            newAssetGroupsColumnMap.MOBILE_URL.value
-        ]
-        asset_group_path1 = asset_group_row[newAssetGroupsColumnMap.PATH1.value]
-        asset_group_path2 = asset_group_row[newAssetGroupsColumnMap.PATH2.value]
+        if not campaign_details:
+          utils.process_api_response_and_errors(
+              None,
+              "No Campaign details for this Asset Group",
+              index,
+              self.sheet_id,
+              data_references.SheetNames.new_asset_groups,
+          )
+
         asset_group_id = self.asset_group_temp_id
         # Increment temp id for next Asset Group
         self.asset_group_temp_id -= 1
 
-        # Append Asset Group Creation to Bulk Operations Object.
-        operations.append(
-            self.create_asset_group(
-                asset_group_name,
-                asset_group_status,
-                asset_group_final_url,
-                asset_group_mobile_url,
-                asset_group_path1,
-                asset_group_path2,
-                asset_group_id,
-                campaign_id,
-                customer_id,
-            )
+        operations = self.generate_mandatory_assets_for_asset_group(
+            asset_group_row, asset_group_id, asset_group_name, campaign_details
         )
 
-        # Create 3 mandatory headline assets and extend them to Bulk Operations
-        # Object.
-        headlines = asset_group_row[
-            newAssetGroupsColumnMap.HEADLINE1.value : newAssetGroupsColumnMap.HEADLINE3.value
-            + 1
-        ]
-        headline_resource_names = self.create_mandatory_assets_asset_group(
-            headlines, customer_id
-        )
-        operations.extend(
-            self.consolidate_mandatory_assets_group_operations(
-                headline_resource_names,
-                assetTypes.HEADLINE,
-                asset_group_id,
-                customer_id,
-            )
-        )
-
-        # Create 2 mandatory description assets and extend them to Bulk
-        # Operations Object.
-        descriptions = asset_group_row[
-            newAssetGroupsColumnMap.DESCRIPTION1.value : newAssetGroupsColumnMap.DESCRIPTION2.value
-            + 1
-        ]
-        description_resource_names = self.create_mandatory_assets_asset_group(
-            descriptions, customer_id
-        )
-        operations.extend(
-            self.consolidate_mandatory_assets_group_operations(
-                description_resource_names,
-                assetTypes.DESCRIPTION,
-                asset_group_id,
-                customer_id,
-            )
-        )
-
-        # Create all other mandatory assets and extend them to
-        # Bulk Operations Object.
-        # These asset types can be created and assigned to the new asset group
-        # in one and the same bulk operation.
-        other_assets = asset_group_row[
-            newAssetGroupsColumnMap.LONG_HEADLINE.value : newAssetGroupsColumnMap.LOGO.value
-            + 1
-        ]
-        operations.extend(
-            self.create_other_assets_asset_group(
-                other_assets, asset_group_id, customer_id
-            )
-        )
-
-        # Send the operations to the Google Ads API and collect the response.
         response, error_message = self.google_ads_service.bulk_mutate(
-            operations, customer_id
+            operations,
+            campaign_details[data_references.CampaignList.customer_id],
         )
-
-        # Handle response from bulk creation and write status back to the
-        # spreadsheet.
-        if error_message:
-          self.sheet_service.variable_update_sheet_status(
-              index,
-              self.sheet_id,
-              newAssetGroupsColumnMap.STATUS.value,
-              assetStatus.ERROR.value,
-              error_message,
-              newAssetGroupsColumnMap.MESSAGE.value,
-          )
-        else:
-          self.sheet_service.variable_update_sheet_status(
-              index,
-              self.sheet_id,
-              newAssetGroupsColumnMap.STATUS.value,
-              assetStatus.UPLOADED.value,
-              newAssetGroupsColumnMap.MESSAGE.value,
-          )
-
-          # Retrieve the asset group id, and add it to the sheetlist array.
-          asset_group_id = response.mutate_operation_responses[
-              0
-          ].asset_group_result.resource_name.split("/")[-1]
-
-          # Add asset_group_sheetlist to the spreadsheet.
-          self.sheet_service.add_new_asset_group_to_list_sheet([
-              customer_name,
-              customer_id,
-              campaign_name,
-              campaign_id,
-              asset_group_name,
-              asset_group_id,
-          ])
+        utils.process_api_response_and_errors(
+            response,
+            error_message,
+            index,
+            self.sheet_id,
+            data_references.SheetNames.new_asset_groups,
+            self.sheet_service,
+            campaign_details,
+            asset_group_name,
+        )
 
   def generate_mandatory_assets_for_asset_group(
       self,
-      asset_group_row: List[str | int],
-      customer_id: str,
+      asset_group_row: Sequence[str | int],
       asset_group_id: str,
       asset_group_name: str,
-      campaign_details: List[str | int],
-  ) -> List[
+      campaign_details: Sequence[str | int],
+  ) -> Sequence[
       tuple[asset_creation.AssetOperation, AssetGroupOperation]
       | asset_creation.AssetToAssetGroupOperation
   ]:
@@ -226,16 +135,18 @@ class AssetGroupService:
 
     Args:
       asset_group_row: List of asset group values.
-      customer_id: Google Ads customer id.
       asset_group_id: Google Ads Asset Group id
       asset_group_name: Name of the asset group.
       campaign_details: List of campaign data.
 
     Returns:
-      List of Assets Operations from creating assets and tuple of Assets Operations
-      and Asset Group Operation from appending Assets to Asset Group.
+      List of Assets Operations from creating assets and tuple of Assets
+      Operations and Asset Group Operation from appending Assets to Asset Group.
     """
     operations = []
+    campaign_id = campaign_details[data_references.CampaignList.campaign_id]
+    customer_id = campaign_details[data_references.CampaignList.customer_id]
+
     operations.append(
         self.create_asset_group(
             asset_group_name,
@@ -255,7 +166,7 @@ class AssetGroupService:
                 data_references.newAssetGroupsColumnMap.PATH2.value
             ],
             asset_group_id,
-            campaign_details[data_references.CampaignList.campaign_id],
+            campaign_id,
             customer_id,
         )
     )
@@ -263,9 +174,9 @@ class AssetGroupService:
     # Create 3 mandatory headline assets and extend them to Bulk Operations
     # Object.
     headline_data = asset_group_row[
-            data_references.newAssetGroupsColumnMap.HEADLINE1.value : data_references.newAssetGroupsColumnMap.HEADLINE3.value
-            + 1
-        ]
+        data_references.newAssetGroupsColumnMap.HEADLINE1.value : data_references.newAssetGroupsColumnMap.HEADLINE3.value
+        + 1
+    ]
     headlines = self.create_mandatory_text_assets(
         headline_data,
         customer_id,
@@ -282,9 +193,9 @@ class AssetGroupService:
     # Create 2 mandatory description assets and extend them to Bulk
     # Operations Object.
     descriptions = asset_group_row[
-            data_references.newAssetGroupsColumnMap.DESCRIPTION1.value : data_references.newAssetGroupsColumnMap.DESCRIPTION2.value
-            + 1
-        ]
+        data_references.newAssetGroupsColumnMap.DESCRIPTION1.value : data_references.newAssetGroupsColumnMap.DESCRIPTION2.value
+        + 1
+    ]
     description_resource_names = self.create_mandatory_text_assets(
         descriptions,
         customer_id,
@@ -316,8 +227,8 @@ class AssetGroupService:
     return operations
 
   def create_other_assets_asset_group(
-      self, assets: List[str], asset_group_id: str, customer_id: int
-  ) -> List[tuple[asset_creation.AssetOperation, AssetGroupOperation]]:
+      self, assets: Sequence[str], asset_group_id: str, customer_id: int
+  ) -> Sequence[tuple[asset_creation.AssetOperation, AssetGroupOperation]]:
     """Logic to create mandatory other assets for asset group.
 
     When creating the API operations for a new Asset Group. The API expects
@@ -338,7 +249,9 @@ class AssetGroupService:
     operations = []
 
     for index, asset_value in enumerate(assets):
-      col_num = data_references.newAssetGroupsColumnMap.LONG_HEADLINE.value + index
+      col_num = (
+          data_references.newAssetGroupsColumnMap.LONG_HEADLINE.value + index
+      )
       asset_type = data_references.newAssetGroupsColumnMap(col_num).name
 
       asset_operation = self.asset_service.create_asset(
@@ -359,11 +272,11 @@ class AssetGroupService:
 
   def consolidate_mandatory_assets_group_operations(
       self,
-      resource_names: List[str],
+      resource_names: Sequence[str],
       asset_type: str,
       asset_group_id: str,
       customer_id: str,
-  ) -> List[asset_creation.AssetToAssetGroupOperation]:
+  ) -> Sequence[asset_creation.AssetToAssetGroupOperation]:
     """Logic to create mandatory text assets for asset group.
 
     When creating the API operations for a new Asset Group. The API expects
@@ -391,8 +304,8 @@ class AssetGroupService:
     return operations
 
   def create_mandatory_text_assets(
-      self, text_assets: List[str], customer_id: str
-  ) -> List[str]:
+      self, text_assets: Sequence[str], customer_id: str
+  ) -> Sequence[str]:
     """Logic to create mandatory text assets for asset group.
 
     When creating the API operations for a new Asset Group. The API expects
@@ -403,7 +316,7 @@ class AssetGroupService:
     names.
 
     Args:
-      text_Assets: ARRAY of STRINGS, text asset values.
+      text_assets: ARRAY of STRINGS, text asset values.
       customer_id: Google Ads customer id.
 
     Returns:
@@ -495,7 +408,9 @@ class AssetGroupService:
 
     return mutate_operation
 
-  def compile_campaign_alias(self, sheet_row: List[str | int]) -> str | None:
+  def compile_campaign_alias(
+      self, sheet_row: Sequence[str | int]
+  ) -> str | None:
     """Helper method to compile campaign alias from row content.
 
     Args:
