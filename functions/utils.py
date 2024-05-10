@@ -19,31 +19,23 @@ functions that help process the sheet data, and request the relevant API
 operations.
 """
 
-from collections.abc import Mapping, Sequence
-from typing import TypeAlias
-from ads_api import AdService
+from collections.abc import Sequence
+import ads_api
 import data_references
 from sheet_api import SheetsService
-
-
-_BudgetOperation: TypeAlias = Mapping[str, str | int]
-_CampaignOperation: TypeAlias = Mapping[str, str | bool | Mapping[str, int]]
-_SitelinkOperation: TypeAlias = Mapping[str, str | Sequence | Mapping[str, str]]
-_LinkSitelinkOperation: TypeAlias = Mapping[str, str]
-_ApiResponse: TypeAlias = Mapping[str, bool | Mapping[str, str]]
 
 
 def process_operations_and_errors(
     customer_id: str,
     operations: (
-        tuple[_BudgetOperation, _CampaignOperation]
-        | tuple[_SitelinkOperation, _LinkSitelinkOperation]
+        tuple[ads_api.BudgetOperation, ads_api.CampaignOperation]
+        | tuple[ads_api.SitelinkOperation, ads_api.LinkSitelinkOperation]
         | None
     ),
     error_log: str,
     row_number: int,
     sheet_service: SheetsService,
-    google_ads_service: AdService,
+    google_ads_service: ads_api.AdService,
     sheet_name: str,
 ) -> None:
   """Processing Mutate Operations and Error Log from campaign service.
@@ -53,8 +45,8 @@ def process_operations_and_errors(
 
   Args:
     customer_id: Google ads customer id.
-    operations: Typle containing to dicts, (_BudgetOperation,
-      _CampaignOperation)
+    operations: Tuple containing two dicts (BudgetOperation,
+      CampaignOperation)
     error_log: String representation of the error message.
     row_number: Corresponding sheetrow number to the sheet entry.
     sheet_service: instance of sheet_service for dependancy injection.
@@ -89,7 +81,7 @@ def process_operations_and_errors(
 
 
 def process_api_response_and_errors(
-    response: _ApiResponse,
+    response: ads_api.ApiResponse,
     error_message: str,
     row_number: int,
     sheet_id: str,
@@ -163,7 +155,7 @@ def process_api_response_and_errors(
 
 
 def add_asset_group_sheetlist_to_spreadsheet(
-    response: _ApiResponse,
+    response: ads_api.ApiResponse,
     campaign_details: Sequence[str | int],
     asset_group_name: str,
     sheet_service: SheetsService,
