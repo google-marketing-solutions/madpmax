@@ -1,7 +1,5 @@
-from unittest.mock import MagicMock
-from unittest.mock import Mock
-from asset_creation import AssetService
 from unittest import mock
+from asset_creation import AssetService
 import pytest
 
 
@@ -23,11 +21,11 @@ import pytest
     ],
 )
 def test_get_asset_value_for_all_assets(type_input, expected):
-  google_ads_service = MagicMock()
-  _google_ads_client = Mock()
-  sheet_service = MagicMock()
+  google_ads_service = mock.MagicMock()
+  google_ads_client = mock.Mock()
+  sheet_service = mock.MagicMock()
   asset_service = AssetService(
-      _google_ads_client, google_ads_service, sheet_service
+      google_ads_client, google_ads_service, sheet_service
   )
 
   input_sheet_row = [
@@ -47,48 +45,56 @@ def test_get_asset_value_for_all_assets(type_input, expected):
 
   assert result == expected
 
+
 @pytest.mark.parametrize(
     "type_input",
     [
-        ("MARKETING_IMAGE"),
-        ("SQUARE_MARKETING_IMAGE"),
-        ("PORTRAIT_MARKETING_IMAGE"),
-        ("LOGO"),
-        ("LANDSCAPE_LOGO"),
+        "MARKETING_IMAGE",
+        "SQUARE_MARKETING_IMAGE",
+        "PORTRAIT_MARKETING_IMAGE",
+        "LOGO",
+        "LANDSCAPE_LOGO",
     ],
 )
-@mock.patch('asset_creation.AssetService.create_image_asset')
-@mock.patch('validators.url')
-def test_create_image_asset_for_images_types(mock_validators_url, mock_create_image_asset, type_input):
-  google_ads_service = MagicMock()
-  _google_ads_client = Mock()
-  sheet_service = MagicMock()
+@mock.patch("asset_creation.AssetService.create_image_asset")
+@mock.patch("validators.url")
+def test_create_image_asset_for_images_types(
+    mock_validators_url, mock_create_image_asset, type_input
+):
+  google_ads_service = mock.MagicMock()
+  google_ads_client = mock.Mock()
+  sheet_service = mock.MagicMock()
   asset_service = AssetService(
-      _google_ads_client, google_ads_service, sheet_service
+      google_ads_client, google_ads_service, sheet_service
   )
   mock_create_image_asset.return_value = "Image object let's say"
   mock_validators_url.return_value = True
-  result = asset_service.create_asset(type_input, "Test Image Asset", "customer10")
+  result = asset_service.create_asset(
+      type_input, "Test Image Asset", "customer10"
+  )
 
   assert result == "Image object let's say"
+
 
 @pytest.mark.parametrize(
     "type_input",
     [
-        ("HEADLINE"),
-        ("BUSINESS_NAME"),
-        ("DESCRIPTION"),
-        ("LONG_HEADLINE"),
+        "HEADLINE",
+        "BUSINESS_NAME",
+        "DESCRIPTION",
+        "LONG_HEADLINE",
     ],
 )
-@mock.patch('asset_creation.AssetService.create_text_asset')
-@mock.patch('validators.url')
-def test_create_text_asset_for_text_types(mock_validators_url, mock_create_text_asset, type_input):
-  google_ads_service = MagicMock()
-  _google_ads_client = Mock()
-  sheet_service = MagicMock()
+@mock.patch("asset_creation.AssetService.create_text_asset")
+@mock.patch("validators.url")
+def test_create_text_asset_for_text_types(
+    mock_validators_url, mock_create_text_asset, type_input
+):
+  google_ads_service = mock.MagicMock()
+  google_ads_client = mock.Mock()
+  sheet_service = mock.MagicMock()
   asset_service = AssetService(
-      _google_ads_client, google_ads_service, sheet_service
+     google_ads_client, google_ads_service, sheet_service
   )
   mock_create_text_asset.return_value = "Now it is a text object"
   mock_validators_url.return_value = True
@@ -96,29 +102,47 @@ def test_create_text_asset_for_text_types(mock_validators_url, mock_create_text_
 
   assert result == "Now it is a text object"
 
+
 @pytest.mark.parametrize(
-    "type_input",
+    "type_input,error",
     [
-        ("HEADLINE"),
-        ("BUSINESS_NAME"),
-        ("DESCRIPTION"),
-        ("LONG_HEADLINE"),
-        ("CALL_TO_ACTION_SELECTION"),
-        ("YOUTUBE_VIDEO"),
-        ("MARKETING_IMAGE"),
-        ("SQUARE_MARKETING_IMAGE"),
-        ("PORTRAIT_MARKETING_IMAGE"),
-        ("LOGO"),
-        ("LANDSCAPE_LOGO"),
+        ("HEADLINE", "Asset text is required to create a HEADLINE Asset"),
+        (
+            "BUSINESS_NAME",
+            "Asset text is required to create a BUSINESS_NAME Asset",
+        ),
+        ("DESCRIPTION", "Asset text is required to create a DESCRIPTION Asset"),
+        (
+            "LONG_HEADLINE",
+            "Asset text is required to create a LONG_HEADLINE Asset",
+        ),
+        (
+            "CALL_TO_ACTION_SELECTION",
+            (
+                "Call to action is required to create a"
+                " CALL_TO_ACTION_SELECTION Asset"
+            ),
+        ),
+        ("YOUTUBE_VIDEO", "Asset URL YOUTUBE_VIDEO is not a valid URL"),
+        ("MARKETING_IMAGE", "Asset URL MARKETING_IMAGE is not a valid URL"),
+        (
+            "SQUARE_MARKETING_IMAGE",
+            "Asset URL SQUARE_MARKETING_IMAGE is not a valid URL",
+        ),
+        (
+            "PORTRAIT_MARKETING_IMAGE",
+            "Asset URL PORTRAIT_MARKETING_IMAGE is not a valid URL",
+        ),
+        ("LOGO", "Asset URL LOGO' is not a valid URL"),
+        ("LANDSCAPE_LOGO", "Asset URL LANDSCAPE_LOGO is not a valid URL"),
     ],
 )
-def test_rise_error_when_no_asset_value_for_create_asset(type_input):
-    google_ads_service = MagicMock()
-    _google_ads_client = Mock()
-    sheet_service = MagicMock()
-    asset_service = AssetService(
-        _google_ads_client, google_ads_service, sheet_service
-    )
-    with pytest.raises(
-        ValueError,match= f"Asset URL is required to create a {type_input} Asset"):
-      asset_service.create_asset(type_input, None, "customer10")
+def test_rise_error_when_no_asset_value_for_create_asset(type_input, error):
+  google_ads_service = mock.MagicMock()
+  google_ads_client = mock.Mock()
+  sheet_service = mock.MagicMock()
+  asset_service = AssetService(
+      google_ads_client, google_ads_service, sheet_service
+  )
+  with pytest.raises(ValueError, match=error):
+    asset_service.create_asset(type_input, None, "customer10")

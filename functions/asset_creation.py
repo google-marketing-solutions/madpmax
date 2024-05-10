@@ -16,18 +16,12 @@
 from collections.abc import Mapping, MutableMapping, Sequence
 from typing import Any, TypeAlias
 import uuid
-from ads_api import AdService
+import ads_api
 import data_references
 from google.ads.googleads import client
 import requests
 from sheet_api import SheetsService
 import validators
-
-
-AssetOperation: TypeAlias = Mapping[str, str]
-AssetToAssetGroupOperation: TypeAlias = Mapping[
-    str, str | Mapping[str, str | int]
-]
 
 
 class AssetService:
@@ -43,7 +37,7 @@ class AssetService:
   def __init__(
       self,
       google_ads_client: client.GoogleAdsClient,
-      google_ads_service: AdService,
+      google_ads_service: ads_api.AdService,
       sheet_service: SheetsService,
   ) -> None:
     """Constructs the AssetService instance.
@@ -51,6 +45,7 @@ class AssetService:
     Args:
       google_ads_client: Google Ads API client, dependency injection.
       google_ads_service: Ads Service Class dependency injection.
+      sheet_service: Google Sheets API method class.
     """
     self._google_ads_client = google_ads_client
     self._google_ads_service = google_ads_service
@@ -108,10 +103,12 @@ class AssetService:
           status_to_row_mapping[feedback_index]["message"] = str(ex)
           status_to_row_mapping[feedback_index]["asset_group_asset"] = ""
 
-        if customer_id not in operations.keys() or not operations[customer_id]:
-          operations[customer_id] = []
-
         if asset_operation:
+          if (
+              customer_id not in operations.keys()
+              or not operations[customer_id]
+          ):
+            operations[customer_id] = []
           operations[customer_id].append(asset_operation)
           resource_name = asset_operation.asset_operation.create.resource_name
 
@@ -165,17 +162,17 @@ class AssetService:
             )
         )
 
-        self.sheet_service.bulk_update_sheet_status(
-            data_references.SheetNames.assets,
-            data_references.Assets.status,
-            data_references.Assets.error_message,
-            data_references.Assets.asset_group_asset,
-            status_to_row_mapping,
-        )
+    self.sheet_service.bulk_update_sheet_status(
+        data_references.SheetNames.assets,
+        data_references.Assets.status,
+        data_references.Assets.error_message,
+        data_references.Assets.asset_group_asset,
+        status_to_row_mapping,
+    )
 
   def create_asset(
       self, asset_type: str, asset_value: str, customer_id: str
-  ) -> AssetOperation | _CallToActionOperation:
+  ) -> ads_api.AssetOperation | _CallToActionOperation:
     """Set up mutate object for creating asset.
 
     Args:
@@ -187,13 +184,11 @@ class AssetService:
       asset operation array
     """
     mutate_operation = None
-    if not asset_value:
-      raise ValueError(f"Asset URL is required to create a {asset_type} Asset")
 
     match asset_type:
       case data_references.AssetTypes.youtube_video:
-        if not validators.url(asset_value):
-          raise ValueError(f"Asset URL '{asset_value}' is not a valid URL")
+        if not validators.url(asset_value) or not asset_value:
+          raise ValueError(f"Asset URL {asset_value} is not a valid URL")
         mutate_operation = self.create_video_asset(asset_value, customer_id)
       case asset_type if asset_type in [
           data_references.AssetTypes.marketing_image,
@@ -202,8 +197,8 @@ class AssetService:
           data_references.AssetTypes.square_logo,
           data_references.AssetTypes.landscape_logo,
       ]:
-        if not validators.url(asset_value):
-          raise ValueError(f"Asset URL '{asset_value}' is not a valid URL")
+        if not validators.url(asset_value) or not asset_value:
+          raise ValueError(f"Asset URL {asset_value} is not a valid URL")
         mutate_operation = self.create_image_asset(
             asset_value,
             f"#{uuid.uuid4()}",
@@ -215,15 +210,25 @@ class AssetService:
           data_references.AssetTypes.long_headline,
           data_references.AssetTypes.business_name,
       ]:
+        if not asset_value:
+          raise ValueError(
+              f"Asset text is required to create a {asset_type} Asset"
+          )
         mutate_operation = self.create_text_asset(asset_value, customer_id)
       case data_references.AssetTypes.call_to_action:
+        if not asset_value:
+          raise ValueError(
+              f"Call to action is required to create a {asset_type} Asset"
+          )
         mutate_operation = self.create_call_to_action_asset(
             asset_value, customer_id
         )
 
     return mutate_operation
 
-  def create_text_asset(self, text: str, customer_id: str) -> AssetOperation:
+  def create_text_asset(
+      self, text: str, customer_id: str
+  ) -> ads_api.AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -248,7 +253,7 @@ class AssetService:
 
   def create_image_asset(
       self, image_url: str, name: str, customer_id: str
-  ) -> AssetOperation:
+  ) -> ads_api.AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -279,7 +284,7 @@ class AssetService:
 
   def create_video_asset(
       self, video_url: str, customer_id: str
-  ) -> AssetOperation:
+  ) -> ads_api.AssetOperation:
     """Generates the image asset and returns the resource name.
 
     Args:
@@ -340,7 +345,7 @@ class AssetService:
       asset_group_id: str,
       asset_type: str,
       customer_id: int,
-  ) -> AssetToAssetGroupOperation:
+  ) -> ads_api.AssetToAssetGroupOperation:
     """Adds the asset resource to an asset group.
 
     Args:
