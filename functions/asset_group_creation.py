@@ -13,9 +13,8 @@
 # limitations under the License.
 """Provides functionality to create asset groups."""
 
-from collections.abc import Mapping, Sequence
-from ads_api import AdService
-import asset_creation
+from collections.abc import Sequence
+import ads_api
 from asset_creation import AssetService
 import data_references
 from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
@@ -23,8 +22,6 @@ from google.ads.googleads import client
 from sheet_api import SheetsService
 import utils
 import validators
-
-AssetGroupOperation = Mapping[str, str]
 
 
 class AssetGroupService:
@@ -35,7 +32,7 @@ class AssetGroupService:
 
   def __init__(
       self,
-      google_ads_service: AdService,
+      google_ads_service: ads_api.AdService,
       sheet_service: SheetsService,
       asset_service: AssetService,
       google_ads_client: client.GoogleAdsClient,
@@ -122,8 +119,8 @@ class AssetGroupService:
       asset_group_name: str,
       campaign_details: Sequence[str | int],
   ) -> Sequence[
-      tuple[asset_creation.AssetOperation, AssetGroupOperation]
-      | asset_creation.AssetToAssetGroupOperation
+      tuple[ads_api.AssetOperation, ads_api.AssetGroupOperation]
+      | ads_api.AssetToAssetGroupOperation
   ]:
     """Logic to create mandatory assets for asset group into one dictionary.
 
@@ -228,7 +225,7 @@ class AssetGroupService:
 
   def create_other_assets_asset_group(
       self, assets: Sequence[str], asset_group_id: str, customer_id: int
-  ) -> Sequence[tuple[asset_creation.AssetOperation, AssetGroupOperation]]:
+  ) -> Sequence[tuple[ads_api.AssetOperation, ads_api.AssetGroupOperation]]:
     """Logic to create mandatory other assets for asset group.
 
     When creating the API operations for a new Asset Group. The API expects
@@ -276,7 +273,7 @@ class AssetGroupService:
       asset_type: str,
       asset_group_id: str,
       customer_id: str,
-  ) -> Sequence[asset_creation.AssetToAssetGroupOperation]:
+  ) -> Sequence[ads_api.AssetToAssetGroupOperation]:
     """Logic to create mandatory text assets for asset group.
 
     When creating the API operations for a new Asset Group. The API expects
@@ -344,7 +341,7 @@ class AssetGroupService:
       asset_group_id: str,
       campaign_id: str,
       customer_id: str,
-  ) -> AssetGroupOperation:
+  ) -> ads_api.AssetGroupOperation:
     """Creates a list of MutateOperations that create a new asset_group.
 
     A temporary ID will be assigned to this asset group so that it can
