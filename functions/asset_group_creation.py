@@ -17,7 +17,6 @@ from collections.abc import Sequence
 import ads_api
 from asset_creation import AssetService
 import data_references
-from enums.new_asset_groups_column_map import newAssetGroupsColumnMap
 from google.ads.googleads import client
 from sheet_api import SheetsService
 import utils
@@ -69,16 +68,16 @@ class AssetGroupService:
     """
     for index, asset_group_row in enumerate(asset_group_data):
       if (
-          asset_group_row[newAssetGroupsColumnMap.STATUS.value]
+          asset_group_row[data_references.newAssetGroupsColumnMap.STATUS.value]
           != data_references.RowStatus.uploaded
-          and len(asset_group_row) > newAssetGroupsColumnMap.LOGO.value
+          and len(asset_group_row) > data_references.newAssetGroupsColumnMap.LOGO.value
       ):
         campaign_alias = self.compile_campaign_alias(asset_group_row)
         campaign_details = self.sheet_service.get_sheet_row(
             campaign_alias, campaign_data, data_references.SheetNames.campaigns
         )
         asset_group_name = asset_group_row[
-            newAssetGroupsColumnMap.ASSET_GROUP_NAME.value
+            data_references.newAssetGroupsColumnMap.ASSET_GROUP_NAME.value
         ]
         if not campaign_details:
           utils.process_api_response_and_errors(
