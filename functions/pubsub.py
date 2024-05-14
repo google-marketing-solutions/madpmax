@@ -20,7 +20,6 @@ import asset_creation
 import asset_group_creation
 import auth
 import campaign_creation
-import data_processing
 import data_references
 from google.ads.googleads import client
 import sheet_api
@@ -89,15 +88,6 @@ class PubSub:
         self.sheet_service,
         self.asset_service,
         self.google_ads_client,
-    )
-
-  @cached_property
-  def data_processing_service(self):
-    return data_processing.DataProcessingService(
-        self.sheet_service,
-        self.google_ads_service,
-        self.asset_service,
-        self.asset_group_service,
     )
 
   @cached_property
