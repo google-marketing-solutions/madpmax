@@ -133,7 +133,7 @@ class AssetService:
   def upload_assets_to_sheet(
       self,
       operations: Mapping[str, Mapping[str, str]],
-      status_to_row_mapping: MutableMapping[str, str],
+      status_to_row_mapping: MutableMapping[str, MutableMapping[str, str]],
       message_mapping: Mapping[str, str],
   ) -> None:
     """Uploading asset results to the sheet.

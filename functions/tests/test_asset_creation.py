@@ -157,7 +157,7 @@ class TestAssetService(unittest.TestCase):
   ):
     mock_validators_url.return_value = False
     with self.assertRaisesRegex(
-        ValueError, "Asset URL 'Test Asset' is not a valid URL"
+        ValueError, "Asset URL Test Asset is not a valid URL"
     ):
       self.asset_service.create_asset(
           data_references.AssetTypes.youtube_video, "Test Asset", "customer10"
@@ -166,8 +166,7 @@ class TestAssetService(unittest.TestCase):
   def test_rise_error_when_no_asset_value_for_create_asset(self):
     with self.assertRaisesRegex(
         ValueError,
-        "Asset URL is required to create a"
-        f" {data_references.AssetTypes.youtube_video} Asset",
+        "Asset URL None is not a valid URL",
     ):
       self.asset_service.create_asset(
           data_references.AssetTypes.youtube_video, None, "customer10"

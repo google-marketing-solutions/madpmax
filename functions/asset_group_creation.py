@@ -70,7 +70,8 @@ class AssetGroupService:
       if (
           asset_group_row[data_references.newAssetGroupsColumnMap.STATUS.value]
           != data_references.RowStatus.uploaded
-          and len(asset_group_row) > data_references.newAssetGroupsColumnMap.LOGO.value
+          and len(asset_group_row)
+          > data_references.newAssetGroupsColumnMap.LOGO.value
       ):
         campaign_alias = self.compile_campaign_alias(asset_group_row)
         campaign_details = self.sheet_service.get_sheet_row(
@@ -167,8 +168,7 @@ class AssetGroupService:
         )
     )
 
-    # Create 3 mandatory headline assets and extend them to Bulk Operations
-    # Object.
+    # Create 3 mandatory headline assets, extend them to Bulk Operations Object.
     headline_data = asset_group_row[
         data_references.newAssetGroupsColumnMap.HEADLINE1.value : data_references.newAssetGroupsColumnMap.HEADLINE3.value
         + 1

@@ -14,20 +14,15 @@
 """Provides functionality to create campaigns."""
 
 import datetime
-from typing import TypeAlias, Mapping
+from typing import Mapping
 import uuid
 from absl import logging
-from ads_api import AdService
+import ads_api
 import data_references
 from google.ads.googleads import client
 from sheet_api import SheetsService
 import utils
 
-_BudgetOperation: TypeAlias = Mapping[str, str | int]
-_CampaignOperation: TypeAlias = Mapping[
-    str,
-    str | bool | Mapping[str, int]
-]
 
 _CUSTOMER_ID: str = "customer_id"
 _OPERATIONS: str = "operations"
@@ -44,16 +39,16 @@ class CampaignService:
     sheet_service: Instance of Google Ads API client.
     _google_ads_client: instance of sheet_service for dependancy injection.
     budget_temporary_id: Temp ID used to identify and assign Budgets operations
-        to campaign operations, prior to API upload.
-    performance_max_campaign_temporary_id: Temp ID used to identify and assign 
-        link API operations to a campaign operation, prior to API upload.
+      to campaign operations, prior to API upload.
+    performance_max_campaign_temporary_id: Temp ID used to identify and assign
+      link API operations to a campaign operation, prior to API upload.
   """
 
   def __init__(
       self,
-      google_ads_service: AdService,
+      google_ads_service: ads_api.AdService,
       sheet_service: SheetsService,
-      google_ads_client: client.GoogleAdsClient
+      google_ads_client: client.GoogleAdsClient,
   ) -> None:
     """Constructs the CampaignService instance.
 
@@ -69,8 +64,7 @@ class CampaignService:
     self.performance_max_campaign_temporary_id = -100
 
   def process_campaign_input_sheet(
-      self,
-      new_campaign_data: list[list[str]]
+      self, new_campaign_data: list[list[str]]
   ) -> None:
     """Loops through input Lists, and decides on next action.
 
@@ -88,11 +82,12 @@ class CampaignService:
 
     for row_num, row in enumerate(new_campaign_data):
       result = None
-      if (len(row) > data_references.NewCampaigns.campaign_start_date
-          and row[data_references.NewCampaigns.campaign_upload_status] !=
-          data_references.RowStatus.uploaded):
-        result = self.process_campaign_data_and_create_campaigns(
-            row)
+      if (
+          len(row) > data_references.NewCampaigns.campaign_start_date
+          and row[data_references.NewCampaigns.campaign_upload_status]
+          != data_references.RowStatus.uploaded
+      ):
+        result = self.process_campaign_data_and_create_campaigns(row)
         if result:
           utils.process_operations_and_errors(
               result[_CUSTOMER_ID],
@@ -101,13 +96,12 @@ class CampaignService:
               row_num,
               self.sheet_service,
               self.google_ads_service,
-              data_references.SheetNames.new_campaigns
+              data_references.SheetNames.new_campaigns,
           )
 
   def process_campaign_data_and_create_campaigns(
-      self,
-      campaign_data: list[str]
-  ) -> Mapping[str, tuple[_BudgetOperation, _CampaignOperation]]:
+      self, campaign_data: list[str]
+  ) -> Mapping[str, tuple[ads_api.BudgetOperation, ads_api.CampaignOperation]]:
     """Creates campaigns via google API based.
 
     Args:
@@ -118,12 +112,12 @@ class CampaignService:
       Message to write to the sheet. For example:
 
         {'customer_id': '123456',
-         'operations': (_BudgetOperation, _CampaignOperation),
+         'operations': (ads_api.BudgetOperation, ads_api.CampaignOperation),
          'error_log': 'Target ROAS and CPA should be a number.'}
     """
     customer_id = utils.retrieve_customer_id(
         campaign_data[data_references.NewCampaigns.customer_name],
-        self.sheet_service
+        self.sheet_service,
     )
 
     logging.info("Creating Budget API Operation")
@@ -133,7 +127,7 @@ class CampaignService:
       budget_operation = self.create_campaign_budget_operation(
           customer_id,
           campaign_data[data_references.NewCampaigns.campaign_budget],
-          campaign_data[data_references.NewCampaigns.budget_delivery_method]
+          campaign_data[data_references.NewCampaigns.budget_delivery_method],
       )
     except ValueError as e:
       budget_error = str(e)
@@ -160,7 +154,7 @@ class CampaignService:
     result = {
         _CUSTOMER_ID: customer_id,
         _OPERATIONS: (budget_operation, campaign_operation),
-        _ERROR_LOG: error_message
+        _ERROR_LOG: error_message,
     }
 
     if error_message:
@@ -169,11 +163,8 @@ class CampaignService:
     return result
 
   def create_campaign_budget_operation(
-      self,
-      customer_id: str,
-      budget: str,
-      budget_delivery_method: str
-  ) -> (_BudgetOperation | None, str):
+      self, customer_id: str, budget: str, budget_delivery_method: str
+  ) -> tuple[ads_api.BudgetOperation | None, str]:
     """Set up mutate object for creating campaign and budget for the campaign.
 
     Args:
@@ -183,7 +174,8 @@ class CampaignService:
         which the campaign budget is spent. STANDARD or ACCELERATED
 
     Returns:
-       A tuple (_BudgetOperation, error_message), where _BudgetOperation is a
+       A tuple (ads_api.BudgetOperation, error_message), where
+       ads_api.BudgetOperation is a
        Google Ads API MutateOperation for a campaign budget, and error_message
        is a string, containing the optional error message.
 
@@ -197,8 +189,9 @@ class CampaignService:
     budget = float(budget)
 
     if budget_delivery_method not in ("STANDARD", "ACCELERATED"):
-      raise ValueError("Budget delivery method should be either STANDARD or"
-                       " ACCELERATED.")
+      raise ValueError(
+          "Budget delivery method should be either STANDARD or ACCELERATED."
+      )
 
     mutate_operation = self._google_ads_client.get_type("MutateOperation")
     campaign_budget_operation = mutate_operation.campaign_budget_operation
@@ -224,8 +217,8 @@ class CampaignService:
       target_cpa: str,
       bidding_strategy: str,
       start_date: str,
-      end_date: str
-  ) -> (_CampaignOperation | None, str):
+      end_date: str,
+  ) -> tuple[ads_api.CampaignOperation | None, str]:
     """Creates a MutateOperation that creates a new Performance Max campaign.
 
     A temporary ID will be assigned to this campaign so that it can
@@ -239,13 +232,14 @@ class CampaignService:
         spend. Value must be between 0.01 and 1000.0, inclusive.
       target_cpa: Average CPA target. This target should be greater than or
         equal to minimum billable unit based on the currency for the account.
-      bidding_strategy: MaximizeConversions or MaximizeConversionValue
-        bidding strategy.
+      bidding_strategy: MaximizeConversions or MaximizeConversionValue bidding
+        strategy.
       start_date: Start time for the campaign in format 'YYYY-MM-DD'.
       end_date: End time for the campaign in format 'YYYY-MM-DD'.
 
     Returns:
-      A tuple (_CampaignOperation, error_message), where _CampaignOperation is a
+      A tuple (ads_api.CampaignOperation, error_message), where
+      ads_api.CampaignOperation is a
       Google Ads API MutateOperation for a pmax campaign, and error_message
       is a string, containing the optional error message.
 
