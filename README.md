@@ -32,6 +32,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
       * [Compute Engine API](https://console.cloud.google.com/apis/library/compute.googleapis.com)
       * [Identity and Access Management (IAM) API](https://console.cloud.google.com/apis/library/iam.googleapis.com)
       * [Cloud Resource Manager API](https://console.cloud.google.com/apis/library/cloudresourcemanager.googleapis.com)
+      * [Service Usage API](https://console.cloud.google.com/apis/library/serviceusage.googleapis.com)
 
 5. ### Generate OAuth Credentials
 
@@ -48,7 +49,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
          Obtain your **Script ID** by navigating to Your Copy of the Template Spreadsheet. In the top menu, select *"Extensions > Apps Script"*. The Apps Script editor will open in a new tab. Navigate on the left hand side to *Project Settings* and copy the **Script ID**.
         * [**pmax-api**] `'https://developers.google.com/oauthplayground'`
     5. Copy the **Client ID** and **Client Secret** and store safely for use later in the configuration.
-    6. [**pmax-trigger**] Navigate to the Apps Script Code Editor, and copy values for the **Client ID** and **Client Secret** to the respective variables in the `Service.gs` file.
+    6. [**pmax-trigger**] Navigate to the Apps Script Code Editor, and copy values for the **Client ID** and **Client Secret** to the respective variables in the `Config.gs` file.
     7. [**pmax-api**] Generate access and refresh token:
 
         [Follow these steps](https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens) to generate OAuth tokens. Make sure to include the following scopes when generating the tokens:
