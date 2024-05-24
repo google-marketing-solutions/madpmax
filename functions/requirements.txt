@@ -1,4 +1,5 @@
 # Function dependencies
+absl-py==2.1.0
 google-ads==22.0.0
 google-api-python-client==2.102.0
 google-auth-httplib2==0.1.1

@@ -70,7 +70,7 @@ resource "google_cloudfunctions2_function" "function" {
   description           = "mad Pmax function"
 
   build_config {
-    runtime     = "python39"
+    runtime     = "python312"
     entry_point = "pmax_trigger" # Set the entry entry_point
     source {
       storage_source {
