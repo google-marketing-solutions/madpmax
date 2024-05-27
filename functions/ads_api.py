@@ -639,15 +639,27 @@ class AdService:
         customer_id=customer_id, query=query
     )
 
-  def retrieve_all_customers(self, login_customer_id: str) -> ApiResponse:
+  def retrieve_all_customers(
+      self,
+      login_customer_id: str,
+      customer_id_inclusion_list: str
+  ) -> ApiResponse:
     """Retrieve all active customers from Google Ads.
 
     Args:
       login_customer_id: Google ads customer id.
+      customer_id_inclusion_list: String representation of list of Google Ads
+          customer ids.
 
     Returns:
       Results object with Google Ads api search results.
     """
+    customer_filter = ""
+    if customer_id_inclusion_list:
+      customer_filter = (
+          f"AND customer_client.id IN ({customer_id_inclusion_list})"
+      )
+
     query = f"""SELECT
                   customer.id,
                   customer_client.descriptive_name,
@@ -655,6 +667,7 @@ class AdService:
                 FROM customer_client
                 WHERE customer_client.status = 'ENABLED'
                 AND customer_client.id != {login_customer_id}
+                {customer_filter}
                 ORDER BY
                   customer.id ASC"""
 

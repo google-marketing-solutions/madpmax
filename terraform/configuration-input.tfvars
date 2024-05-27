@@ -21,8 +21,8 @@ developer_token   = "" # Google Ads API Developer Token
 login_customer_id = "" # Google Ads manager account id (without dashes)
 
 # Application Config variable.
-customer_id       = "" # Google Ads Customer ID (without dashes)
-spreadsheet_id    = "" # Google Spreadsheet ID
+customer_id_inclusion_list = "" # "OPTIONAL inclusion list of Google Ads Customer Ids e.g. "1234,5678", the tool will only port data from the accounts in this list."
+spreadsheet_id             = "" # Google Spreadsheet ID
 
 # Config variables for the OAuth Authentication flow.
 client_id         = "" # "pmax-api" Client ID (from Cloud OAuth credentials)

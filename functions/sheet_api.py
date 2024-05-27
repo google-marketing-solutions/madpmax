@@ -38,7 +38,8 @@ class SheetsService:
 
   Attributes:
     spread_sheet_id: Google Spreadsheet id.
-    customer_id: Google Ads customer id.
+    customer_id_inclusion_list: String representation of list of Google Ads
+        customer ids.
     login_customer_id: Google Ads customer id of MCC level.
     google_ads_client: Google Ads API client.
     google_ads_service: Google Ads method class.
@@ -62,7 +63,7 @@ class SheetsService:
       cfg = yaml.safe_load(ymlfile)
 
     self.spread_sheet_id = cfg["spreadsheet_id"]
-    self.customer_id = cfg["customer_id"]
+    self.customer_id_inclusion_list = cfg["customer_id_inclusion_list"]
     self.login_customer_id = cfg["login_customer_id"]
     self.google_ads_service = google_ads_service
     self.google_ads_client = google_ads_client
@@ -910,7 +911,7 @@ class SheetsService:
     """Update spreadsheet with exisitng assets, asset groups and campaigns."""
     account_map = {}
     results = self.google_ads_service.retrieve_all_customers(
-        self.login_customer_id
+        self.login_customer_id, self.customer_id_inclusion_list
     )
     account_map = self.update_sheet_lists(
         results, data_references.SheetNames.customers, "!B:B", account_map
@@ -949,7 +950,7 @@ class SheetsService:
     """Update spreadsheet with Campaign list."""
     account_map = {}
     results = self.google_ads_service.retrieve_all_customers(
-        self.login_customer_id
+        self.login_customer_id, self.customer_id_inclusion_list
     )
     account_map = self.update_sheet_lists(
         results, data_references.SheetNames.customers, "!B:B", account_map
@@ -969,7 +970,7 @@ class SheetsService:
   def refresh_asset_group_list(self) -> None:
     """Update spreadsheet with Asset Group list."""
     results = self.google_ads_service.retrieve_all_customers(
-        self.login_customer_id
+        self.login_customer_id, self.customer_id_inclusion_list
     )
     account_map = self.refresh_campaign_list()
 
@@ -989,7 +990,7 @@ class SheetsService:
     """Update spreadsheet with Assets list."""
     account_map = {}
     results = self.google_ads_service.retrieve_all_customers(
-        self.login_customer_id
+        self.login_customer_id, self.customer_id_inclusion_list
     )
     account_map = self.update_sheet_lists(
         results, data_references.SheetNames.customers, "!B:B", account_map
@@ -1006,7 +1007,7 @@ class SheetsService:
     """Update spreadsheet with Sitelinks list."""
     account_map = {}
     results = self.google_ads_service.retrieve_all_customers(
-        self.login_customer_id
+        self.login_customer_id, self.customer_id_inclusion_list
     )
     account_map = self.update_sheet_lists(
         results, data_references.SheetNames.customers, "!B:B", account_map
@@ -1022,7 +1023,7 @@ class SheetsService:
   def refresh_customer_id_list(self) -> None:
     """Update spreadsheet with customer id list."""
     results = self.google_ads_service.retrieve_all_customers(
-        self.login_customer_id
+        self.login_customer_id, self.customer_id_inclusion_list
     )
     self.update_sheet_lists(
         results, data_references.SheetNames.customers, "!B:B", {}

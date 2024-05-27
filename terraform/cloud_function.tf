@@ -17,7 +17,7 @@ resource "local_file" "ads_config" {
     access_token       = "${var.access_token}",
     refresh_token      = "${var.refresh_token}",
     login_customer_id  = "${var.login_customer_id}"
-    customer_id        = "${var.customer_id}"
+    customer_id_inclusion_list = "${var.customer_id_inclusion_list}"
     spreadsheet_id     = "${var.spreadsheet_id}"
   })
   filename = "../functions/config.yaml"

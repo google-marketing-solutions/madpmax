@@ -44,9 +44,9 @@ variable "login_customer_id" {
   description = "The Google Ads customer id of the manager account"
 }
 
-variable "customer_id" {
+variable "customer_id_inclusion_list" {
   type        = string
-  description = "Google Ads Customer Id, without dashes"
+  description = "OPTIONAL inclusion list of Google Ads Customer Ids, the tool will only port data from the accounts in this list."
 }
 
 variable "cloud_function_region" {

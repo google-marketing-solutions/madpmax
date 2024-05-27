@@ -16,7 +16,7 @@ login_customer_id: "${login_customer_id}"
 
 # Application configuration
 spreadsheet_id: "${spreadsheet_id}"
-customer_id: "${customer_id}"
+customer_id_inclusion_list: "${customer_id_inclusion_list}"
 
 # OAuth2 configuration
 client_id: "${client_id}"

@@ -195,7 +195,7 @@ class TestMain(unittest.TestCase):
         'access_token': 'z-z-Z-Z',
         'refresh_token': 'Y-y-Y-y',
         'login_customer_id': '12345',
-        'customer_id': '654321',
+        'customer_id_inclusion_list': '654321',
         'spreadsheet_id': 'SheetId123',
     }
     out_dir = self.create_tempdir('tmp_test')
@@ -224,7 +224,7 @@ class TestMain(unittest.TestCase):
         'client_id_wrong': '123456789',
         'refresh_token': 'Y-y-Y-y',
         'login_customer_id': '12345',
-        'customer_id': '654321',
+        'customer_id_inclusion_list': '654321',
         'spreadsheet_id': 'SheetId123',
     }
 

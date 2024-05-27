@@ -32,7 +32,8 @@ class ConfigFile:
     access_token: Access token for Google Ads API access.
     refresh_token: Refresh token for Google Ads API access.
     login_customer_id: Google Ads customer id of MCC level.
-    customer_id: Google Ads customer id under MCC level.
+    customer_id_inclusion_list: String representation of list of Google Ads
+          customer ids.
     spreadsheet_id: Id of spreadsheet to work with. Consist of numbers and
         letters. Eg take form the link to your template spreadsheet
         https://docs.google.com/spreadsheets/d/{spreadsheet_id}
@@ -44,7 +45,7 @@ class ConfigFile:
   access_token: str
   refresh_token: str
   login_customer_id: int
-  customer_id: int
+  customer_id_inclusion_list: str
   spreadsheet_id: str
 
 
