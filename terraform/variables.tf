@@ -41,7 +41,7 @@ variable "access_token" {
 
 variable "login_customer_id" {
   type        = string
-  description = "[Optional] only if you setup under manager account"
+  description = "The Google Ads customer id of the manager account"
 }
 
 variable "customer_id" {

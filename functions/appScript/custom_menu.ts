@@ -65,7 +65,7 @@ function pubsubRefreshCustomersRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_CUSTOMERS');
+  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_CUSTOMER_LIST');
   updateUploadedValuesIntoProperty();
 }
 
@@ -79,7 +79,7 @@ function pubsubRefreshCampaignsRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_CAMPAIGNS');
+  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_CAMPAIGN_LIST');
   updateUploadedValuesIntoProperty();
 }
 
@@ -93,7 +93,7 @@ function pubsubRefreshAssetGroupsRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_ASSET_GROUPS');
+  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_ASSET_GROUP_LIST');
   updateUploadedValuesIntoProperty();
 }
 

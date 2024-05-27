@@ -18,7 +18,7 @@
 
 # Config variables for the Google Ads Yaml file.
 developer_token   = "" # Google Ads API Developer Token
-login_customer_id = "" # [Optional] only if you setup under manager account (without dashes)
+login_customer_id = "" # Google Ads manager account id (without dashes)
 
 # Application Config variable.
 customer_id       = "" # Google Ads Customer ID (without dashes)

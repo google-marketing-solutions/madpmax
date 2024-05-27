@@ -137,7 +137,6 @@ def process_api_response_and_errors(
         resource_name_col,
     )
 
-    sheet_service.refresh_campaign_list()
     if sheet_name == data_references.SheetNames.new_asset_groups:
       add_asset_group_sheetlist_to_spreadsheet(
           response, campaign_details, asset_group_name, sheet_service
@@ -227,10 +226,9 @@ def retrieve_campaign_id(
     (customer_id, campaign_id)
   """
   campaign_data: Sequence[Sequence[str]] = sheet_service.get_sheet_values(
-      data_references.SheetNames.campaigns
-      + data_references.SheetRanges.campaigns
+      f"{data_references.SheetNames.campaigns}!"
+      f"{data_references.SheetRanges.campaigns}"
   )
-
   for row in campaign_data:
     if campaign_name in row and customer_name in row:
       return (

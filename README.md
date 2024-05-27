@@ -33,6 +33,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
       * [Identity and Access Management (IAM) API](https://console.cloud.google.com/apis/library/iam.googleapis.com)
       * [Cloud Resource Manager API](https://console.cloud.google.com/apis/library/cloudresourcemanager.googleapis.com)
       * [Service Usage API](https://console.cloud.google.com/apis/library/serviceusage.googleapis.com)
+      * [Cloud Pub/Sub API](https://console.cloud.google.com/apis/library/pubsub.googleapis.com)
 
 5. ### Generate OAuth Credentials
 

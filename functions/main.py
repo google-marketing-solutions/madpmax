@@ -24,7 +24,7 @@ from absl import logging
 import yaml
 
 _CONFIG_FILE_NAME: Final[str] = "config.yaml"
-_API_VERSIONAPI_VERSION: Final[str] = "v14"
+_API_VERSIONAPI_VERSION: Final[str] = "v16"
 
 
 def retrieve_config(config_name: str) -> ConfigFile:
@@ -78,9 +78,9 @@ def pmax_trigger(cloud_event: CloudEvent) -> None:
         pubsub_utils.refresh_campaign_list()
       case "REFRESH_ASSET_GROUP_LIST":
         pubsub_utils.refresh_asset_group_list()
-      case "REFRESH_ASSETS_LIST":
+      case "REFRESH_ASSETS":
         pubsub_utils.refresh_assets_list()
-      case "REFRESH_SITELINK_LIST":
+      case "REFRESH_SITELINKS":
         pubsub_utils.refresh_sitelinks_list()
 
     logging.info(
