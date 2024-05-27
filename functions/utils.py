@@ -133,8 +133,10 @@ def process_api_response_and_errors(
         sheet_id,
         upload_status_col,
         data_references.RowStatus.uploaded,
-        sitelink_resource,
-        resource_name_col,
+        error_message="",
+        message_col_id=error_message_col,
+        resource_name=sitelink_resource,
+        resource_col_id=resource_name_col,
     )
 
     if sheet_name == data_references.SheetNames.new_asset_groups:
@@ -148,8 +150,8 @@ def process_api_response_and_errors(
         sheet_id,
         upload_status_col,
         data_references.RowStatus.error,
-        error_message,
-        error_message_col,
+        error_message=error_message,
+        message_col_id=error_message_col,
     )
 
 
