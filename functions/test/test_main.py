@@ -8,7 +8,7 @@ import tempfile
 from typing import Any, AnyStr, BinaryIO, ContextManager, Iterator, Optional, Tuple
 import unittest
 from unittest.mock import patch
-import cloud_event as cloud_event
+import main
 import data_references
 
 
@@ -202,7 +202,7 @@ class TestMain(unittest.TestCase):
     json_string = json.dumps(file_dict).encode('utf-8')
     out_file = out_dir.create_file('output_correct_file.yaml', json_string)
 
-    result = cloud_event.retrieve_config(out_file)
+    result = main.retrieve_config(out_file)
     expected = data_references.ConfigFile(
         True,
         'zZzZzZz',
@@ -232,7 +232,7 @@ class TestMain(unittest.TestCase):
     json_string = json.dumps(file_dict).encode('utf-8')
     out_file = out_dir.create_file('output_wrong_file.yaml', json_string)
 
-    self.assertRaises(TypeError, cloud_event.retrieve_config, out_file)
+    self.assertRaises(TypeError, main.retrieve_config, out_file)
 
   @patch('pubsub.PubSub.refresh_spreadsheet')
   def test_pmax_trigger_to_call_refresh_spreadsheet_for_refresh_cloud_event(
@@ -245,7 +245,7 @@ class TestMain(unittest.TestCase):
         {'data': {'message': {'data': encoded_refresh_data}}},
     )
 
-    cloud_event.pmax_trigger(mock_cloud_event)
+    main.pmax_trigger(mock_cloud_event)
 
     mock_refresh_spreadsheet.assert_called()
 
@@ -260,7 +260,7 @@ class TestMain(unittest.TestCase):
         {'data': {'message': {'data': encoded_refresh_data}}},
     )
 
-    cloud_event.pmax_trigger(mock_cloud_event)
+    main.pmax_trigger(mock_cloud_event)
 
     mock_create_api_operations.assert_called()
 
@@ -288,7 +288,7 @@ class TestMain(unittest.TestCase):
         {'data': {'message': {'data': encoded_refresh_data}}},
     )
 
-    cloud_event.pmax_trigger(mock_cloud_event)
+    main.pmax_trigger(mock_cloud_event)
 
     mock_create_api_operations.assert_not_called()
     mock_refresh_spreadsheet.assert_not_called()

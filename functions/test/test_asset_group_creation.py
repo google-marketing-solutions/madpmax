@@ -11,15 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for Asset Creation"""
+"""Tests for Asset Creation."""
 
 import unittest
 from unittest import mock
 from asset_group_creation import AssetGroupService
+import data_references
 import pytest
 
 
-# Run this test from funtions folder with: python -m pytest tests/test_asset_group_creation.py
+# Run this test from funtions folder with:
+# python -m pytest tests/test_asset_group_creation.py
 @pytest.mark.parametrize(
     "asset_group_name,asset_group_status,asset_group_final_url,asset_group_mobile_url,error",
     [
@@ -93,7 +95,9 @@ class TestAssetGroupService(unittest.TestCase):
     self._google_ads_client = mock.Mock()
     self.sheet_service = mock.MagicMock()
     self.asset_service = mock.Mock()
-    self._google_ads_client.enums.AssetGroupStatusEnum = {"SUCCESS": "SUCCESS"}
+    self._google_ads_client.enums.AssetGroupStatusEnum = {
+        data_references.ApiStatus.paused: data_references.ApiStatus.paused
+    }
     self.asset_group_service = AssetGroupService(
         self.google_ads_service,
         self.sheet_service,
@@ -115,7 +119,7 @@ class TestAssetGroupService(unittest.TestCase):
         "Test AN",
         "Test Campaign 1",
         "Test Asset Group 1",
-        "PAUSED",
+        data_references.ApiStatus.paused,
         "https://www.example.com",
         "https://www.example.com",
         "Test Path 1",
@@ -158,7 +162,7 @@ class TestAssetGroupService(unittest.TestCase):
     ):
       self.asset_group_service.create_asset_group(
           "asset_group_name",
-          "SUCCESS",
+          data_references.ApiStatus.paused,
           asset_group_final_url,
           "asset_group_mobile_url",
           "asset_group_path1",
@@ -174,7 +178,7 @@ class TestAssetGroupService(unittest.TestCase):
 
     result = self.asset_group_service.create_asset_group(
         "AGN",
-        "SUCCESS",
+        data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
         "asset_group_path1",
@@ -191,7 +195,7 @@ class TestAssetGroupService(unittest.TestCase):
     mock_validators_url.return_value = True
     result = self.asset_group_service.create_asset_group(
         "AGN",
-        "SUCCESS",
+        data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
         "asset_group_path1",
@@ -200,7 +204,10 @@ class TestAssetGroupService(unittest.TestCase):
         "Campaign1",
         "customer_number_1",
     )
-    self.assertEqual(result.asset_group_operation.create.status, "SUCCESS")
+    self.assertEqual(
+        result.asset_group_operation.create.status,
+        data_references.ApiStatus.paused
+    )
 
   @mock.patch("validators.url")
   def test_create_asset_group_creates_correct_group_path1(
@@ -210,7 +217,7 @@ class TestAssetGroupService(unittest.TestCase):
 
     result = self.asset_group_service.create_asset_group(
         "AGN",
-        "SUCCESS",
+        data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
         "asset_group_path1",
@@ -231,7 +238,7 @@ class TestAssetGroupService(unittest.TestCase):
 
     result = self.asset_group_service.create_asset_group(
         "AGN",
-        "SUCCESS",
+        data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
         "asset_group_path1",
@@ -252,7 +259,7 @@ class TestAssetGroupService(unittest.TestCase):
 
     result = self.asset_group_service.create_asset_group(
         "AGN",
-        "SUCCESS",
+        data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
         "asset_group_path1",
@@ -273,7 +280,7 @@ class TestAssetGroupService(unittest.TestCase):
 
     result = self.asset_group_service.create_asset_group(
         "AGN",
-        "SUCCESS",
+        data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
         "asset_group_path1",
@@ -316,7 +323,7 @@ class TestAssetGroupService(unittest.TestCase):
     )
     mock_create_asset_group.assert_called_once_with(
         "asset/group/name/1",
-        "PAUSED",
+        data_references.ApiStatus.paused,
         "https://www.example.com",
         "https://www.example.com",
         "Test Path 1",

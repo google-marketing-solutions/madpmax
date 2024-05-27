@@ -111,27 +111,21 @@ class TestPubSubCall(unittest.TestCase):
     self.pubsub.refresh_sitelinks_list()
     mock_refresh_sitelinks_list.assert_called()
 
-  @patch("sitelink_creation.SitelinkService.process_sitelink_data")
   @patch("asset_creation.AssetService.process_asset_data_and_create")
-  @patch(
-      "asset_group_creation.AssetGroupService.process_asset_group_data_and_create"
-  )
-  @patch(
-      "campaign_creation.CampaignService.process_campaign_input_sheet"
-  )
+  @patch("sheet_api.SheetsService.get_sheet_id")
   @patch("sheet_api.SheetsService.get_sheet_values")
   def test_create_api_operations_calls_value_retrieval_services_correctly(
       self,
       mock_get_sheet_values,
-      mock_process_campaign_input_sheet,
-      mock_process_asset_group_data_and_create,
+      mock_get_sheet_id,
       mock_process_asset_data_and_create,
-      mock_process_sitelink_data,
   ):
     """Test create_api_operations method in PubSub.
 
     Confirms if service retrives correct amount of data.
     """
+    mock_process_asset_data_and_create.return_value = True
+    mock_get_sheet_id.return_value = "1234abcd"
     mock_get_sheet_values.side_effect = _mock_get_sheet_values_callback
     self.pubsub.create_api_operations()
 
@@ -149,7 +143,8 @@ class TestPubSubCall(unittest.TestCase):
     expected_call_count = 6
     self.assertTrue(mock_get_sheet_values.call_count >= expected_call_count)
 
-  @patch("sitelink_creation.SitelinkService.process_sitelink_data")
+  @patch("sheet_api.SheetsService.get_sheet_id")
+  @patch("sitelink_creation.SitelinkService.process_sitelink_input_sheet")
   @patch("asset_creation.AssetService.process_asset_data_and_create")
   @patch(
       "asset_group_creation.AssetGroupService.process_asset_group_data_and_create"
@@ -164,12 +159,14 @@ class TestPubSubCall(unittest.TestCase):
       mock_process_campaign_input_sheet,
       mock_process_asset_group_data_and_create,
       mock_process_asset_data_and_create,
-      mock_process_sitelink_data,
+      mock_process_sitelink_input_sheet,
+      mock_get_sheet_id,
   ):
     """Test if create_api_operations method in PubSub.
 
     Confirms if service calls correct functions with all data available.
     """
+    mock_get_sheet_id.return_value = "1234abcd"
     mock_get_sheet_values.side_effect = _mock_get_sheet_values_callback
     self.pubsub.create_api_operations()
 
@@ -179,14 +176,14 @@ class TestPubSubCall(unittest.TestCase):
     mock_process_asset_group_data_and_create.assert_called_with(
         [["New Asset Groups Test Data"]], [["Campaigns Test Data"]]
     )
-    mock_process_sitelink_data.assert_called_once_with(
-        [["Sitelinks Test Data"]], [["Campaigns Test Data"]]
+    mock_process_sitelink_input_sheet.assert_called_once_with(
+        [["Sitelinks Test Data"]]
     )
     mock_process_asset_data_and_create.assert_called_with(
         [["Assets Test Data"]], [["New Asset Groups Test Data"]]
     )
 
-  @patch("sitelink_creation.SitelinkService.process_sitelink_data")
+  @patch("sitelink_creation.SitelinkService.process_sitelink_input_sheet")
   @patch("asset_creation.AssetService.process_asset_data_and_create")
   @patch(
       "asset_group_creation.AssetGroupService.process_asset_group_data_and_create"
@@ -201,7 +198,7 @@ class TestPubSubCall(unittest.TestCase):
       mock_process_campaign_input_sheet,
       mock_process_asset_group_data_and_create,
       mock_process_asset_data_and_create,
-      mock_process_sitelink_data,
+      mock_process_sitelink_input_sheet,
   ):
     """Test create_api_operations method in PubSub.
 
@@ -212,5 +209,5 @@ class TestPubSubCall(unittest.TestCase):
 
     mock_process_campaign_input_sheet.assert_not_called()
     mock_process_asset_group_data_and_create.assert_not_called()
-    mock_process_sitelink_data.assert_not_called()
+    mock_process_sitelink_input_sheet.assert_not_called()
     mock_process_asset_data_and_create.assert_not_called()

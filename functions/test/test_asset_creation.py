@@ -230,10 +230,10 @@ class TestAssetService(unittest.TestCase):
     )
 
   def test_upload_asset_to_sheet_return_exception_on_error_message(self):
-    self.google_ads_service.bulk_mutate.return_value = {
+    self.google_ads_service.bulk_mutate.return_value = (
         None,
         "Attention! Error!",
-    }
+    )
     operations = {}
     operations["Customer ID 1"] = ["Test", ""]
 
