@@ -371,39 +371,52 @@ class SheetsService:
       self,
       row_index: int,
       sheet_id: str,
-      status_row_id: int,
+      status_col_id: int,
       upload_status: str,
       error_message: str = "",
-      message_row_id: int = None,
+      message_col_id: int = None,
+      resource_name: str = "",
+      resource_col_id: int = None,
   ) -> None:
     """Update status and error message (if provided) in the sheet.
 
     Args:
       row_index: Index of sheet row.
       sheet_id: Sheet id.
-      status_row_id: Row of status position.
+      status_col_id: Row of status position.
       upload_status: Status of API operation.
       error_message: Optional string value with error message.
-      message_row_id: Column of error messgae position.
+      message_col_id: Column of error messgae position.
+      resource_name: Optional Google Ads resource name.
+      resource_col_id: Column index of resource name.
 
     Raises:
       Exception: If unknown error occurs while updating rows.
     """
     update_request_list = []
 
-    status = self.get_status_note(
-        row_index + _SHEET_HEADER_SIZE, status_row_id, upload_status, sheet_id
+    request = self.get_status_note(
+        row_index + _SHEET_HEADER_SIZE, status_col_id, upload_status, sheet_id
     )
-    update_request_list.append(status)
+    update_request_list.append(request)
 
-    if error_message and message_row_id:
-      error_note = self.get_status_note(
+    if message_col_id:
+      request = self.get_status_note(
           row_index + _SHEET_HEADER_SIZE,
-          message_row_id,
+          message_col_id,
           error_message,
           sheet_id,
       )
-      update_request_list.append(error_note)
+      update_request_list.append(request)
+
+    if resource_col_id:
+      request = self.get_status_note(
+          row_index + _SHEET_HEADER_SIZE,
+          message_col_id,
+          error_message,
+          sheet_id,
+      )
+      update_request_list.append(request)
 
     try:
       self.batch_update_requests(update_request_list)
