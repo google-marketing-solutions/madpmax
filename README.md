@@ -18,13 +18,13 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
 
       1. Navigate to [Create a Project](https://console.cloud.google.com/projectcreate) in Google Cloud Console.
       2. In the **Project Name** field, enter a descriptive name for your project.
-      3. When deploying within a Cloud organisation, you will need to select the **Billing account** and the **Organisation** to deploy your new project.
+      3. When deploying within a Cloud organisation, you will need to select the **Billing account** and the **Organisation** to deploy your new project. If billing is not correctly set up you won't be able to enable the Compute Engine API below.
       4. In the **Location** field, click Browse to display potential locations for your project.
       5. Click **Create**.
 
 4. ### Enable the following APIs
 
-      Navigate to the [API Library](https://console.cloud.google.com/apis/library) and enable the following APIs
+      Navigate to the [API Library](https://console.cloud.google.com/apis/library) and enable the following APIs either by searching them by name or by directly clicking on the links below and click on the **Enable** button:
 
       * [Google Drive API](https://console.cloud.google.com/apis/library/drive.googleapis.com)
       * [Google Sheets API](https://console.cloud.google.com/apis/library/sheets.googleapis.com)
@@ -50,7 +50,7 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
          Obtain your **Script ID** by navigating to Your Copy of the Template Spreadsheet. In the top menu, select *"Extensions > Apps Script"*. The Apps Script editor will open in a new tab. Navigate on the left hand side to *Project Settings* and copy the **Script ID**.
         * [**pmax-api**] `'https://developers.google.com/oauthplayground'`
     5. Copy the **Client ID** and **Client Secret** and store safely for use later in the configuration.
-    6. [**pmax-trigger**] Navigate to the Apps Script Code Editor, and copy values for the **Client ID** and **Client Secret** to the respective variables in the `Config.gs` file.
+    6. [**pmax-trigger**] Navigate to the Apps Script Code Editor, and copy values for the **Client ID** and **Client Secret** to the respective variables in the `Config.gs` file. Then, find your **Google Cloud Project Name** from the Project Info section of your [Google Cloud Project Dashboard](https://console.cloud.google.com/home/dashboard) and copy its value to the respective variable in the same file.
     7. [**pmax-api**] Generate access and refresh token:
 
         [Follow these steps](https://developers.google.com/google-ads/api/docs/oauth/playground#generate_tokens) to generate OAuth tokens. Make sure to include the following scopes when generating the tokens:
@@ -106,7 +106,15 @@ The Performance Max Asset Automation solution can be deployed on Google Cloud th
 
     **Note**: To obtain Google Ads Developer token refer to Apply for access to the Google Ads API.
 
-7. ### Using the tool
+7. ### Link your copy of the Template Sheet to the Google Cloud Project
+
+    1. Open the **Extensions** menu in your Template Sheet and click on **Apps Script**.
+    2. Find the cog wheel icon, titled as **Project Settings**, on the left side of the screen and click on it.
+    3. Scroll down to the **Google Cloud Platform (GCP) Project** section and click on the button titled as **Change Project**.
+    4. In another tab of your browser, navigate to the Project Info section of your [Google Cloud Project Dashboard](https://console.cloud.google.com/home/dashboard) and copy the value for the **Project Number**.
+    5. Copy this value into your Template Sheet and click on the button titled as **Set Project** to complete the process.
+
+8. ### Using the tool
 
     Template spreadsheet contains *pMax Execute* menu option with two functions:
     * **Refresh Sheet**: loads all existing in your account Campaigns, Asset Groups and Assets into related pages in the spreadsheet
