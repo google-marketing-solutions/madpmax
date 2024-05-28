@@ -13,7 +13,9 @@
 # limitations under the License.
 """Gets the OAuth2 credential from file."""
 
-import google.oauth2
+from collections.abc import Mapping
+from google.auth import exceptions
+from google.oauth2 import credentials
 import yaml
 
 _SCOPES = [
@@ -24,7 +26,9 @@ _SCOPES = [
 _TOKEN_URI = "https://oauth2.googleapis.com/token"
 
 
-def get_credentials_from_file(access_token, refresh_token, client_id, client_secret):
+def get_credentials_from_file(
+    access_token: str, refresh_token: str, client_id: str, client_secret: str
+) -> Mapping[str, str]:
   """Gets the Oauth2 credentials.
 
   Args:
@@ -39,24 +43,27 @@ def get_credentials_from_file(access_token, refresh_token, client_id, client_sec
   Raises:
     Error when credentials cannot be generated.
   """
-  creds = google.oauth2.credentials.Credentials(
+  creds = credentials.Credentials(
       token=access_token,
       refresh_token=refresh_token,
       token_uri=_TOKEN_URI,
       client_id=client_id,
       client_secret=client_secret,
-      scopes=_SCOPES
+      scopes=_SCOPES,
   )
- # Creds expired generate new creds using refresh token.
+  # Creds expired generate new creds using refresh token.
   if not creds or not creds.valid:
     if creds and creds.expired and creds.refresh_token:
-      creds = google.oauth2.credentials.Credentialsrefresh(
-        refresh_token, client_id, client_secret)
-     # Save the credentials for the next run
+      creds = credentials.Credentialsrefresh(
+          refresh_token, client_id, client_secret
+      )
+      # Save the credentials for the next run
       with open("config.yaml", "w") as token:
         token.write(creds.to_json())
     else:
-      raise Exception("Error while generating OAuth credentials, no credentials returned.")
+      raise exceptions.OAuthError(
+          "Error while generating OAuth credentials, no credentials returned."
+      )
   return creds
 
 

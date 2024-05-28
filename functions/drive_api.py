@@ -13,7 +13,9 @@
 # limitations under the License.
 """Provides functionality to interact with Google Drive platform."""
 
+from collections.abc import Mapping
 import io
+from absl import logging
 import googleapiclient
 import requests
 
@@ -22,27 +24,27 @@ import requests
 _DRIVE_URL = "drive.google.com"
 
 
-class DriveService():
-  """Provides Drive APIs to download images from Drive.
-  """
+class DriveService:
+  """Provides Drive APIs to download images from Drive."""
 
-  def __init__(self, credential):
+  def __init__(self, credential: Mapping[str, str]) -> None:
     """Creates a instance of drive service to handle requests.
 
     Args:
       credential: Drive APIs credentials.
     """
     self._drive_service = googleapiclient.discovery.build(
-        "drive", "v3", credentials=credential)
+        "drive", "v3", credentials=credential
+    )
 
-  def _download_asset(self, url):
+  def _download_asset(self, url: str) -> bytes:
     """Downloads an asset based on url, from drive or the web.
 
     Args:
-      url: url to fetch the asset from.
+      url: Url to fetch the asset from.
 
     Returns:
-      asset data array.
+      Asset data array.
     """
     if _DRIVE_URL in url:
       return self._download_drive_asset(url)
@@ -50,23 +52,29 @@ class DriveService():
       response = requests.get(url)
     return io.BytesIO(response.content).read()
 
-  def get_file_by_name(self, file_name):
+  def get_file_by_name(self, file_name: str) -> str:
     """Retrieves the file by name and returns id.
 
     Args:
       file_name: Name of the spreadsheet file to retrieve.
 
     Returns:
-      file id of the spreadsheet.
+      File id of the spreadsheet.
     """
+    file_id = None
     try:
-      file_id = None
       page_token = None
       while True:
-        response = self._drive_service.files().list(
-            q=f"name = '{file_name}'", spaces="drive",
-            fields="nextPageToken, "
-            "files(id)", pageToken=page_token).execute()
+        response = (
+            self._drive_service.files()
+            .list(
+                q=f"name = '{file_name}'",
+                spaces="drive",
+                fields="nextPageToken, files(id)",
+                pageToken=page_token,
+            )
+            .execute()
+        )
         for file in response.get("files", []):
           file_id = file.get("id")
           break
@@ -74,6 +82,5 @@ class DriveService():
         if page_token is None:
           break
     except googleapiclient.http.HttpError as error:
-      print(F"An error occurred: {error}")
-      file = None
+      logging.error("An error occurred: %s ", error)
     return file_id

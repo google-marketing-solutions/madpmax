@@ -2,4 +2,5 @@ google-ads.yaml
 .venv/*
 __pycache__/
 path/*
-functions/config.yaml
+functions/config*
+local_run.py

@@ -18,11 +18,11 @@
 
 # Config variables for the Google Ads Yaml file.
 developer_token   = "" # Google Ads API Developer Token
-login_customer_id = "" # [Optional] only if you setup under manager account (without dashes)
+login_customer_id = "" # Google Ads manager account id (without dashes)
 
 # Application Config variable.
-customer_id       = "" # Google Ads Customer ID (without dashes)
-spreadsheet_id    = "" # Google Spreadsheet ID
+customer_id_inclusion_list = "" # "OPTIONAL inclusion list of Google Ads Customer Ids e.g. "1234,5678", the tool will only port data from the accounts in this list."
+spreadsheet_id             = "" # Google Spreadsheet ID
 
 # Config variables for the OAuth Authentication flow.
 client_id         = "" # "pmax-api" Client ID (from Cloud OAuth credentials)
@@ -32,7 +32,7 @@ refresh_token     = "" # https://developers.google.com/google-ads/api/docs/oauth
 
 # General Cloud Configuration
 project_id            = ""   # Project id were the solution will run.
-cloud_function_name   = ""   # Name of the cloud function running the solution.
-cloud_function_region = ""   # Cloud Region where the solutions will run. i.e. europe-west2
-cloud_storage_region  = ""   # or US
-solution_user_list    = [""] # Comma separated list of solution users e.g. ["user:example@example.com"] (gives permissions to publish the pubsub trigger)
+cloud_function_name   = ""   # Name of the cloud function running the solution. e.g. pmax-automation
+cloud_function_region = ""   # Cloud Region where the solutions will run. e.g. europe-west2
+cloud_storage_region  = ""   # Cloud Region for the storage bucket. e.g. europe-west2. Find the full list at https://cloud.google.com/storage/docs/locations
+solution_user_list    = [""] # Comma separated list of solution users. e.g. ["user:example@example.com"] (gives permissions to publish the pubsub trigger)
