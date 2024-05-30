@@ -4,11 +4,14 @@
 
 The Mad Pmax: Performance Max Asset Automation solution can be deployed on Google Cloud through Terraform. See the steps below. This will require roughly 2-4 hours to deploy.
 
-1. ### Make a copy of the [Mad pMax Template sheet](https://docs.google.com/spreadsheets/d/1uj1IA7Bf8W5av2h1Mw_WEAyhiWa6Rxu9KbFxKXW3v2k/copy)
+1. ### Join the [Mad pMax users](https://groups.google.com/g/mad-pmax-users) group
+     Joining this group will grant you access to the template Google Sheet.
+
+2. ### Make a copy of the [Mad pMax Template sheet](https://docs.google.com/spreadsheets/d/1uj1IA7Bf8W5av2h1Mw_WEAyhiWa6Rxu9KbFxKXW3v2k/copy)
 
      See usage instructions in the [Template Sheet Guide](#template-sheet-guide) section.
 
-2. ### Create a new or Select an existing Google Cloud Project
+3. ### Create a new or Select an existing Google Cloud Project
 
       Select an **existing Cloud Project** to deploy the solution, or follow the next steps to **create a new cloud project**.
 
@@ -18,7 +21,7 @@ The Mad Pmax: Performance Max Asset Automation solution can be deployed on Googl
       4. In the **Location** field, click Browse to display potential locations for your project.
       5. Click **Create**.
 
-3. ### Enable the following APIs
+4. ### Enable the following APIs
 
       Navigate to the [API Library](https://console.cloud.google.com/apis/library) and enable the following APIs either by searching them by name or by directly clicking on the links below and click on the **Enable** button:
 
@@ -31,7 +34,7 @@ The Mad Pmax: Performance Max Asset Automation solution can be deployed on Googl
       * [Service Usage API](https://console.cloud.google.com/apis/library/serviceusage.googleapis.com)
       * [Cloud Pub/Sub API](https://console.cloud.google.com/apis/library/pubsub.googleapis.com)
 
-4. ### Generate OAuth Credentials
+5. ### Generate OAuth Credentials
 
     The Credentials are required 1) for pMax API access permissions (pmax-api) and 2) for permissions to trigger the application to run (pmax-trigger).
 
@@ -56,7 +59,7 @@ The Mad Pmax: Performance Max Asset Automation solution can be deployed on Googl
 
         **Important**: Make sure to use the **Client ID** and **Client Secret** generated in step 4 for [pmax-api] to generate the tokens.
 
-5. ### Terraform Deployment
+6. ### Terraform Deployment
 
     1. Open the cloud project where you want to deploy the solution and open the [Cloud Editor](https://shell.cloud.google.com/?show=ide%2Cterminal). Make sure to select the project where you want to deploy the solution using `gcloud config set project [PROJECT_ID]`
 
@@ -102,7 +105,7 @@ The Mad Pmax: Performance Max Asset Automation solution can be deployed on Googl
 
     **Note**: To obtain Google Ads Developer token refer to Apply for access to the Google Ads API.
 
-6. ### Link your copy of the Template Sheet to the Google Cloud Project
+7. ### Link your copy of the Template Sheet to the Google Cloud Project
 
     1. Open the **Extensions** menu in your Template Sheet and click on **Apps Script**.
     2. Find the cog wheel icon, titled as **Project Settings**, on the left side of the screen and click on it.
