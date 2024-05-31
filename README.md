@@ -72,7 +72,7 @@ The Mad Pmax: Performance Max Asset Automation solution can be deployed on Googl
     3. Run
 
         ```bash
-        cd pmax_asset_automation/terraform
+        cd madpmax/terraform
         ```
 
     4. Open `/terraform/configuration-input.tfvars` file and complete all required input variables in the `configuration-input.tfvars` file.
