@@ -79,8 +79,8 @@ def test_create_asset_group_return_error_on_invalid_input(
         asset_group_status,
         asset_group_final_url,
         asset_group_mobile_url,
-        "asset_group_path1",
-        "asset_group_path2",
+        "test_path1",
+        "test_path2",
         "asset_group_id",
         "campaign_id",
         "customer_id",
@@ -165,8 +165,8 @@ class TestAssetGroupService(unittest.TestCase):
           data_references.ApiStatus.paused,
           asset_group_final_url,
           "asset_group_mobile_url",
-          "asset_group_path1",
-          "asset_group_path2",
+          "test_path1",
+          "test_path2",
           "asset_group_id",
           "campaign_id",
           "customer_id",
@@ -181,8 +181,8 @@ class TestAssetGroupService(unittest.TestCase):
         data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
-        "asset_group_path1",
-        "asset_group_path2",
+        "test_path1",
+        "test_path2",
         "123456Id",
         "Campaign1",
         "customer_number_1",
@@ -198,8 +198,8 @@ class TestAssetGroupService(unittest.TestCase):
         data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
-        "asset_group_path1",
-        "asset_group_path2",
+        "test_path1",
+        "test_path2",
         "123456Id",
         "Campaign1",
         "customer_number_1",
@@ -220,14 +220,14 @@ class TestAssetGroupService(unittest.TestCase):
         data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
-        "asset_group_path1",
-        "asset_group_path2",
+        "test_path1",
+        "test_path2",
         "123456Id",
         "Campaign1",
         "customer_number_1",
     )
     self.assertEqual(
-        result.asset_group_operation.create.path1, "asset_group_path1"
+        result.asset_group_operation.create.path1, "test_path1"
     )
 
   @mock.patch("validators.url")
@@ -241,15 +241,59 @@ class TestAssetGroupService(unittest.TestCase):
         data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
-        "asset_group_path1",
-        "asset_group_path2",
+        "test_path1",
+        "test_path2",
         "123456Id",
         "Campaign1",
         "customer_number_1",
     )
     self.assertEqual(
-        result.asset_group_operation.create.path2, "asset_group_path2"
+        result.asset_group_operation.create.path2, "test_path2"
     )
+
+  @mock.patch("validators.url")
+  def test_create_asset_group_return_error_on_too_long_path1(
+      self, mock_validators_url
+  ):
+    asset_group_path_1= "asset_group_test_path_1"
+    mock_validators_url.return_value = False
+
+    with self.assertRaisesRegex(
+        ValueError, f"Display path 1 '{asset_group_path1}' has more than 15 characters"
+    ):
+      self.asset_group_service.create_asset_group(
+          "AGN",
+          data_references.ApiStatus.paused,
+          "final.com",
+          "mobile_url.com",
+          asset_group_path_1,
+          "test_path2",
+          "asset_group_id",
+          "campaign_id",
+          "customer_id",
+      )
+
+  @mock.patch("validators.url")
+  def test_create_asset_group_return_error_on_too_long_path2(
+      self, mock_validators_url
+  ):
+    asset_group_path_2= "asset_group_test_path_2"
+    mock_validators_url.return_value = False
+
+    with self.assertRaisesRegex(
+        ValueError, f"Display path 2 '{asset_group_path_2}' has more than 15 characters"
+    ):
+      self.asset_group_service.create_asset_group(
+          "AGN",
+          data_references.ApiStatus.paused,
+          "final.com",
+          "mobile_url.com",
+          "test_path1",
+          asset_group_path_2,
+          "asset_group_id",
+          "campaign_id",
+          "customer_id",
+      )
 
   @mock.patch("validators.url")
   def test_create_asset_group_creates_correct_resource_name(
@@ -262,8 +306,8 @@ class TestAssetGroupService(unittest.TestCase):
         data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
-        "asset_group_path1",
-        "asset_group_path2",
+        "test_path1",
+        "test_path2",
         "123456Id",
         "Campaign1",
         "customer_number_1",
@@ -283,8 +327,8 @@ class TestAssetGroupService(unittest.TestCase):
         data_references.ApiStatus.paused,
         "final.com",
         "mobile_url.com",
-        "asset_group_path1",
-        "asset_group_path2",
+        "test_path1",
+        "test_path2",
         "123456Id",
         "Campaign1",
         "customer_number_1",

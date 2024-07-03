@@ -383,6 +383,15 @@ class AssetGroupService:
       raise ValueError(
           f"Mobile URL '{asset_group_mobile_url}' is not a valid URL"
       )
+    if asset_group_path1 and len(asset_group_path1) > 15:
+      raise ValueError(
+        f"Display path 1 '{asset_group_path1}' has more than 15 characters"
+      )
+    if asset_group_path2 and len(asset_group_path2) > 15:
+      raise ValueError(
+        f"Display path 2 '{asset_group_path2}' has more than 15 characters"
+      )
+
 
     mutate_operation = self._google_ads_client.get_type("MutateOperation")
     asset_group = mutate_operation.asset_group_operation.create
