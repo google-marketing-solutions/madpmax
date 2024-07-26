@@ -87,6 +87,7 @@ class AssetGroupService:
               index,
               self.sheet_id,
               data_references.SheetNames.new_asset_groups,
+              self.sheet_service,
           )
 
         asset_group_id = self.asset_group_temp_id

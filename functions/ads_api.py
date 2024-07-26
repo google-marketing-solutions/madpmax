@@ -653,6 +653,9 @@ class AdService:
 
     Returns:
       Results object with Google Ads api search results.
+
+    Raises:
+      RuntimeError: In case no Customer Ids are retrieved based on input variables.
     """
     customer_filter = ""
     if customer_id_inclusion_list:
@@ -671,6 +674,14 @@ class AdService:
                 ORDER BY
                   customer.id ASC"""
 
-    return self._google_ads_client.get_service("GoogleAdsService").search(
+    results = self._google_ads_client.get_service("GoogleAdsService").search(
         customer_id=login_customer_id, query=query
     )
+
+    if not results.results:
+      raise RuntimeError(
+          "No Customer Ids have been retrieved "
+          f"for the provided Login Customer Id {login_customer_id}."
+      )
+
+    return results

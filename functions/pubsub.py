@@ -166,12 +166,14 @@ class PubSub:
     if new_campaign_data:
       logging.info("Creating new Campaigns")
       self.campaign_service.process_campaign_input_sheet(new_campaign_data)
+      self.refresh_campaign_list()
 
     if new_asset_group_data and campaign_data:
       logging.info("Creating new Asset Groups")
       self.asset_group_service.process_asset_group_data_and_create(
           new_asset_group_data, campaign_data
       )
+      self.refresh_asset_group_list()
 
     if asset_data and asset_group_data:
       logging.info("Creating Assets")
