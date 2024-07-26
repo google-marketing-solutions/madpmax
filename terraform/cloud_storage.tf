@@ -15,3 +15,18 @@ resource "google_storage_bucket" "config" {
   uniform_bucket_level_access = true
   force_destroy               = true
 }
+
+resource "google_storage_bucket" "cf_upload_bucket" {
+  name                        = "pmax-code-bucket-${random_id.bucket_prefix.hex}"
+  location                    = var.cloud_function_region
+  uniform_bucket_level_access = true
+  force_destroy               = true
+  lifecycle_rule {
+    condition {
+      age = 1
+    }
+    action {
+      type = "Delete"
+    }
+  }
+}

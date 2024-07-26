@@ -40,21 +40,6 @@ resource "google_pubsub_topic" "default" {
   name = "performance-max-topic"
 }
 
-resource "google_storage_bucket" "cf_upload_bucket" {
-  name                        = "pmax-code-bucket-${random_id.bucket_prefix.hex}"
-  location                    = var.cloud_function_region
-  uniform_bucket_level_access = true
-  force_destroy               = true
-  lifecycle_rule {
-    condition {
-      age = 1
-    }
-    action {
-      type = "Delete"
-    }
-  }
-}
-
 resource "google_storage_bucket_object" "cf_upload_object" {
   name   = "src-${data.archive_file.zip_code_repo.output_md5}.zip"
   bucket = google_storage_bucket.cf_upload_bucket.name
@@ -81,7 +66,7 @@ resource "google_cloudfunctions2_function" "function" {
   }
 
   service_config {
-    available_memory      = "512M"
+    available_memory      = "1G"
     service_account_email = data.google_compute_default_service_account.default.email
   }
 
@@ -90,6 +75,6 @@ resource "google_cloudfunctions2_function" "function" {
     trigger_region = var.cloud_function_region
     event_type = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic   = google_pubsub_topic.default.id
-    retry_policy = "RETRY_POLICY_RETRY"
+    retry_policy = "RETRY_POLICY_DO_NOT_RETRY"
   }
 }

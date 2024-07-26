@@ -29,9 +29,3 @@ resource "google_storage_bucket" "backend" {
     enabled = true
   }
 }
-# terraform {
-#  backend "gcs" {
-#    bucket  = "YOUR-BACKEND-BUCKET-NAME"
-#    prefix  = "terraform/state"
-#  }
-# }
