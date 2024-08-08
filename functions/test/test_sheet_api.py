@@ -16,6 +16,7 @@
 from collections import namedtuple
 import unittest
 from unittest import mock
+import data_references
 from sheet_api import SheetsService
 
 
@@ -30,7 +31,6 @@ class TestSheetService(unittest.TestCase):
         self.credentials, self._google_ads_client, self.google_ads_service
     )
 
-# TODO: b/341261907 - Add tests for refresh spreadsheet
   @mock.patch("sheet_api.SheetsService.update_asset_sheet_output")
   @mock.patch("sheet_api.SheetsService.update_sheet_lists")
   def test_refresh_assets_list(
@@ -95,4 +95,116 @@ class TestSheetService(unittest.TestCase):
     mock_update_asset_sheet_output.assert_has_calls([
         mock.call(refresh_results, account_map),
         mock.call(refresh_results, account_map),
+    ])
+
+  @mock.patch("sheet_api.SheetsService.update_sitelink_sheet_output")
+  @mock.patch("sheet_api.SheetsService.update_asset_sheet_output")
+  @mock.patch("sheet_api.SheetsService._set_cell_value")
+  @mock.patch("sheet_api.SheetsService.update_sheet_lists")
+  def test_update_asset_sheet_output_with_empty_campaign_for_first_customer(
+      self,
+      mock_update_sheet_lists,
+      mock_set_cell_value,
+      mock_update_asset_sheet_output,
+      mock_update_sitelink_sheet_output,
+  ):
+    Customer = namedtuple("Customer", ["id"])
+    ResultRow = namedtuple("ResultRow", ["customer_client"])
+    retrieve_all_customers = [
+        ResultRow(customer_client=Customer(id="customer1")),
+        ResultRow(customer_client=Customer(id="customer2")),
+    ]
+
+    self.google_ads_service.retrieve_all_customers.return_value = (
+        retrieve_all_customers
+    )
+    account_map = {
+        "customer1": {},
+        "customer2": {"Test Campaign1"},
+    }
+    mock_update_sheet_lists.return_value = account_map
+    self.google_ads_service.retrieve_all_campaigns.side_effect = [
+        {},
+        {"Test Campaign1"},
+    ]
+    self.google_ads_service.retrieve_all_asset_groups.return_value = {}
+    self.sheet_service.refresh_spreadsheet()
+
+    mock_update_sheet_lists.assert_has_calls([
+        mock.call(
+            retrieve_all_customers,
+            data_references.SheetNames.customers,
+            "!B:B",
+            {},
+        ),
+        mock.call(
+            {"Test Campaign1"},
+            data_references.SheetNames.campaigns,
+            "!D:D",
+            account_map,
+        ),
+    ])
+
+  @mock.patch("sheet_api.SheetsService.update_sitelink_sheet_output")
+  @mock.patch("sheet_api.SheetsService.update_asset_sheet_output")
+  @mock.patch("sheet_api.SheetsService._set_cell_value")
+  @mock.patch("sheet_api.SheetsService.update_sheet_lists")
+  def test_update_asset_sheet_output_with_empty_asset_group_for_first_customer(
+      self,
+      mock_update_sheet_lists,
+      mock_set_cell_value,
+      mock_update_asset_sheet_output,
+      mock_update_sitelink_sheet_output,
+  ):
+    Customer = namedtuple("Customer", ["id"])
+    ResultRow = namedtuple("ResultRow", ["customer_client"])
+    retrieve_all_customers = [
+        ResultRow(customer_client=Customer(id="customer1")),
+        ResultRow(customer_client=Customer(id="customer2")),
+    ]
+
+    self.google_ads_service.retrieve_all_customers.return_value = (
+        retrieve_all_customers
+    )
+    account_map = {
+        "customer1": {"Campaign1"},
+        "customer2": {"Test Campaign1"},
+    }
+    mock_update_sheet_lists.return_value = account_map
+    self.google_ads_service.retrieve_all_campaigns.side_effect = [
+        {"Campaign1"},
+        {"Test Campaign1"},
+    ]
+    self.google_ads_service.retrieve_all_asset_groups.side_effect = [
+        {},
+        {"AssertGroup1"},
+    ]
+
+    self.sheet_service.refresh_spreadsheet()
+
+    mock_update_sheet_lists.assert_has_calls([
+        mock.call(
+            retrieve_all_customers,
+            data_references.SheetNames.customers,
+            "!B:B",
+            {},
+        ),
+        mock.call(
+            {"Campaign1"},
+            data_references.SheetNames.campaigns,
+            "!D:D",
+            account_map,
+        ),
+        mock.call(
+            {"Test Campaign1"},
+            data_references.SheetNames.campaigns,
+            "!D:D",
+            account_map,
+        ),
+        mock.call(
+            {"AssertGroup1"},
+            data_references.SheetNames.asset_groups,
+            "!F:F",
+            account_map,
+        ),
     ])

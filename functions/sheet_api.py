@@ -935,23 +935,26 @@ class SheetsService:
 
       if customer_id:
         results = self.google_ads_service.retrieve_all_campaigns(customer_id)
-        account_map = self.update_sheet_lists(
-            results, data_references.SheetNames.campaigns, "!D:D", account_map
-        )
-
+        if results:
+          account_map = self.update_sheet_lists(
+              results, data_references.SheetNames.campaigns, "!D:D", account_map
+          )
         results = self.google_ads_service.retrieve_all_asset_groups(customer_id)
-        account_map = self.update_sheet_lists(
-            results,
-            data_references.SheetNames.asset_groups,
-            "!F:F",
-            account_map,
-        )
+        if results:
+          account_map = self.update_sheet_lists(
+              results,
+              data_references.SheetNames.asset_groups,
+              "!F:F",
+              account_map,
+          )
 
         results = self.google_ads_service.retrieve_all_assets(customer_id)
-        self.update_asset_sheet_output(results, account_map)
+        if results:
+          self.update_asset_sheet_output(results, account_map)
 
         results = self.google_ads_service.retrieve_sitelinks(customer_id)
-        self.update_sitelink_sheet_output(results, account_map)
+        if results:
+          self.update_sitelink_sheet_output(results, account_map)
 
     self._set_cell_value(
         "=SORT(UNIQUE({CustomerList!$A$5:$A}))", "DropDownConfig!N3"
