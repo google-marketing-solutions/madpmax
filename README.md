@@ -26,7 +26,7 @@ The Mad Pmax: Performance Max Asset Automation solution can be deployed on Googl
 
 Use the interactive cloud tutorial to deploy the solution:
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.png)](https://ssh.cloud.google.com/cloudshell/open?cloudshell_git_repo=https://github.com/google-marketing-solutions/madpmax&cloudshell_tutorial=docs/tutorial.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.png)](https://console.cloud.google.com/?cloudshell=true&cloudshell_git_repo=https://github.com/google-marketing-solutions/madpmax&cloudshell_tutorial=docs/tutorial.md)
 
 Alternatively, you can find the [full deployment guide here](https://github.com/google-marketing-solutions/madpmax/wiki/Manual-Deployment-Guide).
 
