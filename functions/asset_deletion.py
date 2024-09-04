@@ -49,6 +49,36 @@ class AssetDeletionService:
     self._google_ads_service = google_ads_service
     self.sheet_service = sheet_service
 
+  def asset_deletion(self, asset_data: Sequence[str | int]) -> None:
+    """Asset Deletion method.
+
+    Args:
+      asset_data: Array of Asset data from the sheeet.
+
+    Returns:
+      Void. Writes output to sheets, and makes changes in Google Ads through the
+      API.
+    """
+    operations, row_to_operations_mapping = self.process_asset_deletion_input(
+        asset_data)
+
+    rows_for_removal, error_sheet_output = self.process_api_deletion_operations(
+        operations,
+        row_to_operations_mapping)
+
+    if error_sheet_output:
+      self.sheet_service.bulk_update_sheet_status(
+          data_references.SheetNames.assets,
+          data_references.Assets.status,
+          data_references.Assets.error_message,
+          data_references.Assets.asset_group_asset,
+          error_sheet_output)
+
+    if rows_for_removal:
+      self.sheet_service.remove_sheet_rows(
+          rows_for_removal,
+          data_references.SheetNames.assets)
+
   def delete_asset(
       self, asset_resource: str
   ) -> AssetGroupAssetOperation:

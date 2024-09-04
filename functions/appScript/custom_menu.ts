@@ -38,6 +38,8 @@ function onOpen(e) {
     )
     .addSeparator()
     .addItem('Upload to Google Ads', 'pubsubUploadRequest')
+    .addSeparator()
+    .addItem('Delete Assets', 'pubsubDeleteRequest')
     .addToUi();
 }
 
@@ -136,4 +138,17 @@ function pubsubUploadRequest() {
     value: 'run_all',
   };
   pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'UPLOAD');
+}
+
+/**
+ * Generate a PubSub trigger to the Cloud Project.
+ * PubSub Trigger will be processed and based on the attached attribute
+ * It will run the related action in the Cloud Function.
+ */
+function pubsubDeleteRequest() {
+  const attr = {
+    id: 'madmax',
+    value: 'run_all',
+  };
+  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'DELETE');
 }

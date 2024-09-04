@@ -90,6 +90,12 @@ class PubSub:
     )
 
   @cached_property
+  def asset_deletion_service(self):
+    return asset_deletion.AssetDeletionService(
+        self.google_ads_client, self.google_ads_service, self.sheet_service
+    )
+
+  @cached_property
   def asset_group_service(self):
     return asset_group_creation.AssetGroupService(
         self.google_ads_service,
@@ -127,6 +133,25 @@ class PubSub:
   def refresh_sitelinks_list(self) -> None:
     """Requests sitelinks data from the Ads API and updates the spreadsheet."""
     self.sheet_service.refresh_sitelinks_list()
+
+  def delete_api_operations(self) -> None:
+    """Reads the asset data from the input sheet and deletes assets.
+
+    For the assets provided. Removes the provided assets, and
+    writes the results back to the spreadsheet.
+    """
+    logging.info("Processing Assets Deletion data")
+    asset_data = self.sheet_service.get_sheet_values(
+        data_references.SheetNames.assets
+        + "!"
+        + data_references.SheetRanges.assets
+    )
+
+    if asset_data:
+      logging.info("Delete Assets")
+      self.asset_deletion_service.asset_deletion(
+          asset_data
+      )
 
   def create_api_operations(self) -> None:
     """Reads the campaigns and asset groups from the input sheet, creates assets.

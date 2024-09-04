@@ -345,3 +345,41 @@ def test_process_api_deletion_operations(
       rows_for_removal, expected_rows)
   assert error_sheet_output == expected_errors, "%s != %s" % (
       error_sheet_output, expected_errors)
+
+
+@pytest.mark.parametrize(
+    "row_num, asset_group_asset",
+    [(
+        0,
+        "customers/1234567890/assetGroupAssets/1234567890~1234567890~HEADLINE"
+    )])
+@mock.patch(
+    "asset_deletion.AssetDeletionService.process_api_deletion_operations")
+@mock.patch("asset_deletion.AssetDeletionService.process_asset_deletion_input")
+def test_asset_deletion(
+        mock_process_asset_deletion_input, mock_process_api_deletion_operations,
+        service_mocks, row_num, asset_group_asset):
+  """Test process_asset_deletion_input method in AssetDeletionService.
+
+  Verifying wheter the returns the expected data.
+  """
+  google_ads_client, google_ads_service, sheet_service = service_mocks
+  asset_service = AssetDeletionService(
+      google_ads_client, google_ads_service, sheet_service)
+
+  mock_process_asset_deletion_input.return_value = ({
+      _CUSTOMER_ID: [
+          {
+              "remove": asset_group_asset
+          }
+      ]
+  }, {_CUSTOMER_ID: [row_num]})
+
+  mock_process_api_deletion_operations. return_value = (
+      [row_num], {})
+
+  asset_service.asset_deletion(_VALID_SHEET_DATA)
+  sheet_service.remove_sheet_rows.assert_called_once_with(
+      [row_num],
+      data_references.SheetNames.assets
+  )

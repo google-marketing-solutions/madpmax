@@ -71,6 +71,8 @@ def pmax_trigger(cloud_event: CloudEvent) -> None:
         pubsub_utils.refresh_spreadsheet()
       case "UPLOAD":
         pubsub_utils.create_api_operations()
+      case "DELETE":
+        pubsub_utils.delete_api_operations()
       case "REFRESH_CUSTOMER_LIST":
         pubsub_utils.refresh_customer_id_list()
       case "REFRESH_CAMPAIGN_LIST":

@@ -1158,3 +1158,37 @@ class SheetsService:
       output[data_references.AssetGroupList.customer_id] = row.customer.id
 
     return output
+
+  def remove_sheet_rows(
+      self, row_numbers: list[int], sheet_name: str
+  ) -> None:
+    """Delete the given rownumber from the given sheet.
+
+    Args:
+      row_numbers: List of row numbers, minus the header size.
+      sheet_name: Name of the sheet for which data is processed.
+
+    Returns:
+      Void. Updates the spreadsheet
+    """
+    requests = []
+    sheet_id = self.get_sheet_id_by_name(sheet_name)
+    for row in row_numbers:
+      requests.append(
+          {
+              "deleteDimension": {
+                  "range": {
+                      "sheetId": sheet_id,
+                      "dimension": "ROWS",
+                      "startIndex": row + _SHEET_HEADER_SIZE,
+                      "endIndex": row + _SHEET_HEADER_SIZE + 1
+                  }
+              }
+          },
+      )
+    if requests:
+      try:
+        self.batch_update_requests(requests)
+      except errors.HttpError as e:
+        logging.error("Unable to update Sheet rows: %s", str(e))
+        raise e
