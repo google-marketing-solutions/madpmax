@@ -15,16 +15,16 @@
 
 import base64
 from typing import Final
+from absl import logging
 from cloudevents.http import CloudEvent
+from data_references import ConfigFile
 import functions_framework
 from google.ads.googleads import client
-from data_references import ConfigFile
 import pubsub
-from absl import logging
 import yaml
 
 _CONFIG_FILE_NAME: Final[str] = "config.yaml"
-_API_VERSIONAPI_VERSION: Final[str] = "v16"
+_API_VERSIONAPI_VERSION: Final[str] = "v17"
 
 
 def retrieve_config(config_name: str) -> ConfigFile:
@@ -40,7 +40,7 @@ def retrieve_config(config_name: str) -> ConfigFile:
     with open(config_name, "r") as config_file:
       return ConfigFile(**yaml.safe_load(config_file))
   except (ValueError, TypeError) as ex:
-    raise TypeError("Wrong structure or type of config file.", ex)
+    raise TypeError("Wrong structure or type of config file.") from ex
 
 
 @functions_framework.cloud_event
@@ -60,9 +60,8 @@ def pmax_trigger(cloud_event: CloudEvent) -> None:
   pubsub_utils = pubsub.PubSub(config, google_ads_client)
   if cloud_event:
     logging.info(
-        "------- START "
-        + base64.b64decode(cloud_event.data["message"]["data"]).decode()
-        + " EXECUTION -------"
+        "------- START %s EXECUTION -------",
+        base64.b64decode(cloud_event.data["message"]["data"]).decode()
     )
     message_data = base64.b64decode(
         cloud_event.data["message"]["data"]
@@ -84,7 +83,6 @@ def pmax_trigger(cloud_event: CloudEvent) -> None:
         pubsub_utils.refresh_sitelinks_list()
 
     logging.info(
-        "------- END "
-        + base64.b64decode(cloud_event.data["message"]["data"]).decode()
-        + " EXECUTION -------"
+        "------- END %s EXECUTION -------",
+        base64.b64decode(cloud_event.data["message"]["data"]).decode()
     )
