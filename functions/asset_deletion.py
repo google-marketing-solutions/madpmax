@@ -13,11 +13,13 @@
 # limitations under the License.
 """Provides functionality to delete Asset Group Assets in Google Ads."""
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import TypeAlias
 import ads_api
+import data_references
 from google.ads.googleads import client
 from sheet_api import SheetsService
+import utils
 
 AssetGroupAssetOperation: TypeAlias = Mapping[str, str]
 
@@ -63,3 +65,64 @@ class AssetDeletionService:
       mutate_operation.asset_group_asset_operation.remove = asset_resource
 
     return mutate_operation
+
+  def process_asset_deletion_input(
+      self,
+      asset_data: Sequence[str | int]
+  ) -> tuple[Mapping[str, list[AssetGroupAssetOperation]], Mapping[
+      str, list[int]]]:
+    """Process data from the sheet to delete assets.
+
+    Args:
+      asset_data: Array of Asset data from the sheeet.
+
+    Returns:
+      The API mutate operations, organized by Customer Id, and the Sheet Rows
+      these API mutrations are referring to.
+
+      (
+          {"customerid": [AssetGroupAssetOperation]},
+          {"customerid": [0]}
+      )
+    """
+    operations = {}
+    row_to_operations_mapping = {}
+    customer_mapping = {}
+
+    for sheet_row_index, asset in enumerate(asset_data):
+      if (
+          asset[data_references.Assets.status]
+          == data_references.RowStatus.uploaded and
+          asset[data_references.Assets.delete_asset] == "TRUE"
+      ):
+        customer_name = asset[data_references.Assets.customer_name]
+        if customer_name not in customer_mapping:
+          customer_mapping[customer_name] = utils.retrieve_customer_id(
+              customer_name, self.sheet_service)
+        customer_id = customer_mapping[customer_name]
+
+        asset_operation = None
+        if asset[data_references.Assets.asset_group_asset]:
+          asset_operation = self.delete_asset(
+              asset[data_references.Assets.asset_group_asset]
+          )
+
+        if asset_operation:
+          if (
+              customer_id not in operations.keys()
+              or not operations[customer_id]
+          ):
+            operations[customer_id] = []
+          operations[customer_id].append(asset_operation)
+
+          # map the index of the row to the resource that is process for
+          # allocating errors from the API call later
+          if (
+              customer_id not in row_to_operations_mapping.keys()
+              or not row_to_operations_mapping[customer_id]
+          ):
+            row_to_operations_mapping[customer_id] = []
+          row_to_operations_mapping[
+              customer_id].append(sheet_row_index)
+
+    return operations, row_to_operations_mapping

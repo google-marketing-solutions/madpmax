@@ -127,3 +127,40 @@ class TestAssetDeletionService(unittest.TestCase):
     self.assertIsNone(
         delete_asset_operation
     )
+
+  @mock.patch.object(AssetDeletionService, "delete_asset")
+  @mock.patch("utils.retrieve_customer_id")
+  def test_process_asset_deletion_input(
+      self,
+      mock_retrieve_customer_id,
+      mock_delete_asset
+    ):
+    """Test process_asset_deletion_input method in AssetDeletionService.
+
+    Verifying wheter the returns the expected data.
+    """
+    valid_row_number = 0
+    mock_delete_asset.return_value = {
+        "remove": _VALID_SHEET_DATA[
+            valid_row_number][data_references.Assets.asset_group_asset]
+    }
+    mock_retrieve_customer_id.return_value = _CUSTOMER_ID
+    operations, row_mapping = self.asset_service.process_asset_deletion_input(
+        _VALID_SHEET_DATA
+    )
+
+    self.assertEqual(
+        operations, {
+            _CUSTOMER_ID: [
+                {
+                    "remove": _VALID_SHEET_DATA[valid_row_number][
+                        data_references.Assets.asset_group_asset]
+                }
+            ]
+        }
+    )
+
+    self.assertEqual(
+        row_mapping, {_CUSTOMER_ID: [valid_row_number]}
+    )
+
