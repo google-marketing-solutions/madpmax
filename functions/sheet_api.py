@@ -1102,14 +1102,15 @@ class SheetsService:
     value_range_body = {"values": sheet_output}
 
     try:
-      request = self._sheets_service.values().append(
-          spreadsheetId=self.spread_sheet_id,
-          range=sheet_range,
-          valueInputOption=value_input_option,
-          insertDataOption=insert_data_option,
-          body=value_range_body,
-      )
-      request.execute()
+      if sheet_output:
+        request = self._sheets_service.values().append(
+            spreadsheetId=self.spread_sheet_id,
+            range=sheet_range,
+            valueInputOption=value_input_option,
+            insertDataOption=insert_data_option,
+            body=value_range_body,
+        )
+        request.execute()
     except errors.HttpError as e:
       logging.error("Unable to update Sheet rows: %s ", str(e))
       raise e
