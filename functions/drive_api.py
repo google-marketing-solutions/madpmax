@@ -16,7 +16,9 @@
 from collections.abc import Mapping
 import io
 from absl import logging
-import googleapiclient
+from googleapiclient import discovery
+from googleapiclient import errors
+from googleapiclient import http
 import requests
 
 
@@ -33,11 +35,9 @@ class DriveService:
     Args:
       credential: Drive APIs credentials.
     """
-    self._drive_service = googleapiclient.discovery.build(
-        "drive", "v3", credentials=credential
-    )
+    self._drive_service = discovery.build("drive", "v3", credentials=credential)
 
-  def _download_asset(self, url: str) -> bytes:
+  def download_asset_content(self, url: str) -> bytes:
     """Downloads an asset based on url, from drive or the web.
 
     Args:
@@ -47,10 +47,31 @@ class DriveService:
       Asset data array.
     """
     if _DRIVE_URL in url:
-      return self._download_drive_asset(url)
+      file_id = self.extract_file_id(url)
+      return self._download_drive_asset(file_id)
     else:
       response = requests.get(url)
     return io.BytesIO(response.content).read()
+
+  def extract_file_id(self, image_url: str) -> str:
+    url_parameters = image_url.split("/")
+    return url_parameters[url_parameters.index("d") + 1]
+
+  def _download_drive_asset(self, file_id: str) -> bytes:
+    try:
+      request = self._drive_service.files().get_media(fileId=file_id)
+      file = io.BytesIO()
+      downloader = http.MediaIoBaseDownload(file, request)
+      done = False
+      while done is False:
+        status, done = downloader.next_chunk()
+        logging.info(f"Download {int(status.progress() * 100)}.")
+
+    except errors.HttpError as error:
+      logging.error(f"An error occurred: {error}")
+      file = None
+
+    return file.getvalue()
 
   def get_file_by_name(self, file_name: str) -> str:
     """Retrieves the file by name and returns id.
@@ -81,6 +102,6 @@ class DriveService:
         page_token = response.get("nextPageToken", None)
         if page_token is None:
           break
-    except googleapiclient.http.HttpError as error:
+    except http.HttpError as error:
       logging.error("An error occurred: %s ", error)
     return file_id

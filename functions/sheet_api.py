@@ -39,7 +39,7 @@ class SheetsService:
   Attributes:
     spread_sheet_id: Google Spreadsheet id.
     customer_id_inclusion_list: String representation of list of Google Ads
-        customer ids.
+      customer ids.
     login_customer_id: Google Ads customer id of MCC level.
     google_ads_client: Google Ads API client.
     google_ads_service: Google Ads method class.
@@ -871,7 +871,7 @@ class SheetsService:
       sheet_output: Input sheet object with the relevant new sheet values.
       account_map: Google Ads account map, account ids and names.
     """
-    if response["tableRange"]:
+    if response.get("tableRange"):
       sheet_id = self.get_sheet_id(data_references.SheetNames.sitelinks)
       start_row = int(re.search("([0-9]*$)", response["tableRange"]).group())
       update_request_list = []

@@ -21,6 +21,7 @@ import asset_group_creation
 import auth
 import campaign_creation
 import data_references
+import drive_api
 from google.ads.googleads import client
 import sheet_api
 import sitelink_creation
@@ -32,7 +33,7 @@ class PubSub:
   def __init__(
       self,
       config: data_references.ConfigFile,
-      google_ads_client: client.GoogleAdsClient
+      google_ads_client: client.GoogleAdsClient,
   ) -> None:
     """Constructs the PubSub instance.
 
@@ -64,6 +65,10 @@ class PubSub:
     return ads_api.AdService(self.google_ads_client)
 
   @cached_property
+  def drive_service(self):
+    return drive_api.DriveService(self.credentials)
+
+  @cached_property
   def sheet_service(self):
     return sheet_api.SheetsService(
         self.credentials, self.google_ads_client, self.google_ads_service
@@ -78,7 +83,10 @@ class PubSub:
   @cached_property
   def asset_service(self):
     return asset_creation.AssetService(
-        self.google_ads_client, self.google_ads_service, self.sheet_service
+        self.google_ads_client,
+        self.google_ads_service,
+        self.sheet_service,
+        self.drive_service,
     )
 
   @cached_property

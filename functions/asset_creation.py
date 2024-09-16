@@ -18,8 +18,8 @@ from typing import Any, TypeAlias
 import uuid
 import ads_api
 import data_references
+from drive_api import DriveService
 from google.ads.googleads import client
-import requests
 from sheet_api import SheetsService
 import validators
 
@@ -39,6 +39,7 @@ class AssetService:
       google_ads_client: client.GoogleAdsClient,
       google_ads_service: ads_api.AdService,
       sheet_service: SheetsService,
+      drive_service: DriveService,
   ) -> None:
     """Constructs the AssetService instance.
 
@@ -50,6 +51,7 @@ class AssetService:
     self._google_ads_client = google_ads_client
     self._google_ads_service = google_ads_service
     self.sheet_service = sheet_service
+    self.drive_service = drive_service
 
     self.asset_temp_id = -10000
 
@@ -265,7 +267,7 @@ class AssetService:
       Asset operation or None.
     """
     # Download image from URL and determine the ratio.
-    image_content = requests.get(image_url).content
+    image_content = self.drive_service.download_asset_content(image_url)
 
     asset_service = self._google_ads_client.get_service("AssetService")
     resource_name = asset_service.asset_path(customer_id, self.asset_temp_id)
