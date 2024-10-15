@@ -10,37 +10,31 @@
 # limitations under the License.
 
 # COMPUTE SERVICE ACCOUNT --------------------------------------------------------------
-data "google_project" "project" {
-  project_id = var.project_id
+resource "google_service_account" "service_account" {
+  account_id   = "mad-pmax-runner"
+  display_name = "Service Account for running Mad PMax"
 }
+
 resource "google_project_iam_member" "storage_object_viewer_role" {
   project = var.project_id
   role    = "roles/storage.objectViewer"
-  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  member  = "serviceAccount:${google_service_account.service_account.email}"
 }
 resource "google_project_iam_member" "logs_writer_role" {
   project = var.project_id
   role    = "roles/logging.logWriter"
-  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  member  = "serviceAccount:${google_service_account.service_account.email}"
 }
 resource "google_project_iam_member" "artifact_registry_administrator_role" {
   project = var.project_id
   role    = "roles/artifactregistry.admin"
-  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
-}
-
-# DEFAULT SERVICE ACCOUNT --------------------------------------------------------------
-data "google_compute_default_service_account" "default" {
-}
-
-locals {
-  default_service_account_full = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+  member  = "serviceAccount:${google_service_account.service_account.email}"
 }
 
 resource "google_storage_bucket_iam_member" "member" {
   bucket = google_storage_bucket.config.name
   role   = "roles/storage.objectViewer"
-  member = local.default_service_account_full
+  member = "serviceAccount:${google_service_account.service_account.email}"
 }
 
 resource "google_cloudfunctions2_function_iam_member" "eventarc_invoker" {
@@ -48,66 +42,59 @@ resource "google_cloudfunctions2_function_iam_member" "eventarc_invoker" {
   location       = google_cloudfunctions2_function.function.location
   cloud_function = google_cloudfunctions2_function.function.name
   role           = "roles/cloudfunctions.invoker"
-  member         = local.default_service_account_full
+  member         = "serviceAccount:${google_service_account.service_account.email}"
 }
 
 resource "google_project_iam_binding" "cloud_functions_invoker" {
   project = var.project_id
   role    = "roles/cloudfunctions.invoker"
-
   members = [
-    local.default_service_account_full
+    "serviceAccount:${google_service_account.service_account.email}"
   ]
 }
 
 resource "google_project_iam_binding" "service_account_token" {
   project = var.project_id
   role    = "roles/iam.serviceAccountTokenCreator"
-
   members = [
-    local.default_service_account_full
+    "serviceAccount:${google_service_account.service_account.email}"
   ]
 }
 
 resource "google_project_iam_binding" "pubsub_editor" {
   project = var.project_id
   role    = "roles/pubsub.editor"
-
   members = [
-    local.default_service_account_full
+    "serviceAccount:${google_service_account.service_account.email}"
   ]
 }
 
 resource "google_project_iam_binding" "run_invoker" {
   project = var.project_id
   role    = "roles/run.invoker"
-
   members = [
-    local.default_service_account_full
+    "serviceAccount:${google_service_account.service_account.email}"
   ]
 }
 
 resource "google_project_iam_binding" "eventarc_publisher" {
   project = var.project_id
   role    = "roles/eventarc.publisher"
-
   members = [
-    local.default_service_account_full
+    "serviceAccount:${google_service_account.service_account.email}"
   ]
 }
 
 resource "google_project_iam_binding" "pubsub_publisher" {
   project = var.project_id
   role    = "roles/pubsub.publisher"
-
   members = var.solution_user_list
 }
 
 resource "google_project_iam_binding" "log_writer" {
   project = var.project_id
   role    = "roles/logging.logWriter"
-
   members = [
-    local.default_service_account_full
+    "serviceAccount:${google_service_account.service_account.email}"
   ]
 }

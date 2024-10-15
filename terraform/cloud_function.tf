@@ -67,7 +67,7 @@ resource "google_cloudfunctions2_function" "function" {
 
   service_config {
     available_memory      = "1G"
-    service_account_email = data.google_compute_default_service_account.default.email
+    service_account_email = google_service_account.service_account.email
   }
 
 
