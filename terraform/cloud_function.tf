@@ -70,11 +70,11 @@ resource "google_cloudfunctions2_function" "function" {
     service_account_email = google_service_account.service_account.email
   }
 
-
   event_trigger {
     trigger_region = var.cloud_function_region
     event_type = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic   = google_pubsub_topic.default.id
     retry_policy = "RETRY_POLICY_DO_NOT_RETRY"
+    service_account_email = google_service_account.service_account.email
   }
 }
