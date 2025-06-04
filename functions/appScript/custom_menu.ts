@@ -53,7 +53,7 @@ function pubsubRefreshAllRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH');
+  pubsub(PROJECT_ID, PUBSUB_TOPIC, attr, 'REFRESH');
   updateUploadedValuesIntoProperty();
 }
 
@@ -67,7 +67,7 @@ function pubsubRefreshCustomersRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_CUSTOMER_LIST');
+  pubsub(PROJECT_ID, PUBSUB_TOPIC, attr, 'REFRESH_CUSTOMER_LIST');
   updateUploadedValuesIntoProperty();
 }
 
@@ -81,7 +81,7 @@ function pubsubRefreshCampaignsRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_CAMPAIGN_LIST');
+  pubsub(PROJECT_ID, PUBSUB_TOPIC, attr, 'REFRESH_CAMPAIGN_LIST');
   updateUploadedValuesIntoProperty();
 }
 
@@ -95,7 +95,7 @@ function pubsubRefreshAssetGroupsRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_ASSET_GROUP_LIST');
+  pubsub(PROJECT_ID, PUBSUB_TOPIC, attr, 'REFRESH_ASSET_GROUP_LIST');
   updateUploadedValuesIntoProperty();
 }
 
@@ -109,7 +109,7 @@ function pubsubRefreshAssetsRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_ASSETS');
+  pubsub(PROJECT_ID, PUBSUB_TOPIC, attr, 'REFRESH_ASSETS');
   updateUploadedValuesIntoProperty();
 }
 
@@ -123,7 +123,7 @@ function pubsubRefreshSitelinksRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'REFRESH_SITELINKS');
+  pubsub(PROJECT_ID, PUBSUB_TOPIC, attr, 'REFRESH_SITELINKS');
   updateUploadedValuesIntoProperty();
 }
 
@@ -137,7 +137,7 @@ function pubsubUploadRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'UPLOAD');
+  pubsub(PROJECT_ID, PUBSUB_TOPIC, attr, 'UPLOAD');
 }
 
 /**
@@ -150,5 +150,5 @@ function pubsubDeleteRequest() {
     id: 'madmax',
     value: 'run_all',
   };
-  pubsub(PROJECT_NAME, PUBSUB_TOPIC, attr, 'DELETE');
+  pubsub(PROJECT_ID, PUBSUB_TOPIC, attr, 'DELETE');
 }
