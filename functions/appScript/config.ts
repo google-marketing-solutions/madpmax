@@ -19,6 +19,6 @@
 // Use the following redirect URI is
 // https://script.google.com/macros/d/[REPLACE_WITH_SCRIPT_ID]/usercallback
 const CLIENT_ID = 'UPDATE_CLINET_ID_HERE';          // OAuth client id.
-const CLIENT_SECRET = 'UPDATE_CLINET_SECRET_HERE';  // OAuth client secret.
-const PROJECT_NAME = 'UPDATE_PROJECT_NAME_HERE';    // Name of your GCP project.
+const CLIENT_SECRET = 'UPDATE_CLIENT_SECRET_HERE';  // OAuth client secret.
+const PROJECT_ID = 'UPDATE_PROJECT_ID_HERE';    // The Project ID of your GCP project.
 const PUBSUB_TOPIC = 'UPDATE_PUBSUB_TOPIC_NAME_HERE';  // Name of PubSub topic.
