@@ -145,6 +145,7 @@ class CampaignService:
           campaign_data[data_references.NewCampaigns.bidding_strategy],
           campaign_data[data_references.NewCampaigns.campaign_start_date],
           campaign_data[data_references.NewCampaigns.campaign_end_date],
+          campaign_data[data_references.NewCampaigns.eu_political_ads],
       )
     except ValueError as e:
       campaign_error = str(e)
@@ -218,6 +219,8 @@ class CampaignService:
       bidding_strategy: str,
       start_date: str,
       end_date: str,
+      eu_political_ads: str,
+      brand_guidelines_enabled: bool = False,
   ) -> tuple[ads_api.CampaignOperation | None, str]:
     """Creates a MutateOperation that creates a new Performance Max campaign.
 
@@ -236,6 +239,9 @@ class CampaignService:
         strategy.
       start_date: Start time for the campaign in format 'YYYY-MM-DD'.
       end_date: End time for the campaign in format 'YYYY-MM-DD'.
+      eu_political_ads: String value containing self declaration on whether the
+        campaign contains EU Political Ads.
+      brand_guidelines_enabled: Set if the campaign is enabled for brand guidelines.
 
     Returns:
       A tuple (ads_api.CampaignOperation, error_message), where
@@ -312,5 +318,19 @@ class CampaignService:
     campaign.end_date = datetime.datetime.strptime(
         end_date, "%Y-%m-%d"
     ).strftime("%Y%m%d")
+
+    # Declare whether or not this campaign serves political ads targeting the
+    # EU.
+    match eu_political_ads:
+      case data_references.EuPoliticalAds.no:
+        campaign.contains_eu_political_advertising = (
+            self._google_ads_client.enums.EuPoliticalAdvertisingStatusEnum.DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING
+        )
+      case data_references.EuPoliticalAds.yes:
+        campaign.contains_eu_political_advertising = (
+            self._google_ads_client.enums.EuPoliticalAdvertisingStatusEnum.CONTAINS_EU_POLITICAL_ADVERTISING
+        )
+
+    campaign.brand_guidelines_enabled = brand_guidelines_enabled
 
     return mutate_operation

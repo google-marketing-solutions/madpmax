@@ -1,7 +1,7 @@
 # Function dependencies
 absl-py==2.1.0
-google-ads==24.1.0
-google-api-python-client==2.130.0
+google-ads==28.0.0
+google-api-python-client==2.182.0
 google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.0
 oauth2client==4.1.3

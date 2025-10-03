@@ -135,7 +135,8 @@ class NewCampaigns:
   campaign_target_cpa: int = 8
   campaign_start_date: int = 9
   campaign_end_date: int = 10
-  error_message: int = 11
+  eu_political_ads: int = 11
+  error_message: int = 12
 
 
 @dataclasses.dataclass(frozen=True)
@@ -203,6 +204,21 @@ class ApiStatus:
   """
   paused: str = "PAUSED"
   enabled: str = "ENABLED"
+
+
+@dataclasses.dataclass(frozen=True)
+class EuPoliticalAds:
+  """Map for the eu political ads policy flag of an campaign.
+
+  The status can be either set to "CONTAINS_EU_POLITICAL_ADVERTISING" or 
+  "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING".
+
+  Atrributes:
+    yes: Campaign contains EU political ads.
+    no: Campaign does not contain EU political ads.
+  """
+  yes: str = "CONTAINS_EU_POLITICAL_ADVERTISING"
+  no: str = "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING"
 
 
 @dataclasses.dataclass(frozen=True)
