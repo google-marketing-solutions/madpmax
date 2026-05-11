@@ -972,13 +972,27 @@ class SheetsService:
         results, data_references.SheetNames.customers, "!B:B", account_map
     )
 
+    # Pre-fetch existing campaign IDs before the loop
+    existing_campaigns = self.get_sheet_values(
+        data_references.SheetNames.campaigns + "!D:D"
+    )
+    existing_campaigns_set = {
+        str(val[0]) for val in existing_campaigns if val
+    }
+
     for row in results:
       customer_id = str(row.customer_client.id)
 
       if customer_id:
-        results = self.google_ads_service.retrieve_all_campaigns(customer_id)
+        results = self.google_ads_service.retrieve_all_campaigns(
+            customer_id
+        )
         account_map = self.update_sheet_lists(
-            results, data_references.SheetNames.campaigns, "!D:D", account_map
+            results,
+            data_references.SheetNames.campaigns,
+            "!D:D",
+            account_map,
+            existing_campaigns_set,
         )
 
     return account_map
@@ -990,16 +1004,27 @@ class SheetsService:
     )
     account_map = self.refresh_campaign_list()
 
+    # Pre-fetch existing asset group IDs before the loop
+    existing_asset_groups = self.get_sheet_values(
+        data_references.SheetNames.asset_groups + "!F:F"
+    )
+    existing_asset_groups_set = {
+        str(val[0]) for val in existing_asset_groups if val
+    }
+
     for row in results:
       customer_id = str(row.customer_client.id)
 
       if customer_id:
-        results = self.google_ads_service.retrieve_all_asset_groups(customer_id)
+        results = (
+            self.google_ads_service.retrieve_all_asset_groups(customer_id)
+        )
         self.update_sheet_lists(
             results,
             data_references.SheetNames.asset_groups,
             "!F:F",
             account_map,
+            existing_asset_groups_set,
         )
 
   def refresh_assets_list(self) -> None:
@@ -1055,6 +1080,7 @@ class SheetsService:
       sheet_name: str,
       column: str,
       account_map: Mapping[str, Mapping[str, str]],
+      existing_values_set: set[str] = None,
   ) -> Mapping[str, Mapping[str, str]]:
     """Write exisitng customer list, campaigns, asset groups, assets and sitelinks to spreadsheet.
 
@@ -1064,8 +1090,12 @@ class SheetsService:
       sheet_name: Name of the sheet to write the results to.
       column: String value representation of sheet column, with unique id.
       account_map: Google Ads account map, account ids and names.
+      existing_values_set: Optional set of existing IDs to avoid duplicates.
     """
-    existing_values = self.get_sheet_values(sheet_name + column)
+    if existing_values_set is None:
+      existing_values = self.get_sheet_values(sheet_name + column)
+      existing_values_set = {str(val[0]) for val in existing_values if val}
+
     sheet_range = ""
     sheet_output = []
     index = 0
@@ -1091,7 +1121,7 @@ class SheetsService:
         row_item_id = str(row.asset_group.id)
         sheet_range = sheet_name + "!A:F"
 
-      if [row_item_id] not in existing_values:
+      if row_item_id not in existing_values_set:
         sheet_output.append([])
         sheet_output[index] = self.generate_list_sheet_output(row, sheet_name)
 
