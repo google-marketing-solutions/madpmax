@@ -9,4 +9,4 @@ pillow==10.3.0
 functions-framework==3.3.0
 validators==0.28.2
 pytest == 8.1.1
-urllib3<2.0.0
+httpx==0.27.0

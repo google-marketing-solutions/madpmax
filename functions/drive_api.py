@@ -19,7 +19,7 @@ from absl import logging
 from googleapiclient import discovery
 from googleapiclient import errors
 from googleapiclient import http
-import requests
+import httpx
 
 
 # The format of Drive URL
@@ -50,7 +50,7 @@ class DriveService:
       file_id = self.extract_file_id(url)
       return self._download_drive_asset(file_id)
     else:
-      response = requests.get(url)
+      response = httpx.get(url)
     return io.BytesIO(response.content).read()
 
   def extract_file_id(self, image_url: str) -> str:
