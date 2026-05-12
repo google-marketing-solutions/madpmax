@@ -57,6 +57,7 @@ resource "google_cloudfunctions2_function" "function" {
   build_config {
     runtime     = "python312"
     entry_point = "pmax_trigger" # Set the entry entry_point
+    service_account = google_service_account.service_account.id
     source {
       storage_source {
         bucket = google_storage_bucket.cf_upload_bucket.name
