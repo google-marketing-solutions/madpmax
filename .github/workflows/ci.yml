@@ -1,0 +1,123 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Checks every pull request and every push to main.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Read-only token: no job needs to write to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The Cloud Function runs on python312 (terraform/cloud_function.tf).
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements-dev.txt
+            functions/requirements.txt
+      - run: pip install -r requirements-dev.txt
+      - run: pytest
+
+  lint:
+    name: Format and lint (changed code)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements-dev.txt
+            functions/requirements.txt
+      - run: pip install -r requirements-dev.txt
+      - name: pyink on changed lines
+        run: python .github/scripts/ci_checks.py format --base "origin/${GITHUB_BASE_REF}"
+      - name: pylint errors in changed Python files
+        run: |
+          mapfile -t files < <(git diff --name-only --diff-filter=AM \
+              "origin/${GITHUB_BASE_REF}...HEAD" -- 'functions/*.py' '.github/scripts/*.py')
+          if (( ${#files[@]} == 0 )); then
+            echo "No Python files changed."
+            exit 0
+          fi
+          PYTHONPATH=functions:.github/scripts pylint --errors-only "${files[@]}"
+
+  guards:
+    name: Repository guards
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: python .github/scripts/ci_checks.py guards --base "origin/${GITHUB_BASE_REF}"
+
+  terraform:
+    name: Terraform format and validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+      # Only changed .tf files, so old files are not reformatted as a side
+      # effect. The .tfvars file is excluded: users edit it in their clones.
+      - name: terraform fmt on changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          mapfile -t files < <(git diff --name-only --diff-filter=AM \
+              "origin/${GITHUB_BASE_REF}...HEAD" -- '*.tf' | sed 's#^terraform/##')
+          if (( ${#files[@]} == 0 )); then
+            echo "No Terraform files changed."
+            exit 0
+          fi
+          terraform fmt -check -diff "${files[@]}"
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate

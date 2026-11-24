@@ -1,0 +1,23 @@
+# Weekly dependency update pull requests. The cooldown waits 7 days after a
+# release before proposing it, so a bad or compromised release can be caught
+# and pulled before it reaches this repository.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /functions
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7

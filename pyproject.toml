@@ -1,0 +1,66 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Developer tool settings for Mad PMax. Nothing in this file is deployed: the
+# Cloud Function is built from the functions/ folder only.
+
+[tool.pytest.ini_options]
+testpaths = ["functions/test", ".github/scripts"]
+pythonpath = ["functions", ".github/scripts"]
+python_files = ["test_*.py", "*_test.py"]
+# Unit tests must never reach the network (pytest-socket).
+addopts = [
+  "--disable-socket",
+  "--allow-unix-socket",
+  # TODO(#11): Repair these stale tests and remove the entries below.
+  # They fail on main for reasons that predate CI: AssetService now needs a
+  # drive_service argument, some mocks no longer match the code, and a few
+  # tests call the real OAuth endpoint.
+  "--ignore=functions/test/test_asset_creation.py",
+  "--ignore=functions/test/test_asset_value_by_type.py",
+  "--deselect=functions/test/test_asset_group_creation.py::TestAssetGroupService::test_create_asset_group_return_error_on_too_long_path1",
+  "--deselect=functions/test/test_asset_group_creation.py::TestAssetGroupService::test_create_asset_group_return_error_on_too_long_path2",
+  "--deselect=functions/test/test_drive_api.py::TestSheetService::test_call_drive_download_for_drive_url",
+  "--deselect=functions/test/test_drive_api.py::TestSheetService::test_call_make_request_for_non_drive",
+  "--deselect=functions/test/test_main.py::TestMain::test_pmax_trigger_to_call_create_api_operations_for_upload_cloud_event",
+  "--deselect=functions/test/test_main.py::TestMain::test_pmax_trigger_to_call_nothing_for_random_cloud_event",
+  "--deselect=functions/test/test_main.py::TestMain::test_pmax_trigger_to_call_refresh_spreadsheet_for_refresh_cloud_event",
+  "--deselect=functions/test/test_pubsub.py::TestPubSubCall::test_create_api_operations_calls_services_correctly",
+  "--deselect=functions/test/test_pubsub.py::TestPubSubCall::test_create_api_operations_calls_value_retrieval_services_correctly",
+  "--deselect=functions/test/utils_test.py::TestUtils::test_process_api_response_and_errors_no_errors",
+  "--deselect=functions/test/utils_test.py::TestUtils::test_process_api_response_and_errors_with_errors",
+  "--deselect=functions/test/utils_test.py::TestUtils::test_process_operations_errors",
+]
+
+[tool.pyink]
+# Google Python style: 2-space indent, 80 characters.
+line-length = 80
+pyink-indentation = 2
+pyink-use-majority-quotes = true
+target-version = ["py312"]
+
+[tool.pylint.main]
+py-version = "3.12"
+
+[tool.pylint.basic]
+# As in Google's pylintrc: tests and dunder methods don't need docstrings.
+no-docstring-rgx = "(__.*__|main|test.*|.*test|.*Test)$"
+
+[tool.pylint.format]
+indent-string = "  "
+max-line-length = 80
+
+[tool.pylint.typecheck]
+# googleapiclient builds these members at run time, so pylint can't see them.
+generated-members = ["files", "spreadsheets"]

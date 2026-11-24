@@ -2,6 +2,7 @@ google-ads.yaml
 .venv/*
 venv/
 __pycache__/
+.pytest_cache/
 path/*
 functions/config*
 local_run.py
