@@ -518,7 +518,7 @@ class SheetsService:
           spreadsheetId=self.spread_sheet_id,
           range=sheet_range,
           body=resource,
-          valueInputOption="USER_ENTERED",
+          valueInputOption="RAW",
       ).execute()
     except errors.HttpError as e:
       logging.error("Couldn't update Assets Group to a sheet \n %s", str(e))
@@ -544,7 +544,7 @@ class SheetsService:
           spreadsheetId=self.spread_sheet_id,
           range=sheet_range,
           body=resource,
-          valueInputOption="USER_ENTERED",
+          valueInputOption="RAW",
       ).execute()
     except errors.HttpError as e:
       logging.error("Unable to update Sheet rows: %s ", str(e))
@@ -585,7 +585,7 @@ class SheetsService:
 
         index += 1
 
-    value_input_option = "USER_ENTERED"
+    value_input_option = "RAW"
     insert_data_option = "INSERT_ROWS"
     value_range_body = {"values": sheet_output}
 
@@ -753,7 +753,7 @@ class SheetsService:
 
         index += 1
 
-    value_input_option = "USER_ENTERED"
+    value_input_option = "RAW"
     insert_data_option = "INSERT_ROWS"
     value_range_body = {"values": sheet_output}
 
@@ -1127,7 +1127,7 @@ class SheetsService:
 
         index += 1
 
-    value_input_option = "USER_ENTERED"
+    value_input_option = "RAW"
     insert_data_option = "INSERT_ROWS"
     value_range_body = {"values": sheet_output}
 

