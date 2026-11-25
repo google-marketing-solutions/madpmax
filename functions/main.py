@@ -24,7 +24,7 @@ import pubsub
 import yaml
 
 _CONFIG_FILE_NAME: Final[str] = "config.yaml"
-_API_VERSIONAPI_VERSION: Final[str] = "v21"
+_API_VERSIONAPI_VERSION: Final[str] = "v26"
 
 
 def retrieve_config(config_name: str) -> ConfigFile:

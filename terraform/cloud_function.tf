@@ -11,14 +11,14 @@
 
 resource "local_file" "ads_config" {
   content = templatefile("./config-template.yaml", {
-    developer_token    = "${var.developer_token}",
-    client_id          = "${var.client_id}",
-    client_secret      = "${var.client_secret}",
-    access_token       = "${var.access_token}",
-    refresh_token      = "${var.refresh_token}",
-    login_customer_id  = "${var.login_customer_id}"
+    developer_token            = "${var.developer_token}",
+    client_id                  = "${var.client_id}",
+    client_secret              = "${var.client_secret}",
+    access_token               = "${var.access_token}",
+    refresh_token              = "${var.refresh_token}",
+    login_customer_id          = "${var.login_customer_id}"
     customer_id_inclusion_list = "${var.customer_id_inclusion_list}"
-    spreadsheet_id     = "${var.spreadsheet_id}"
+    spreadsheet_id             = "${var.spreadsheet_id}"
   })
   filename = "../functions/config.yaml"
 }
@@ -50,13 +50,13 @@ resource "google_storage_bucket_object" "cf_upload_object" {
 }
 
 resource "google_cloudfunctions2_function" "function" {
-  name                  = var.cloud_function_name
-  location              = var.cloud_function_region
-  description           = "mad Pmax function"
+  name        = var.cloud_function_name
+  location    = var.cloud_function_region
+  description = "mad Pmax function"
 
   build_config {
-    runtime     = "python312"
-    entry_point = "pmax_trigger" # Set the entry entry_point
+    runtime         = "python312"
+    entry_point     = "pmax_trigger" # Set the entry entry_point
     service_account = google_service_account.service_account.id
     source {
       storage_source {
@@ -67,15 +67,18 @@ resource "google_cloudfunctions2_function" "function" {
   }
 
   service_config {
-    available_memory      = "1G"
+    available_memory = "1G"
+    # Gen2 functions stop after 60 seconds by default; large accounts need
+    # longer. 540 seconds is the maximum for event-triggered functions.
+    timeout_seconds       = 540
     service_account_email = google_service_account.service_account.email
   }
 
   event_trigger {
-    trigger_region = var.cloud_function_region
-    event_type = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.default.id
-    retry_policy = "RETRY_POLICY_DO_NOT_RETRY"
+    trigger_region        = var.cloud_function_region
+    event_type            = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic          = google_pubsub_topic.default.id
+    retry_policy          = "RETRY_POLICY_DO_NOT_RETRY"
     service_account_email = google_service_account.service_account.email
   }
 }
