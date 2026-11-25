@@ -18,6 +18,7 @@ import io
 import json
 import os
 import shutil
+import stat
 import tempfile
 from typing import Any, AnyStr, BinaryIO, ContextManager, Iterator, Optional, Tuple
 import unittest
@@ -102,6 +103,24 @@ class _TempFile(object):
     """
     with self.open_bytes(mode) as fp:
       fp.write(data)
+
+  def write_text(
+      self,
+      text: str,
+      mode: str = 'w',
+      encoding: str = 'utf8',
+      errors: str = 'strict',
+  ) -> None:
+    """Write text to the file.
+
+    Args:
+      text: Text to write.
+      mode: Mode to open the file for writing.
+      encoding: Text encoding to use.
+      errors: How to handle encoding errors.
+    """
+    with self._open(mode, encoding=encoding, errors=errors) as fp:
+      fp.write(text)
 
   def open_bytes(self, mode: str = 'rb') -> ContextManager[BinaryIO]:
     """Return a context manager for opening the file in binary mode.
@@ -199,6 +218,16 @@ class _TempDir(object):
 
 
 class TestMain(unittest.TestCase):
+
+  def setUp(self):
+    super().setUp()
+    # pmax_trigger builds a Google Ads client, which would call the real OAuth
+    # token endpoint. Replace it so the tests stay offline.
+    patcher = patch.object(
+        main.client.GoogleAdsClient, 'load_from_storage', autospec=True
+    )
+    patcher.start()
+    self.addCleanup(patcher.stop)
 
   def testConfig_retrieval_successful_with_correct_file(self):
     file_dict = {

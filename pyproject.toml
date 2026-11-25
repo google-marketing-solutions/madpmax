@@ -28,13 +28,6 @@ addopts = [
   # the code, and a few tests call the real OAuth endpoint.
   "--deselect=functions/test/test_asset_group_creation.py::TestAssetGroupService::test_create_asset_group_return_error_on_too_long_path1",
   "--deselect=functions/test/test_asset_group_creation.py::TestAssetGroupService::test_create_asset_group_return_error_on_too_long_path2",
-  "--deselect=functions/test/test_drive_api.py::TestSheetService::test_call_drive_download_for_drive_url",
-  "--deselect=functions/test/test_drive_api.py::TestSheetService::test_call_make_request_for_non_drive",
-  "--deselect=functions/test/test_main.py::TestMain::test_pmax_trigger_to_call_create_api_operations_for_upload_cloud_event",
-  "--deselect=functions/test/test_main.py::TestMain::test_pmax_trigger_to_call_nothing_for_random_cloud_event",
-  "--deselect=functions/test/test_main.py::TestMain::test_pmax_trigger_to_call_refresh_spreadsheet_for_refresh_cloud_event",
-  "--deselect=functions/test/test_pubsub.py::TestPubSubCall::test_create_api_operations_calls_services_correctly",
-  "--deselect=functions/test/test_pubsub.py::TestPubSubCall::test_create_api_operations_calls_value_retrieval_services_correctly",
   "--deselect=functions/test/utils_test.py::TestUtils::test_process_api_response_and_errors_no_errors",
   "--deselect=functions/test/utils_test.py::TestUtils::test_process_api_response_and_errors_with_errors",
   "--deselect=functions/test/utils_test.py::TestUtils::test_process_operations_errors",
