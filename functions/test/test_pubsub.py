@@ -125,6 +125,8 @@ class TestPubSubCall(unittest.TestCase):
     self.pubsub.refresh_sitelinks_list()
     mock_refresh_sitelinks_list.assert_called()
 
+  @patch("pubsub.PubSub.refresh_asset_group_list")
+  @patch("pubsub.PubSub.refresh_campaign_list")
   @patch("asset_creation.AssetService.process_asset_data_and_create")
   @patch("sheet_api.SheetsService.get_sheet_id")
   @patch("sheet_api.SheetsService.get_sheet_values")
@@ -133,6 +135,8 @@ class TestPubSubCall(unittest.TestCase):
       mock_get_sheet_values,
       mock_get_sheet_id,
       mock_process_asset_data_and_create,
+      unused_mock_refresh_campaign_list,
+      unused_mock_refresh_asset_group_list,
   ):
     """Test create_api_operations method in PubSub.
 
@@ -157,15 +161,15 @@ class TestPubSubCall(unittest.TestCase):
     expected_call_count = 6
     self.assertTrue(mock_get_sheet_values.call_count >= expected_call_count)
 
+  @patch("pubsub.PubSub.refresh_asset_group_list")
+  @patch("pubsub.PubSub.refresh_campaign_list")
   @patch("sheet_api.SheetsService.get_sheet_id")
   @patch("sitelink_creation.SitelinkService.process_sitelink_input_sheet")
   @patch("asset_creation.AssetService.process_asset_data_and_create")
   @patch(
       "asset_group_creation.AssetGroupService.process_asset_group_data_and_create"
   )
-  @patch(
-      "campaign_creation.CampaignService.process_campaign_input_sheet"
-  )
+  @patch("campaign_creation.CampaignService.process_campaign_input_sheet")
   @patch("sheet_api.SheetsService.get_sheet_values")
   def test_create_api_operations_calls_services_correctly(
       self,
@@ -175,6 +179,8 @@ class TestPubSubCall(unittest.TestCase):
       mock_process_asset_data_and_create,
       mock_process_sitelink_input_sheet,
       mock_get_sheet_id,
+      mock_refresh_campaign_list,
+      mock_refresh_asset_group_list,
   ):
     """Test if create_api_operations method in PubSub.
 
@@ -187,9 +193,11 @@ class TestPubSubCall(unittest.TestCase):
     mock_process_campaign_input_sheet.assert_called_with(
         [["New Campaigns Test Data"]]
     )
+    mock_refresh_campaign_list.assert_called_once()
     mock_process_asset_group_data_and_create.assert_called_with(
         [["New Asset Groups Test Data"]], [["Campaigns Test Data"]]
     )
+    mock_refresh_asset_group_list.assert_called_once()
     mock_process_sitelink_input_sheet.assert_called_once_with(
         [["Sitelinks Test Data"]]
     )
