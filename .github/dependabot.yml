@@ -18,13 +18,20 @@ updates:
     groups:
       function-dependencies:
         update-types: [minor, patch]
-  # Development and CI tools (requirements-dev.txt).
+  # Development and CI tools (requirements-dev.txt). Dependabot also finds
+  # functions/requirements.txt from the repository root, so only the dev tools
+  # are allowed here; the /functions entry above covers the app's packages.
   - package-ecosystem: pip
     directory: /
     schedule:
       interval: monthly
     cooldown:
       default-days: 7
+    allow:
+      - dependency-name: pyink
+      - dependency-name: pylint
+      - dependency-name: pytest
+      - dependency-name: pytest-socket
     groups:
       dev-tools:
         update-types: [minor, patch]
