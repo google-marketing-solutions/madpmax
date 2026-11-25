@@ -20,18 +20,7 @@ testpaths = ["functions/test", ".github/scripts"]
 pythonpath = ["functions", ".github/scripts"]
 python_files = ["test_*.py", "*_test.py"]
 # Unit tests must never reach the network (pytest-socket).
-addopts = [
-  "--disable-socket",
-  "--allow-unix-socket",
-  # TODO(#11): Repair these stale tests and remove the entries below.
-  # They fail on main for reasons that predate CI: some mocks no longer match
-  # the code, and a few tests call the real OAuth endpoint.
-  "--deselect=functions/test/test_asset_group_creation.py::TestAssetGroupService::test_create_asset_group_return_error_on_too_long_path1",
-  "--deselect=functions/test/test_asset_group_creation.py::TestAssetGroupService::test_create_asset_group_return_error_on_too_long_path2",
-  "--deselect=functions/test/utils_test.py::TestUtils::test_process_api_response_and_errors_no_errors",
-  "--deselect=functions/test/utils_test.py::TestUtils::test_process_api_response_and_errors_with_errors",
-  "--deselect=functions/test/utils_test.py::TestUtils::test_process_operations_errors",
-]
+addopts = ["--disable-socket", "--allow-unix-socket"]
 
 [tool.pyink]
 # Google Python style: 2-space indent, 80 characters.

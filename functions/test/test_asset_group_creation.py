@@ -255,11 +255,12 @@ class TestAssetGroupService(unittest.TestCase):
   def test_create_asset_group_return_error_on_too_long_path1(
       self, mock_validators_url
   ):
-    asset_group_path_1= "asset_group_test_path_1"
-    mock_validators_url.return_value = False
+    asset_group_path_1 = "asset_group_test_path_1"
+    mock_validators_url.return_value = True
 
     with self.assertRaisesRegex(
-        ValueError, f"Display path 1 '{asset_group_path1}' has more than 15 characters"
+        ValueError,
+        f"Display path 1 '{asset_group_path_1}' has more than 15 characters",
     ):
       self.asset_group_service.create_asset_group(
           "AGN",
@@ -277,11 +278,12 @@ class TestAssetGroupService(unittest.TestCase):
   def test_create_asset_group_return_error_on_too_long_path2(
       self, mock_validators_url
   ):
-    asset_group_path_2= "asset_group_test_path_2"
-    mock_validators_url.return_value = False
+    asset_group_path_2 = "asset_group_test_path_2"
+    mock_validators_url.return_value = True
 
     with self.assertRaisesRegex(
-        ValueError, f"Display path 2 '{asset_group_path_2}' has more than 15 characters"
+        ValueError,
+        f"Display path 2 '{asset_group_path_2}' has more than 15 characters",
     ):
       self.asset_group_service.create_asset_group(
           "AGN",
@@ -454,7 +456,7 @@ class TestAssetGroupService(unittest.TestCase):
   @mock.patch(
       "asset_group_creation.AssetGroupService.create_mandatory_text_assets"
   )
-  def test_generate_mandatory_assets_for_asset_group_calls_create_asset_group(
+  def test_generate_mandatory_assets_for_asset_group_calls_create_other_assets(
       self,
       mock_create_mandatory_text_assets,
       mock_consolidate_mandatory_assets_group_operations,
