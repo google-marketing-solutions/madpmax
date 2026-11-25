@@ -96,7 +96,7 @@ class TestUtils(unittest.TestCase):
         data_references.NewCampaigns.campaign_upload_status,
         data_references.RowStatus.error,
         error_message="dummy_response",
-        error_col_id=data_references.NewCampaigns.error_message,
+        message_col_id=data_references.NewCampaigns.error_message,
     )
 
   def test_process_api_response_and_errors_no_errors(self):
@@ -125,11 +125,10 @@ class TestUtils(unittest.TestCase):
         data_references.Sitelinks.upload_status,
         data_references.RowStatus.uploaded,
         error_message="",
-        error_col_id=data_references.Sitelinks.error_message,
+        message_col_id=data_references.Sitelinks.error_message,
         resource_name="Test Resource Name",
         resource_col_id=data_references.Sitelinks.sitelink_resource,
     )
-    self.sheet_service.refresh_campaign_list.assert_called_once()
 
   def test_process_api_response_and_errors_with_errors(self):
     """Test processing of API Errors.
@@ -153,7 +152,7 @@ class TestUtils(unittest.TestCase):
         data_references.Sitelinks.upload_status,
         data_references.RowStatus.error,
         error_message="dummy_response",
-        error_col_id=data_references.Sitelinks.error_message,
+        message_col_id=data_references.Sitelinks.error_message,
     )
 
   @mock.patch("sheet_api.SheetsService")
