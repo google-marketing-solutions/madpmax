@@ -47,7 +47,7 @@ jobs:
           cache-dependency-path: |
             requirements-dev.txt
             functions/requirements.txt
-      - run: pip install -r requirements-dev.txt
+      - run: pip install -r functions/requirements.txt -r requirements-dev.txt
       - run: pytest
 
   lint:
@@ -66,7 +66,7 @@ jobs:
           cache-dependency-path: |
             requirements-dev.txt
             functions/requirements.txt
-      - run: pip install -r requirements-dev.txt
+      - run: pip install -r functions/requirements.txt -r requirements-dev.txt
       - name: pyink on changed lines
         run: python .github/scripts/ci_checks.py format --base "origin/${GITHUB_BASE_REF}"
       - name: pylint errors in changed Python files
