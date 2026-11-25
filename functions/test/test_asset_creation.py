@@ -43,8 +43,12 @@ class TestAssetService(unittest.TestCase):
     self.google_ads_service = mock.Mock()
     self._google_ads_client = mock.Mock()
     self.sheet_service = mock.MagicMock()
+    self.drive_service = mock.MagicMock()
     self.asset_service = AssetService(
-        self._google_ads_client, self.google_ads_service, self.sheet_service
+        self._google_ads_client,
+        self.google_ads_service,
+        self.sheet_service,
+        self.drive_service,
     )
     self._google_ads_client.enums.AssetFieldTypeEnum = {"LOGO": "LOGO"}
     self._google_ads_client.enums.CallToActionTypeEnum = {"BOOK": "BOOK"}
@@ -82,15 +86,15 @@ class TestAssetService(unittest.TestCase):
     )
     self.assertEqual(result.asset_operation.create.name, "Test Image Asset")
 
-  @mock.patch("requests.get")
-  def test_create_image_asset_returns_correct_object(self, mock_requests_get):
-    mock_response = mock.MagicMock()
-    mock_response.content = "Test Content"
-    mock_requests_get.return_value = mock_response
+  def test_create_image_asset_returns_correct_object(self):
+    self.drive_service.download_asset_content.return_value = "Test Content"
     result = self.asset_service.create_image_asset(
         "https://example.co.uk", "Test Image Asset", "customer10"
     )
 
+    self.drive_service.download_asset_content.assert_called_once_with(
+        "https://example.co.uk"
+    )
     self.assertEqual(
         result.asset_operation.create.image_asset.data, "Test Content"
     )
