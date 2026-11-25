@@ -1,23 +1,39 @@
-# Weekly dependency update pull requests. The cooldown waits 7 days after a
-# release before proposing it, so a bad or compromised release can be caught
-# and pulled before it reaches this repository.
+# Monthly dependency update pull requests, one per folder: all minor and patch
+# updates are grouped into a single PR. Major updates still get their own PR,
+# because they're more likely to break something. The cooldown waits 7 days
+# after a release before proposing it, so a bad or compromised release can be
+# caught and pulled before it reaches this repository.
+#
+# Security updates are separate: they're enabled for the whole organization
+# and open as soon as a vulnerability is published.
 version: 2
 updates:
+  # Packages deployed with the Cloud Function.
   - package-ecosystem: pip
     directory: /functions
     schedule:
-      interval: weekly
+      interval: monthly
     cooldown:
       default-days: 7
+    groups:
+      function-dependencies:
+        update-types: [minor, patch]
+  # Development and CI tools (requirements-dev.txt).
   - package-ecosystem: pip
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     cooldown:
       default-days: 7
+    groups:
+      dev-tools:
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     cooldown:
       default-days: 7
+    groups:
+      github-actions:
+        update-types: [minor, patch]

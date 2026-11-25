@@ -1,5 +1,6 @@
 # Tools for development and CI only. Not deployed with the Cloud Function.
--r functions/requirements.txt
+# Install together with the app's packages:
+#   pip install -r functions/requirements.txt -r requirements-dev.txt
 pyink==26.5.1
 pylint==4.1.4
 pytest==9.0.3
