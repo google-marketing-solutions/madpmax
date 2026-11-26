@@ -17,6 +17,7 @@ from functools import cached_property
 from absl import logging
 import ads_api
 import asset_creation
+import asset_deletion
 import asset_group_creation
 import auth
 import campaign_creation

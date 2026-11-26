@@ -233,3 +233,28 @@ class TestPubSubCall(unittest.TestCase):
     mock_process_asset_group_data_and_create.assert_not_called()
     mock_process_sitelink_input_sheet.assert_not_called()
     mock_process_asset_data_and_create.assert_not_called()
+
+  @patch("asset_deletion.AssetDeletionService.asset_deletion")
+  @patch("sheet_api.SheetsService.get_sheet_values")
+  def test_delete_api_operations_calls_asset_deletion_service(
+      self, mock_get_sheet_values, mock_asset_deletion
+  ):
+    mock_get_sheet_values.return_value = [["Assets Test Data"]]
+
+    self.pubsub.delete_api_operations()
+
+    mock_get_sheet_values.assert_called_once_with(
+        _SHEET_RANGE_ARGS["assets_arg"]
+    )
+    mock_asset_deletion.assert_called_once_with([["Assets Test Data"]])
+
+  @patch("asset_deletion.AssetDeletionService.asset_deletion")
+  @patch("sheet_api.SheetsService.get_sheet_values")
+  def test_delete_api_operations_skips_deletion_without_asset_data(
+      self, mock_get_sheet_values, mock_asset_deletion
+  ):
+    mock_get_sheet_values.return_value = []
+
+    self.pubsub.delete_api_operations()
+
+    mock_asset_deletion.assert_not_called()
