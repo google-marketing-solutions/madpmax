@@ -300,7 +300,8 @@ class CampaignService:
         self._google_ads_client.enums.AdvertisingChannelTypeEnum.PERFORMANCE_MAX
     )
 
-    campaign.url_expansion_opt_out = False
+    # Final URL expansion stays at the Performance Max default (on). The old
+    # url_expansion_opt_out field was removed in Ads API v22.
 
     self.performance_max_campaign_temporary_id -= 1
     campaign_service = self._google_ads_client.get_service("CampaignService")
@@ -312,12 +313,14 @@ class CampaignService:
         customer_id, self.budget_temporary_id
     )
 
-    campaign.start_date = datetime.datetime.strptime(
+    # Ads API v23 replaced start_date/end_date with *_date_time fields in
+    # "yyyy-MM-dd HH:mm:ss" format. Whole days run from 00:00:00 to 23:59:59.
+    campaign.start_date_time = datetime.datetime.strptime(
         start_date, "%Y-%m-%d"
-    ).strftime("%Y%m%d")
-    campaign.end_date = datetime.datetime.strptime(
+    ).strftime("%Y-%m-%d 00:00:00")
+    campaign.end_date_time = datetime.datetime.strptime(
         end_date, "%Y-%m-%d"
-    ).strftime("%Y%m%d")
+    ).strftime("%Y-%m-%d 23:59:59")
 
     # Declare whether or not this campaign serves political ads targeting the
     # EU.
